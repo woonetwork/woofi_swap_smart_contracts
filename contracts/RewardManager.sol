@@ -375,6 +375,26 @@ contract RewardManager is InitializableOwnable {
 
     mapping (address => uint256) public pendingReward;
 
+    constructor(
+        address owner,
+        uint256 _rewardRatio,
+        address _rewardToken,
+        address _priceOracle,
+        address _rewardChainlinkRefOracle,
+        address _quoteChainlinkRefOracle,
+        address quoteToken
+    ) public {
+        init(
+            owner,
+            _rewardRatio,
+            _rewardToken,
+            _priceOracle,
+            _rewardChainlinkRefOracle,
+            _quoteChainlinkRefOracle,
+            quoteToken
+        );
+    }
+
     function init(
         address owner,
         uint256 _rewardRatio,
@@ -383,7 +403,7 @@ contract RewardManager is InitializableOwnable {
         address _rewardChainlinkRefOracle,
         address _quoteChainlinkRefOracle,
         address quoteToken
-    ) external {
+    ) public {
         require(owner != address(0), "INVALID_OWNER");
         require(_rewardRatio <= 1e18, "INVALID_REWARD_RATIO");
         require(_rewardToken != address(0), "INVALID_RAWARD_TOKEN");
