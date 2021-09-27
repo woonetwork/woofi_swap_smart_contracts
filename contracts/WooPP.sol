@@ -406,12 +406,21 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
 
     address public rewardManager;
 
+    constructor(
+        address owner,
+        address _quoteToken,
+        address _priceOracle,
+        address quoteChainlinkRefOracle
+    ) public {
+        init(owner, _quoteToken, _priceOracle, quoteChainlinkRefOracle);
+    }
+
     function init(
         address owner,
         address _quoteToken,
         address _priceOracle,
         address quoteChainlinkRefOracle
-    ) external {
+    ) public {
         require(owner != address(0), "INVALID_OWNER");
         require(_quoteToken != address(0), "INVALID_QUOTE");
         require(_priceOracle != address(0), "INVALID_ORACLE");
