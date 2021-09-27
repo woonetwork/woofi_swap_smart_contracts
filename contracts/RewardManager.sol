@@ -361,6 +361,12 @@ contract RewardManager is InitializableOwnable {
         _;
     }
 
+    event PriceOracleUpdated(address indexed newPriceOracle);
+    event ChainlinkRefOracleUpdated(
+        address indexed newRewardChainlinkRefOracle,
+        address indexed newQuoteChainlinkRefOracle
+    );
+    event Withdraw(address indexed token, address indexed to, uint256 amount);
     event Approve(address indexed user, bool approved);
     event ClaimReward(address indexed user, uint256 amount);
 
@@ -426,6 +432,9 @@ contract RewardManager is InitializableOwnable {
             require(quoteRefPriceFixCoeff < type(uint96).max);
             refPriceFixCoeff = rewardRefPriceFixCoeff.divFloor(quoteRefPriceFixCoeff);
         }
+
+        emit PriceOracleUpdated(_priceOracle);
+        emit ChainlinkRefOracleUpdated(_rewardChainlinkRefOracle, _quoteChainlinkRefOracle);
     }
 
     function addReward(address user, uint256 amount) external onlyApproved { // amount in USDT
@@ -449,12 +458,13 @@ contract RewardManager is InitializableOwnable {
         emit ClaimReward(user, amountToTransfer);
     }
 
-    function withdraw(address token, address to, uint256 amount) external onlyOwner {
+    function withdraw(address token, address to, uint256 amount) public onlyOwner {
         IERC20(token).safeTransfer(to, amount);
+        emit Withdraw(token, to, amount);
     }
 
     function withdrawAll(address token, address to) external onlyOwner {
-        IERC20(token).safeTransfer(to, IERC20(token).balanceOf(address(this)));
+        withdraw(token, to, IERC20(token).balanceOf(address(this)));
     }
 
     function approve(address user) external onlyOwner {
@@ -470,6 +480,7 @@ contract RewardManager is InitializableOwnable {
     function setPriceOracle(address newPriceOracle) external onlyApproved {
         require(newPriceOracle != address(0), "INVALID_ORACLE");
         priceOracle = newPriceOracle;
+        emit PriceOracleUpdated(newPriceOracle);
     }
 
     function setChainlinkRefOracle(address newRewardChainlinkRefOracle, address newQuoteChainlinkRefOracle) external onlyApproved {
@@ -484,6 +495,8 @@ contract RewardManager is InitializableOwnable {
             require(quoteRefPriceFixCoeff < type(uint96).max);
             refPriceFixCoeff = rewardRefPriceFixCoeff.divFloor(quoteRefPriceFixCoeff);
         }
+
+        emit ChainlinkRefOracleUpdated(newRewardChainlinkRefOracle, newQuoteChainlinkRefOracle);
     }
 
     function isPriceReliable(uint256 price) internal view returns (bool) {
