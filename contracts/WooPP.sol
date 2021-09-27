@@ -473,7 +473,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     }
 
     // When baseSold >= 0 , users sold the base token
-    function getQuoteAmountLowBaseSide(uint256 p, uint256 k, uint256 r, uint256 baseAmount) internal pure returns (uint256) {
+    function getQuoteAmountLowQuoteSide(uint256 p, uint256 k, uint256 r, uint256 baseAmount) internal pure returns (uint256) {
         // priceFactor = 1 + k * baseAmount * p * r;
         uint256 priceFactor = DecimalMath.ONE.add(k.mulCeil(baseAmount).mulCeil(p).mulCeil(r));
         // return baseAmount * p / priceFactor;
@@ -481,7 +481,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     }
 
     // When baseSold >= 0
-    function getBaseAmountLowBaseSide(uint256 p, uint256 k, uint256 r, uint256 quoteAmount) internal pure returns (uint256) {
+    function getBaseAmountLowQuoteSide(uint256 p, uint256 k, uint256 r, uint256 quoteAmount) internal pure returns (uint256) {
         // priceFactor = (1 - k * quoteAmount * r);
         uint256 priceFactor = DecimalMath.ONE.sub(k.mulFloor(quoteAmount).mulFloor(r));
         // return quoteAmount * p^{-1} / priceFactor;
@@ -489,7 +489,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     }
 
     // When quoteSold >= 0
-    function getBaseAmountLowQuoteSide(uint256 p, uint256 k, uint256 r, uint256 quoteAmount) internal pure returns (uint256) {
+    function getBaseAmountLowBaseSide(uint256 p, uint256 k, uint256 r, uint256 quoteAmount) internal pure returns (uint256) {
         // priceFactor = 1 + k * quoteAmount * r;
         uint256 priceFactor = DecimalMath.ONE.add(k.mulCeil(quoteAmount).mulCeil(r));
         // return quoteAmount * p^{-1} / priceFactor;
@@ -497,7 +497,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     }
 
     // When quoteSold >= 0
-    function getQuoteAmountLowQuoteSide(uint256 p, uint256 k, uint256 r, uint256 baseAmount) internal pure returns (uint256) {
+    function getQuoteAmountLowBaseSide(uint256 p, uint256 k, uint256 r, uint256 baseAmount) internal pure returns (uint256) {
         // priceFactor = 1 - k * baseAmount * p * r;
         uint256 priceFactor = DecimalMath.ONE.sub(k.mulFloor(baseAmount).mulFloor(p).mulFloor(r));
         // return baseAmount * p / priceFactor;
@@ -528,10 +528,10 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
             baseSold = 0;
         }
 
-        uint256 virtualBaseBought = getBaseAmountLowQuoteSide(p, k, DecimalMath.ONE, quoteSold);
+        uint256 virtualBaseBought = getBaseAmountLowBaseSide(p, k, DecimalMath.ONE, quoteSold);
         if (isSellBase == (virtualBaseBought < baseBought))
             baseBought = virtualBaseBought;
-        uint256 virtualQuoteBought = getQuoteAmountLowBaseSide(p, k, DecimalMath.ONE, baseSold);
+        uint256 virtualQuoteBought = getQuoteAmountLowQuoteSide(p, k, DecimalMath.ONE, baseSold);
         if (isSellBase == (virtualQuoteBought > quoteBought))
             quoteBought = virtualQuoteBought;
     }
@@ -556,18 +556,18 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         (baseBought, quoteBought) = getBoughtAmount(baseInfo, quoteInfo, p, k, true);
 
         if (baseBought > 0) {
-            uint256 quoteSold = getQuoteAmountLowQuoteSide(p, k, baseInfo.R, baseBought);
+            uint256 quoteSold = getQuoteAmountLowBaseSide(p, k, baseInfo.R, baseBought);
             if (baseAmount > baseBought) {
                 uint256 newBaseSold = baseAmount.sub(baseBought);
-                quoteAmount = quoteSold.add(getQuoteAmountLowBaseSide(p, k, DecimalMath.ONE, newBaseSold));
+                quoteAmount = quoteSold.add(getQuoteAmountLowQuoteSide(p, k, DecimalMath.ONE, newBaseSold));
             } else {
                 uint256 newBaseBought = baseBought.sub(baseAmount);
-                quoteAmount = quoteSold.sub(getQuoteAmountLowQuoteSide(p, k, baseInfo.R, newBaseBought));
+                quoteAmount = quoteSold.sub(getQuoteAmountLowBaseSide(p, k, baseInfo.R, newBaseBought));
             }
         } else {
-            uint256 baseSold = getBaseAmountLowBaseSide(p, k, DecimalMath.ONE, quoteBought);
+            uint256 baseSold = getBaseAmountLowQuoteSide(p, k, DecimalMath.ONE, quoteBought);
             uint256 newBaseSold = baseAmount.add(baseSold);
-            uint256 newQuoteBought = getQuoteAmountLowBaseSide(p, k, DecimalMath.ONE, newBaseSold);
+            uint256 newQuoteBought = getQuoteAmountLowQuoteSide(p, k, DecimalMath.ONE, newBaseSold);
             if (newQuoteBought > quoteBought) {
                 quoteAmount = newQuoteBought.sub(quoteBought);
             }
@@ -594,18 +594,18 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         (baseBought, quoteBought) = getBoughtAmount(baseInfo, quoteInfo, p, k, false);
 
         if(quoteBought > 0) {
-            uint256 baseSold = getBaseAmountLowBaseSide(p, k, baseInfo.R, quoteBought);
+            uint256 baseSold = getBaseAmountLowQuoteSide(p, k, baseInfo.R, quoteBought);
             if (quoteAmount > quoteBought) {
                 uint256 newQuoteSold = quoteAmount.sub(quoteBought);
-                baseAmount = baseSold.add(getBaseAmountLowQuoteSide(p, k, DecimalMath.ONE, newQuoteSold));
+                baseAmount = baseSold.add(getBaseAmountLowBaseSide(p, k, DecimalMath.ONE, newQuoteSold));
             } else {
                 uint256 newQuoteBought = quoteBought.sub(quoteAmount);
-                baseAmount = baseSold.sub(getBaseAmountLowBaseSide(p, k, baseInfo.R, newQuoteBought));
+                baseAmount = baseSold.sub(getBaseAmountLowQuoteSide(p, k, baseInfo.R, newQuoteBought));
             }
         } else {
-            uint256 quoteSold = getQuoteAmountLowQuoteSide(p, k, DecimalMath.ONE, baseBought);
+            uint256 quoteSold = getQuoteAmountLowBaseSide(p, k, DecimalMath.ONE, baseBought);
             uint256 newQuoteSold = quoteAmount.add(quoteSold);
-            uint256 newBaseBought = getBaseAmountLowQuoteSide(p, k, DecimalMath.ONE, newQuoteSold);
+            uint256 newBaseBought = getBaseAmountLowBaseSide(p, k, DecimalMath.ONE, newQuoteSold);
             if (newBaseBought > baseBought) {
                 baseAmount = newBaseBought.sub(baseBought);
             }
