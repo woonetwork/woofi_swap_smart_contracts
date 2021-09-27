@@ -364,7 +364,17 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     using DecimalMath for uint256;
     using SafeERC20 for IERC20;
 
-    event LpFeeRateChange(address baseToken, uint256 newLpFeeRate);
+    event StrategistUpdated(address indexed strategist, bool flag);
+    event RewardManagerUpdated(address indexed newRewardManager);
+    event PriceOracleUpdated(address indexed newPriceOracle);
+    event ChainlinkRefOracleUpdated(address indexed token, address indexed newChainlinkRefOracle);
+    event ParametersUpdated(
+        address indexed baseToken,
+        uint256 newThreshold,
+        uint256 newLpFeeRate,
+        uint256 newR
+    );
+    event Withdraw(address indexed token, address indexed to, uint256 amount);
     event WooSwap(
         address fromToken,
         address toToken,
@@ -438,6 +448,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
             quoteInfo.refPriceFixCoeff = uint96(refPriceFixCoeff);
         }
         priceOracle = _priceOracle;
+
+        emit ChainlinkRefOracleUpdated(quoteToken, quoteChainlinkRefOracle);
     }
 
     function getPairInfo() external view returns (string memory) {
@@ -721,6 +733,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     function setPriceOracle(address newPriceOracle) external onlyStrategist {
         require(newPriceOracle != address(0), "INVALID_ORACLE");
         priceOracle = newPriceOracle;
+        emit PriceOracleUpdated(newPriceOracle);
     }
 
     function setChainlinkRefOracle(address token, address newChainlinkRefOracle) external preventReentrant onlyStrategist {
@@ -733,10 +746,12 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
             require(refPriceFixCoeff <= type(uint96).max);
             info.refPriceFixCoeff = uint96(refPriceFixCoeff);
         }
+        emit ChainlinkRefOracleUpdated(token, newChainlinkRefOracle);
     }
 
     function setRewardManager(address newRewardManager) external onlyStrategist {
         rewardManager = newRewardManager;
+        emit RewardManagerUpdated(newRewardManager);
     }
 
     function addBaseToken(
@@ -769,7 +784,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         }
 
         tokenInfo[baseToken] = info;
-        emit LpFeeRateChange(baseToken, lpFeeRate);
+        emit ParametersUpdated(baseToken, threshold, lpFeeRate, R);
+        emit ChainlinkRefOracleUpdated(baseToken, chainlinkRefOracle);
     }
 
     function removeBaseToken(
@@ -789,7 +805,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         info.refPriceFixCoeff = 0;
 
         tokenInfo[baseToken] = info;
-        emit LpFeeRateChange(baseToken, 0);
+        emit ParametersUpdated(baseToken, 0, 0, 0);
+        emit ChainlinkRefOracleUpdated(baseToken, address(0));
     }
 
     function tuneParameters(
@@ -813,21 +830,24 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         }
 
         tokenInfo[baseToken] = info;
-        emit LpFeeRateChange(baseToken, newLpFeeRate);
+        emit ParametersUpdated(baseToken, newThreshold, newLpFeeRate, newR);
     }
 
     // ========== Administrative functions ==========
 
     function setStrategist(address strategist, bool flag) external onlyOwner {
         isStrategist[strategist] = flag;
+        emit StrategistUpdated(strategist, flag);
     }
 
     function withdraw(address token, address to, uint256 amount) external onlyOwner {
         IERC20(token).safeTransfer(to, amount);
+        emit Withdraw(token, to, amount);
     }
 
     function withdrawToOwner(address token, uint256 amount) external onlyStrategist {
         IERC20(token).safeTransfer(_OWNER_, amount);
+        emit Withdraw(token, _OWNER_, amount);
     }
 
     // ========== Internal functions ==========
