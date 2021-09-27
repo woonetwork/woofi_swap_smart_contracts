@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
 /*
@@ -110,8 +110,6 @@ abstract contract Proxy {
 }
 
 // File: @openzeppelin/contracts/utils/Address.sol
-
-pragma solidity >=0.6.2 <0.8.0;
 
 /**
  * @dev Collection of functions related to the address type
@@ -349,9 +347,6 @@ contract UpgradeabilityProxy is Proxy {
 }
 
 // File: MasterChef/contracts-proxy/AdminUpgradeabilityProxy.sol
-
-pragma solidity ^0.6.0;
-
 
 /**
  * @title AdminUpgradeabilityProxy
