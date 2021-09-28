@@ -22,7 +22,7 @@ contract InitializableOwnable {
     // ============ Modifiers ============
 
     modifier notInitialized() {
-        require(!_INITIALIZED_, "DODO_INITIALIZED");
+        require(!_INITIALIZED_, "SHOULD_NOT_BE_INITIALIZED");
         _;
     }
 
