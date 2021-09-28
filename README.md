@@ -1,5 +1,27 @@
-# Smart contracts of WooFi Swap
-Smart contract code for proprietary market making strategy with high capital efficiency and low price spread, configurable rebate mechanism and smart route to 3rd party AMM DEXes if necessary.
+<p align="center"><img src="http://woofi.iamkun.com/_nuxt/img/8993400.png" width="320" /></p>
+
+<div align="center">
+  <a href="https://circleci.com/gh/dydxprotocol/workflows/solo/tree/master" style="text-decoration:none;">
+    <img src="https://img.shields.io/circleci/project/github/dydxprotocol/solo.svg" alt='CI' />
+  </a>
+  <a href='https://www.npmjs.com/package/@dydxprotocol/solo' style="text-decoration:none;">
+    <img src='https://img.shields.io/npm/v/@dydxprotocol/solo.svg' alt='NPM' />
+  </a>
+  <a href='https://coveralls.io/github/dydxprotocol/solo' style="text-decoration:none;">
+    <img src='https://coveralls.io/repos/github/dydxprotocol/solo/badge.svg?t=toKMwT' alt='Coverage Status' />
+  </a>
+  <a href='https://github.com/dydxprotocol/solo/blob/master/LICENSE' style="text-decoration:none;">
+    <img src='https://img.shields.io/github/license/dydxprotocol/protocol.svg?longCache=true' alt='License' />
+  </a>
+  <a href='https://t.me/joinchat/GBnMlBb9mQblQck2pThTgw' style="text-decoration:none;">
+    <img src='https://img.shields.io/badge/chat-on%20telegram-9cf.svg?longCache=true' alt='Telegram' />
+  </a>
+</div>
+
+>
+
+## Overview
+WooFi swap utilizes the proprietary market making strategy with high capital efficiency and low price spread, configurable rebate mechanism and smart route to 3rd party AMM DEXes if necessary. This repo contains smart contracts and solidity library used for WooFi Swap hosted on [swap.woo.network](https://swap.woo.network).
 
 ## Code structure
 With the "minimalism" design from day one, the smart contract for Woo Dex is straightforward and neat. The whole code base consist of 4 main smart contract files (written in Solidity):
@@ -11,7 +33,7 @@ With the "minimalism" design from day one, the smart contract for Woo Dex is str
 | RewardManager.sol | the contract for user reward (e.g. trading fee discount or rebate) |
 
 ## Dev environment
-Remix online IDE.
+Supports both Remix online IDE and hardhat. More details are coming up...
 
 ## Build version
 Solidity =0.6.12 with 200 optimization on. "0.6.12" was chosen because it's a stable version used by most flagship DeFi apps (AAVE, Uniswap and Pancake.)
