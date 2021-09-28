@@ -1,4 +1,29 @@
-# Advanced Sample Hardhat Project
+# Smart contracts of WooFi Swap
+Smart contract code for proprietary market making strategy with high capital efficiency and low price spread, configurable rebate mechanism and smart route to 3rd party AMM DEXes if necessary.
+
+## Code structure
+With the "minimalism" design from day one, the smart contract for Woo Dex is straightforward and neat. The whole code base consist of 4 main smart contract files (written in Solidity):
+| File | Main Function |
+| :--- |:---:|
+| WooRouter.sol | Routing endpoint to dispatch user trades to Woo private pool or 3rd party dex |
+| WooPP.sol | the WooTrade's proprietary market making pool |
+| WooPP_proxy.sol | the upgradable proxy file from OpenZepplin |
+| RewardManager.sol | the contract for user reward (e.g. trading fee discount or rebate) |
+
+## Dev environment
+Remix online IDE.
+
+## Build version
+Solidity =0.6.12 with 200 optimization on. "0.6.12" was chosen because it's a stable version used by most flagship DeFi apps (AAVE, Uniswap and Pancake.)
+
+## List of Documentations
+Dex design doc: https://shimowendang.com/docs/WGCKdhqQjDjPKcCD
+Class diagram: https://www.processon.com/view/link/6107dba2e401fd7c4ed52e93
+Dex's proprietary marking making model: https://shimowendang.com/docs/jv98yHh9HHKKRT8h
+Certik audit report and tracking record: https://shimowendang.com/docs/wDQqdC6pXgJVhJvG
+Dex Contract Integration Doc: https://shimowendang.com/docs/G8PvQdJtHwtwV8Rp
+
+## HardHat tasks
 
 This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
 
@@ -23,20 +48,4 @@ npx prettier '**/*.{json,sol,md}' --check
 npx prettier '**/*.{json,sol,md}' --write
 npx solhint 'contracts/**/*.sol'
 npx solhint 'contracts/**/*.sol' --fix
-```
-
-# Etherscan verification
-
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
-
-In this project, copy the .env.template file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
-
-```shell
-hardhat run --network ropsten scripts/deploy.js
-```
-
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
-
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
 ```
