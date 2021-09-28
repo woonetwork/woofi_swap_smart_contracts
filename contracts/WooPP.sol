@@ -416,8 +416,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         require(baseAmount <= IERC20(baseToken).balanceOf(address(this)));
     }
 
-    function getPoolSize(address token) external view returns (uint256 poolSize) {
-        poolSize = IERC20(token).balanceOf(address(this));
+    function poolSize(address token) external view returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
     }
 
     function setPriceOracle(address newPriceOracle) external onlyStrategist {
