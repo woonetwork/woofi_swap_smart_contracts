@@ -437,8 +437,7 @@ contract mVault is ERC20, ERC20Detailed {
             uint256 _beforeShares = balanceOf(msg.sender); // new
             uint256 _beforeSharePrice = costSharePrices[msg.sender]; // new
             uint256 _nowCostSharePrice = (
-                _beforeShares
-                .mul(_beforeSharePrice).add(shares.mul(_nowSharePrice)) // new
+                _beforeShares.mul(_beforeSharePrice).add(shares.mul(_nowSharePrice)) // new
             ).div(_beforeShares.add(shares));
             costSharePrices[msg.sender] = _nowCostSharePrice; // new
         }
