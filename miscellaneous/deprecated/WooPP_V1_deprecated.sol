@@ -21,12 +21,12 @@ contract InitializableOwnable {
     // ============ Modifiers ============
 
     modifier notInitialized() {
-        require(!_INITIALIZED_, "DODO_INITIALIZED");
+        require(!_INITIALIZED_, 'DODO_INITIALIZED');
         _;
     }
 
     modifier onlyOwner() {
-        require(msg.sender == _OWNER_, "NOT_OWNER");
+        require(msg.sender == _OWNER_, 'NOT_OWNER');
         _;
     }
 
@@ -43,7 +43,7 @@ contract InitializableOwnable {
     }
 
     function claimOwnership() public {
-        require(msg.sender == _NEW_OWNER_, "INVALID_CLAIM");
+        require(msg.sender == _NEW_OWNER_, 'INVALID_CLAIM');
         emit OwnershipTransferred(_OWNER_, _NEW_OWNER_);
         _OWNER_ = _NEW_OWNER_;
         _NEW_OWNER_ = address(0);
@@ -51,7 +51,6 @@ contract InitializableOwnable {
 }
 
 // File: contracts/intf/IERC20.sol
-
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP.
@@ -125,7 +124,6 @@ interface IERC20 {
 
 // File: contracts/lib/SafeMath.sol
 
-
 /**
  * @title SafeMath
  * @author DODO Breeder
@@ -139,13 +137,13 @@ library SafeMath {
         }
 
         uint256 c = a * b;
-        require(c / a == b, "MUL_ERROR");
+        require(c / a == b, 'MUL_ERROR');
 
         return c;
     }
 
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b > 0, "DIVIDING_ERROR");
+        require(b > 0, 'DIVIDING_ERROR');
         return a / b;
     }
 
@@ -160,13 +158,13 @@ library SafeMath {
     }
 
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b <= a, "SUB_ERROR");
+        require(b <= a, 'SUB_ERROR');
         return a - b;
     }
 
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
-        require(c >= a, "ADD_ERROR");
+        require(c >= a, 'ADD_ERROR');
         return c;
     }
 
@@ -182,7 +180,6 @@ library SafeMath {
 
 // File: contracts/lib/DecimalMath.sol
 
-
 /**
  * @title DecimalMath
  * @author DODO Breeder
@@ -193,7 +190,7 @@ library DecimalMath {
     using SafeMath for uint256;
 
     uint256 internal constant ONE = 10**18;
-    uint256 internal constant TWO = 2*10**18;
+    uint256 internal constant TWO = 2 * 10**18;
     uint256 internal constant ONE2 = 10**36;
 
     function mulFloor(uint256 target, uint256 d) internal pure returns (uint256) {
@@ -223,7 +220,6 @@ library DecimalMath {
 
 // File: contracts/lib/ReentrancyGuard.sol
 
-
 /**
  * @title ReentrancyGuard
  * @author DODO Breeder
@@ -236,7 +232,7 @@ contract ReentrancyGuard {
     bool private _ENTERED_;
 
     modifier preventReentrant() {
-        require(!_ENTERED_, "REENTRANT");
+        require(!_ENTERED_, 'REENTRANT');
         _ENTERED_ = true;
         _;
         _ENTERED_ = false;
@@ -244,7 +240,6 @@ contract ReentrancyGuard {
 }
 
 // File: contracts/lib/SafeERC20.sol
-
 
 /**
  * @title SafeERC20
@@ -272,10 +267,7 @@ library SafeERC20 {
         address to,
         uint256 value
     ) internal {
-        _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(token.transferFrom.selector, from, to, value)
-        );
+        _callOptionalReturn(token, abi.encodeWithSelector(token.transferFrom.selector, from, to, value));
     }
 
     function safeApprove(
@@ -289,7 +281,7 @@ library SafeERC20 {
         // solhint-disable-next-line max-line-length
         require(
             (value == 0) || (token.allowance(address(this), spender) == 0),
-            "SafeERC20: approve from non-zero to non-zero allowance"
+            'SafeERC20: approve from non-zero to non-zero allowance'
         );
         _callOptionalReturn(token, abi.encodeWithSelector(token.approve.selector, spender, value));
     }
@@ -312,70 +304,76 @@ library SafeERC20 {
 
         // solhint-disable-next-line avoid-low-level-calls
         (bool success, bytes memory returndata) = address(token).call(data);
-        require(success, "SafeERC20: low-level call failed");
+        require(success, 'SafeERC20: low-level call failed');
 
         if (returndata.length > 0) {
             // Return data is optional
             // solhint-disable-next-line max-line-length
-            require(abi.decode(returndata, (bool)), "SafeERC20: ERC20 operation did not succeed");
+            require(abi.decode(returndata, (bool)), 'SafeERC20: ERC20 operation did not succeed');
         }
     }
 }
 
 // File: contracts/lib/AggregatorV3Interface.sol
 
-
 interface AggregatorV3Interface {
+    function decimals() external view returns (uint8);
 
-  function decimals() external view returns (uint8);
-  function description() external view returns (string memory);
-  function version() external view returns (uint256);
+    function description() external view returns (string memory);
 
-  // getRoundData and latestRoundData should both raise "No data present"
-  // if they do not have data to report, instead of returning unset values
-  // which could be misinterpreted as actual reported values.
-  function getRoundData(uint80 _roundId)
-    external
-    view
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    );
-  function latestRoundData()
-    external
-    view
-    returns (
-      uint80 roundId,
-      int256 answer,
-      uint256 startedAt,
-      uint256 updatedAt,
-      uint80 answeredInRound
-    );
+    function version() external view returns (uint256);
 
+    // getRoundData and latestRoundData should both raise "No data present"
+    // if they do not have data to report, instead of returning unset values
+    // which could be misinterpreted as actual reported values.
+    function getRoundData(uint80 _roundId)
+        external
+        view
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
+
+    function latestRoundData()
+        external
+        view
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
 }
 
 // File: contracts/IOracle.sol
 
-
 interface IOracle {
     function getPrice(address base) external view returns (uint256 latestPrice, bool feasible);
-    function getState(address base) external view returns (uint256 latestPrice, uint64 spread, uint64 coefficient,
-    bool feasible);
+
+    function getState(address base)
+        external
+        view
+        returns (
+            uint256 latestPrice,
+            uint64 spread,
+            uint64 coefficient,
+            bool feasible
+        );
+
     function timestamp() external view returns (uint256);
 }
 
 // File: contract/IRewardManager.sol
-
 
 interface IRewardManager {
     function addReward(address user, uint256 amount) external; // amount in USDT
 }
 
 // File: contracts/WooPP.sol
-
 
 contract WooPP is InitializableOwnable, ReentrancyGuard {
     using SafeMath for uint256;
@@ -385,26 +383,19 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     bool public isOpenTWAP = false;
 
     event LpFeeRateChange(address baseToken, uint256 newLpFeeRate);
-    event WooSwap(
-        address fromToken,
-        address toToken,
-        uint256 fromAmount,
-        uint256 toAmount,
-        address from,
-        address to
-    );
+    event WooSwap(address fromToken, address toToken, uint256 fromAmount, uint256 toAmount, address from, address to);
 
     modifier isOraclePriceValid(address baseToken) {
         // TODO：security -- double check the swap price with multiple 3rd party oracles
         (, bool isFeasible) = IOracle(priceOracle).getPrice(baseToken);
-        require(isFeasible, "ORACLE_PRICE_NOT_FEASIBLE");
+        require(isFeasible, 'ORACLE_PRICE_NOT_FEASIBLE');
         _;
     }
 
     mapping(address => bool) public isStrategist;
 
     modifier onlyStrategist() {
-        require(isStrategist[msg.sender], "NOT_STRATEGIST");
+        require(isStrategist[msg.sender], 'NOT_STRATEGIST');
         _;
     }
 
@@ -427,7 +418,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     }
 
     address public priceOracle; // WooOracle
-    mapping (address => TokenInfo) public tokenInfo;
+    mapping(address => TokenInfo) public tokenInfo;
 
     string public pairsInfo;
 
@@ -443,7 +434,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         isStrategist[owner] = true;
 
         quoteToken = _quoteToken;
-        require(_priceOracle !=  address(0), "INVALID_ORACLE");
+        require(_priceOracle != address(0), 'INVALID_ORACLE');
         priceOracle = _priceOracle;
     }
 
@@ -466,42 +457,74 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     }
 
     // When baseSold >= 0
-    function getQuoteAmountLowBaseSide(uint256 p0, uint256 s, uint256 k, uint256 r, uint256 baseAmount) internal pure returns (uint256) {
+    function getQuoteAmountLowBaseSide(
+        uint256 p0,
+        uint256 s,
+        uint256 k,
+        uint256 r,
+        uint256 baseAmount
+    ) internal pure returns (uint256) {
         // priceFactor = (1 - s/2) / (1 + k * baseAmount * p * r);
         uint256 priceFactor = DecimalMath.ONE.sub(DecimalMath.divCeil(s, DecimalMath.TWO)).divFloor(
-            DecimalMath.ONE.add(k.mulCeil(baseAmount).mulCeil(p0).mulCeil(r)));
+            DecimalMath.ONE.add(k.mulCeil(baseAmount).mulCeil(p0).mulCeil(r))
+        );
         // return p0 * baseAmount * priceFactor;
         return p0.mulFloor(baseAmount.mulFloor(priceFactor)); // round down
     }
 
     // When baseSold >= 0
-    function getBaseAmountLowBaseSide(uint256 p0, uint256 s, uint256 k, uint256 r, uint256 quoteAmount) internal pure returns (uint256) {
+    function getBaseAmountLowBaseSide(
+        uint256 p0,
+        uint256 s,
+        uint256 k,
+        uint256 r,
+        uint256 quoteAmount
+    ) internal pure returns (uint256) {
         // priceFactor = 1 - s/2 - k * quoteAmount * r;
         uint256 priceFactor = DecimalMath.ONE.sub(DecimalMath.divFloor(s, DecimalMath.TWO)).sub(
-            k.mulFloor(quoteAmount).mulFloor(r));
+            k.mulFloor(quoteAmount).mulFloor(r)
+        );
         // return quoteAmount * p0^{-1} / priceFactor;
         return DecimalMath.divFloor(DecimalMath.divFloor(quoteAmount, p0), priceFactor); // round down
     }
 
     // When quoteSold >= 0
-    function getBaseAmountLowQuoteSide(uint256 p0, uint256 s, uint256 k, uint256 r, uint256 quoteAmount) internal pure returns (uint256) {
+    function getBaseAmountLowQuoteSide(
+        uint256 p0,
+        uint256 s,
+        uint256 k,
+        uint256 r,
+        uint256 quoteAmount
+    ) internal pure returns (uint256) {
         // priceFactor = (1 - s/2) / (1 + k * quoteAmount * r);
         uint256 priceFactor = DecimalMath.ONE.sub(DecimalMath.divCeil(s, DecimalMath.TWO)).divFloor(
-            DecimalMath.ONE.add(k.mulCeil(quoteAmount).mulCeil(r)));
+            DecimalMath.ONE.add(k.mulCeil(quoteAmount).mulCeil(r))
+        );
         // return p0 * quoteAmount * priceFactor;
         return DecimalMath.reciprocalFloor(p0).mulFloor(quoteAmount.mulFloor(priceFactor)); // round down
     }
 
     // When quoteSold >= 0
-    function getQuoteAmountLowQuoteSide(uint256 p0, uint256 s, uint256 k, uint256 r, uint256 baseAmount) internal pure returns (uint256) {
+    function getQuoteAmountLowQuoteSide(
+        uint256 p0,
+        uint256 s,
+        uint256 k,
+        uint256 r,
+        uint256 baseAmount
+    ) internal pure returns (uint256) {
         // priceFactor = 1 - s/2 - k * baseAmount * p * r;
         uint256 priceFactor = DecimalMath.ONE.sub(DecimalMath.divFloor(s, DecimalMath.TWO)).sub(
-            k.mulFloor(baseAmount).mulFloor(p0).mulFloor(r));
+            k.mulFloor(baseAmount).mulFloor(p0).mulFloor(r)
+        );
         // return baseAmount * p0 / priceFactor;
         return DecimalMath.divFloor(baseAmount.mulFloor(p0), priceFactor); // round down
     }
 
-    function getQuoteAmountSellBase(address baseToken, uint256 baseAmount, TokenInfo memory info) internal view returns (uint256 realQuoteAmount) {
+    function getQuoteAmountSellBase(
+        address baseToken,
+        uint256 baseAmount,
+        TokenInfo memory info
+    ) internal view returns (uint256 realQuoteAmount) {
         uint256 p0;
         uint256 s;
         uint256 k;
@@ -509,36 +532,42 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
 
         ensurePriceReliable(p0, info);
 
-        if(info.quoteSold == 0) {
+        if (info.quoteSold == 0) {
             uint256 oldBaseSold = uint256(info.baseSold);
             uint256 newBaseSold = oldBaseSold.add(baseAmount);
             realQuoteAmount = getQuoteAmountLowBaseSide(p0, s, k, DecimalMath.ONE, newBaseSold).sub(
-                    getQuoteAmountLowBaseSide(p0, s, k, DecimalMath.ONE, oldBaseSold));
+                getQuoteAmountLowBaseSide(p0, s, k, DecimalMath.ONE, oldBaseSold)
+            );
 
             require(newBaseSold <= type(uint112).max);
             info.baseSold = uint112(newBaseSold);
-        }
-        else {
+        } else {
             uint256 baseBought = getBaseAmountLowQuoteSide(p0, s, k, info.R, info.quoteSold);
             if (baseAmount > baseBought) {
                 baseAmount = baseAmount.sub(baseBought);
-                realQuoteAmount = uint256(info.quoteSold).add(getQuoteAmountLowBaseSide(p0, s, k, DecimalMath.ONE, baseAmount));
+                realQuoteAmount = uint256(info.quoteSold).add(
+                    getQuoteAmountLowBaseSide(p0, s, k, DecimalMath.ONE, baseAmount)
+                );
 
                 info.quoteSold = 0;
                 require(baseAmount <= type(uint112).max);
                 info.baseSold = uint112(baseAmount);
-            }
-            else {
+            } else {
                 uint256 newBaseBought = baseBought.sub(baseAmount);
                 realQuoteAmount = uint256(info.quoteSold).sub(
-                        getQuoteAmountLowQuoteSide(p0, s, k, info.R, newBaseBought));
+                    getQuoteAmountLowQuoteSide(p0, s, k, info.R, newBaseBought)
+                );
 
                 info.quoteSold = uint112(uint256(info.quoteSold).sub(realQuoteAmount));
             }
         }
     }
 
-    function getBaseAmountSellQuote(address baseToken, uint256 quoteAmount, TokenInfo memory info) internal view returns (uint256 realBaseAmount) {
+    function getBaseAmountSellQuote(
+        address baseToken,
+        uint256 quoteAmount,
+        TokenInfo memory info
+    ) internal view returns (uint256 realBaseAmount) {
         uint256 p0;
         uint256 s;
         uint256 k;
@@ -546,95 +575,87 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
 
         ensurePriceReliable(p0, info);
 
-        if(info.baseSold == 0) {
+        if (info.baseSold == 0) {
             uint256 oldQuoteSold = uint256(info.quoteSold);
             uint256 newQuoteSold = oldQuoteSold.add(quoteAmount);
             realBaseAmount = getBaseAmountLowQuoteSide(p0, s, k, DecimalMath.ONE, newQuoteSold).sub(
-                    getBaseAmountLowQuoteSide(p0, s, k, DecimalMath.ONE, oldQuoteSold));
+                getBaseAmountLowQuoteSide(p0, s, k, DecimalMath.ONE, oldQuoteSold)
+            );
 
             require(newQuoteSold <= type(uint112).max);
             info.quoteSold = uint112(newQuoteSold);
-        }
-        else {
+        } else {
             uint256 quoteBought = getQuoteAmountLowBaseSide(p0, s, k, info.R, info.baseSold);
             if (quoteAmount > quoteBought) {
                 quoteAmount = quoteAmount.sub(quoteBought);
-                realBaseAmount = uint256(info.baseSold).add(realBaseAmount.add(getBaseAmountLowQuoteSide(p0, s, k, DecimalMath.ONE, quoteAmount)));
+                realBaseAmount = uint256(info.baseSold).add(
+                    realBaseAmount.add(getBaseAmountLowQuoteSide(p0, s, k, DecimalMath.ONE, quoteAmount))
+                );
 
                 info.baseSold = 0;
                 require(quoteAmount <= type(uint112).max);
                 info.quoteSold = uint112(quoteAmount);
-            }
-            else {
+            } else {
                 uint256 newQuoteBought = quoteBought.sub(quoteAmount);
                 realBaseAmount = uint256(info.baseSold).sub(
-                        getBaseAmountLowQuoteSide(p0, s, k, info.R, newQuoteBought));
+                    getBaseAmountLowQuoteSide(p0, s, k, info.R, newQuoteBought)
+                );
 
                 info.baseSold = uint112(uint256(info.baseSold).sub(realBaseAmount));
             }
         }
     }
 
-    function sellBase(address baseToken, uint256 baseAmount, uint256 minQuoteAmount, address from, address to, address rebateTo)
-        external
-        preventReentrant
-        isOraclePriceValid(baseToken)
-        returns (uint256 realQuoteAmount)
-    {
+    function sellBase(
+        address baseToken,
+        uint256 baseAmount,
+        uint256 minQuoteAmount,
+        address from,
+        address to,
+        address rebateTo
+    ) external preventReentrant isOraclePriceValid(baseToken) returns (uint256 realQuoteAmount) {
         TokenInfo memory info = tokenInfo[baseToken];
-        require(info.isValid, "TOKEN_DOES_NOT_EXIST");
+        require(info.isValid, 'TOKEN_DOES_NOT_EXIST');
         autoUpdate(info);
 
         realQuoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, info);
         uint256 lpFee = realQuoteAmount.mulCeil(info.lpFeeRate);
         realQuoteAmount = realQuoteAmount.sub(lpFee);
 
-        require(realQuoteAmount >= minQuoteAmount, "PRICE_EXCEEDS_LIMIT");
+        require(realQuoteAmount >= minQuoteAmount, 'PRICE_EXCEEDS_LIMIT');
         IERC20(baseToken).safeTransferFrom(from, address(this), baseAmount);
         IERC20(quoteToken).safeTransfer(to, realQuoteAmount);
         addReward(rebateTo, lpFee);
 
         tokenInfo[baseToken] = info;
 
-        emit WooSwap(
-            baseToken,
-            quoteToken,
-            baseAmount,
-            realQuoteAmount,
-            from,
-            to
-        );
+        emit WooSwap(baseToken, quoteToken, baseAmount, realQuoteAmount, from, to);
     }
 
-    function sellQuote(address baseToken, uint256 quoteAmount, uint256 minBaseAmount, address from, address to, address rebateTo)
-        external
-        preventReentrant
-        isOraclePriceValid(baseToken)
-        returns (uint256 realBaseAmount)
-    {
+    function sellQuote(
+        address baseToken,
+        uint256 quoteAmount,
+        uint256 minBaseAmount,
+        address from,
+        address to,
+        address rebateTo
+    ) external preventReentrant isOraclePriceValid(baseToken) returns (uint256 realBaseAmount) {
         TokenInfo memory info = tokenInfo[baseToken];
-        require(info.isValid, "TOKEN_DOES_NOT_EXIST");
+        require(info.isValid, 'TOKEN_DOES_NOT_EXIST');
         autoUpdate(info);
 
         uint256 lpFee = quoteAmount.mulCeil(info.lpFeeRate);
         quoteAmount = quoteAmount.sub(lpFee);
         realBaseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, info);
 
-        require(realBaseAmount >= minBaseAmount, "PRICE_EXCEEDS_LIMIT");
+        require(realBaseAmount >= minBaseAmount, 'PRICE_EXCEEDS_LIMIT');
         IERC20(quoteToken).safeTransferFrom(from, address(this), quoteAmount.add(lpFee));
         IERC20(baseToken).safeTransfer(to, realBaseAmount);
         addReward(rebateTo, lpFee);
 
         tokenInfo[baseToken] = info;
 
-        emit WooSwap(
-            quoteToken,
-            baseToken,
-            quoteAmount,
-            realBaseAmount,
-            from,
-            to
-        );
+        emit WooSwap(quoteToken, baseToken, quoteAmount, realBaseAmount, from, to);
     }
 
     function querySellBase(address baseToken, uint256 baseAmount)
@@ -644,7 +665,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         returns (uint256 quoteAmount)
     {
         TokenInfo memory info = tokenInfo[baseToken];
-        require(info.isValid, "TOKEN_DOES_NOT_EXIST");
+        require(info.isValid, 'TOKEN_DOES_NOT_EXIST');
         autoUpdate(info);
 
         quoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, info);
@@ -659,7 +680,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         returns (uint256 baseAmount)
     {
         TokenInfo memory info = tokenInfo[baseToken];
-        require(info.isValid, "TOKEN_DOES_NOT_EXIST");
+        require(info.isValid, 'TOKEN_DOES_NOT_EXIST');
         autoUpdate(info);
 
         uint256 lpFee = quoteAmount.mulCeil(info.lpFeeRate);
@@ -676,7 +697,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     }
 
     function setQuoteChainlinkRefOracle(address newQuoteChainlinkRefOracle) external onlyStrategist {
-        require(newQuoteChainlinkRefOracle != address(0), "INVALID_REFERNECE_ORACLE");
+        require(newQuoteChainlinkRefOracle != address(0), 'INVALID_REFERNECE_ORACLE');
         quoteChainlinkRefOracle = newQuoteChainlinkRefOracle;
     }
 
@@ -690,13 +711,13 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         uint256 R,
         address chainlinkRefOracle
     ) public preventReentrant onlyStrategist {
-        require(lpFeeRate <= 1e18, "LP_FEE_RATE_OUT_OF_RANGE");
-        require(R <= 1e18, "R_OUT_OF_RANGE");
+        require(lpFeeRate <= 1e18, 'LP_FEE_RATE_OUT_OF_RANGE');
+        require(R <= 1e18, 'R_OUT_OF_RANGE');
 
-        require(baseToken != quoteToken, "BASE_QUOTE_CAN_NOT_BE_SAME");
+        require(baseToken != quoteToken, 'BASE_QUOTE_CAN_NOT_BE_SAME');
 
         TokenInfo memory info = tokenInfo[baseToken];
-        require(!info.isValid, "TOKEN_ALREADY_EXISTS");
+        require(!info.isValid, 'TOKEN_ALREADY_EXISTS');
 
         info.isValid = true;
         info.lpFeeRate = uint64(lpFeeRate);
@@ -705,11 +726,9 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         tokenInfo[baseToken] = info;
     }
 
-    function removeBaseToken(
-        address baseToken
-    ) public preventReentrant onlyStrategist {
+    function removeBaseToken(address baseToken) public preventReentrant onlyStrategist {
         TokenInfo memory info = tokenInfo[baseToken];
-        require(info.isValid, "TOKEN_DOES_NOT_EXIST");
+        require(info.isValid, 'TOKEN_DOES_NOT_EXIST');
 
         info.isValid = false;
         info.baseSold = 0;
@@ -721,9 +740,13 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         tokenInfo[baseToken] = info;
     }
 
-    function setBaseReferenecOracle1(address baseToken, address chainlinkRefOracle) external preventReentrant onlyStrategist {
+    function setBaseReferenecOracle1(address baseToken, address chainlinkRefOracle)
+        external
+        preventReentrant
+        onlyStrategist
+    {
         TokenInfo storage info = tokenInfo[baseToken];
-        require(info.isValid, "TOKEN_DOES_NOT_EXIST");
+        require(info.isValid, 'TOKEN_DOES_NOT_EXIST');
         info.chainlinkRefOracle = chainlinkRefOracle;
     }
 
@@ -731,18 +754,23 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         address baseToken,
         uint256 newLpFeeRate,
         uint256 newR
+    )
+        public
         // uint256 minBaseReserve,
         // uint256 minQuoteReserve
-    ) public preventReentrant onlyStrategist returns (bool) {
+        preventReentrant
+        onlyStrategist
+        returns (bool)
+    {
         // require(
         //     _BASE_RESERVE_ >= minBaseReserve && _QUOTE_RESERVE_ >= minQuoteReserve,
         //     "RESERVE_AMOUNT_IS_NOT_ENOUGH"
         // );
-        require(newLpFeeRate <= 1e18, "LP_FEE_RATE_OUT_OF_RANGE");
-        require(newR <= 1e18, "K_OUT_OF_RANGE");
+        require(newLpFeeRate <= 1e18, 'LP_FEE_RATE_OUT_OF_RANGE');
+        require(newR <= 1e18, 'K_OUT_OF_RANGE');
 
         TokenInfo memory info = tokenInfo[baseToken];
-        require(info.isValid, "TOKEN_DOES_NOT_EXIST");
+        require(info.isValid, 'TOKEN_DOES_NOT_EXIST');
         info.lpFeeRate = uint64(newLpFeeRate);
         info.R = uint64(newR);
 
@@ -767,19 +795,24 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         // check Chainlink
         if (info.chainlinkRefOracle != address(0)) {
             (, int256 rawReferencePrice, , , ) = AggregatorV3Interface(info.chainlinkRefOracle).latestRoundData();
-            require(rawReferencePrice >= 0, "INVALID_CHAINLINK_PRICE");
+            require(rawReferencePrice >= 0, 'INVALID_CHAINLINK_PRICE');
             (, int256 quoteReferenecPrice, , , ) = AggregatorV3Interface(quoteChainlinkRefOracle).latestRoundData();
-            require(quoteReferenecPrice >= 0, "INVALID_CHAINLINK_QUOTE_PRICE");
+            require(quoteReferenecPrice >= 0, 'INVALID_CHAINLINK_QUOTE_PRICE');
             // referencePrice = rawReferencePrice * 10 ** (18 - decimals);
-            require(AggregatorV3Interface(info.chainlinkRefOracle).decimals() == AggregatorV3Interface(quoteChainlinkRefOracle).decimals(),
-                "CHAINLINK_DECIMALS_MISMATCH");
+            require(
+                AggregatorV3Interface(info.chainlinkRefOracle).decimals() ==
+                    AggregatorV3Interface(quoteChainlinkRefOracle).decimals(),
+                'CHAINLINK_DECIMALS_MISMATCH'
+            );
             uint256 referencePrice = uint256(rawReferencePrice).divFloor(uint256(quoteReferenecPrice));
-            require(referencePrice.mulFloor(1e18-1e16) <= p0 && p0 <= referencePrice.mulCeil(1e18+1e16), "PRICE_UNRELIABLE");
+            require(
+                referencePrice.mulFloor(1e18 - 1e16) <= p0 && p0 <= referencePrice.mulCeil(1e18 + 1e16),
+                'PRICE_UNRELIABLE'
+            );
         }
     }
 
     function addReward(address rebateTo, uint256 lpFee) internal {
-        if (rebateTo != address(0))
-            IRewardManager(rewardManager).addReward(rebateTo, lpFee);
+        if (rebateTo != address(0)) IRewardManager(rewardManager).addReward(rebateTo, lpFee);
     }
 }

@@ -2,7 +2,6 @@
 pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
-
 /**
  * @title SafeMath with divCeil support
  *
@@ -15,13 +14,13 @@ library SafeMathEnhanced {
         }
 
         uint256 c = a * b;
-        require(c / a == b, "MUL_ERROR");
+        require(c / a == b, 'MUL_ERROR');
 
         return c;
     }
 
     function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b > 0, "DIVIDING_ERROR");
+        require(b > 0, 'DIVIDING_ERROR');
         return a / b;
     }
 
@@ -36,13 +35,13 @@ library SafeMathEnhanced {
     }
 
     function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b <= a, "SUB_ERROR");
+        require(b <= a, 'SUB_ERROR');
         return a - b;
     }
 
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
         uint256 c = a + b;
-        require(c >= a, "ADD_ERROR");
+        require(c >= a, 'ADD_ERROR');
         return c;
     }
 
@@ -65,7 +64,7 @@ library DecimalMath {
     using SafeMathEnhanced for uint256;
 
     uint256 internal constant ONE = 10**18;
-    uint256 internal constant TWO = 2*10**18;
+    uint256 internal constant TWO = 2 * 10**18;
     uint256 internal constant ONE2 = 10**36;
 
     function mulFloor(uint256 target, uint256 d) internal pure returns (uint256) {

@@ -2,7 +2,6 @@
 pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
-
 /**
  * @title Ownable
  *
@@ -22,12 +21,12 @@ contract InitializableOwnable {
     // ============ Modifiers ============
 
     modifier notInitialized() {
-        require(!_INITIALIZED_, "SHOULD_NOT_BE_INITIALIZED");
+        require(!_INITIALIZED_, 'SHOULD_NOT_BE_INITIALIZED');
         _;
     }
 
     modifier onlyOwner() {
-        require(msg.sender == _OWNER_, "NOT_OWNER");
+        require(msg.sender == _OWNER_, 'NOT_OWNER');
         _;
     }
 
@@ -44,7 +43,7 @@ contract InitializableOwnable {
     }
 
     function claimOwnership() public {
-        require(msg.sender == _NEW_OWNER_, "INVALID_CLAIM");
+        require(msg.sender == _NEW_OWNER_, 'INVALID_CLAIM');
         emit OwnershipTransferred(_OWNER_, _NEW_OWNER_);
         _OWNER_ = _NEW_OWNER_;
         _NEW_OWNER_ = address(0);

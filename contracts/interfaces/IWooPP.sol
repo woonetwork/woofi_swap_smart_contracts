@@ -36,12 +36,25 @@ pragma experimental ABIEncoderV2;
 */
 
 interface IWooPP {
-    function sellBase(address baseToken, uint256 baseAmount, uint256 minQuoteAmount, address from, address to, address rebateTo)
-            external returns (uint256 realQuoteAmount);
-    function sellQuote(address baseToken, uint256 quoteAmount, uint256 minBaseAmount, address from, address to, address rebateTo)
-            external returns (uint256 realBaseAmount);
-    function querySellBase(address baseToken, uint256 baseAmount)
-            external view returns (uint256 quoteAmount);
-    function querySellQuote(address baseToken, uint256 quoteAmount)
-            external view returns (uint256 baseAmount);
+    function sellBase(
+        address baseToken,
+        uint256 baseAmount,
+        uint256 minQuoteAmount,
+        address from,
+        address to,
+        address rebateTo
+    ) external returns (uint256 realQuoteAmount);
+
+    function sellQuote(
+        address baseToken,
+        uint256 quoteAmount,
+        uint256 minBaseAmount,
+        address from,
+        address to,
+        address rebateTo
+    ) external returns (uint256 realBaseAmount);
+
+    function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
+
+    function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
 }

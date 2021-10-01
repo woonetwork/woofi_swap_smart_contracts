@@ -37,7 +37,16 @@ pragma experimental ABIEncoderV2;
 
 interface IOracle {
     function getPrice(address base) external view returns (uint256 latestPrice, bool feasible);
-    function getState(address base) external view returns (uint256 latestPrice, uint64 spread, uint64 coefficient,
-    bool feasible);
+
+    function getState(address base)
+        external
+        view
+        returns (
+            uint256 latestPrice,
+            uint64 spread,
+            uint64 coefficient,
+            bool feasible
+        );
+
     function timestamp() external view returns (uint256);
 }

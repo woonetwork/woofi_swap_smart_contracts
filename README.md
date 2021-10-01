@@ -22,9 +22,11 @@
 >
 
 ## Overview
+
 WooFi Swap utilizes the proprietary market making strategy with high capital efficiency and low price spread, configurable rebate mechanism and smart route to 3rd party AMM DEXes if necessary. This repo contains smart contracts and solidity library used for WooFi Swap hosted on [swap.woo.network](https://swap.woo.network).
 
 ## Code structure
+
 With the "minimalism" design from day one, the smart contract for WooFi Swap is straightforward and neat. The whole code base consist of 4 main smart contract files (written in Solidity):
 | File | Main Function |
 | :--- |:---:|
@@ -34,12 +36,15 @@ With the "minimalism" design from day one, the smart contract for WooFi Swap is 
 | RewardManager.sol | the contract for user reward (e.g. trading fee discount or rebate) |
 
 ## Dev environment
+
 Supports both Remix online IDE and hardhat. More details are coming up...
 
 ## Build version
+
 Solidity =0.6.12 with 200 optimization on. "0.6.12" was chosen because it's a stable version used by most flagship DeFi apps (AAVE, Uniswap and Pancake.)
 
 ## List of Documentations
+
 - Dex design doc: https://shimowendang.com/docs/WGCKdhqQjDjPKcCD
 - Class diagram: https://www.processon.com/view/link/6107dba2e401fd7c4ed52e93
 - WooFi proprietary marking making model: https://shimowendang.com/docs/jv98yHh9HHKKRT8h
