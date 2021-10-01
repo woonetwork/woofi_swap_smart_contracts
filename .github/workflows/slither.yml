@@ -6,9 +6,6 @@ on:
       - "contracts/**"
       - ".github/workflows/slither.yaml"
   pull_request:
-    branches: [main]
-    paths:
-      - "contracts/**"
 
 jobs:
   build:
