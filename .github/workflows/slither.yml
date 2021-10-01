@@ -9,42 +9,18 @@ on:
 jobs:
   run-slither:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.8, 3.9]
-        node-version: [14.x]
-
+    name: Solidity Security
     steps:
-      - uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Slither Static Analysis
+        uses: luisfontes19/slither-static-analysis-action@v0.3.2
         with:
-          node-version: ${{ matrix.node-version }}
-      - run: yarn install
-      - run: yarn compile
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: |
-          sudo snap install solc
-          python -m pip install --upgrade pip
-          pip install slither-analyzer==0.8.1 solc-select==0.2.1
-      - name: Summary of static analysis
-        run: |
-          slither . --print human-summary
-      - name: Contract summary of static analysis
-        run: |
-          slither . --print contract-summary
-      - name: Function summary
-        run: |
-          slither . --print function-summary
-      - name: Inheritance
-        run: |
-          slither . --print inheritance
-      - name: Data dependency
-        run: |
-          slither . --print data-dependency
+          slither-version: '0.6.13'
+          run-npm-install: true
+          high-threshold: 1
+          medium-threshold: 1
+          low-threshold: 1
+          optimization-threshold: 1
+          informative-threshold: 10
+          projectPath: "."
