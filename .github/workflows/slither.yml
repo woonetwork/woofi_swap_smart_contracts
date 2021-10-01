@@ -14,17 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8, 3.9]
+        python-version: [3.8]
         node-version: [12.x]
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Set up node
         uses: actions/setup-node@v1
         with:
-          node-version: ${{ matrix.node-version }}
-      - run: yarn install
-      - run: yarn compile
+          node-version: 12
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
