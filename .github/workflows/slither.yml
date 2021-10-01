@@ -12,10 +12,6 @@ on:
 jobs:
   run-slither:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.8]
-        node-version: [12.x]
 
     steps:
       - name: Check out Git repository
@@ -26,20 +22,24 @@ jobs:
         with:
           node-version: 12
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: 3.8
 
       - name: Install dependencies
         run: |
           sudo snap install solc
           python -m pip install --upgrade pip
           pip install slither-analyzer==0.8.1 solc-select==0.2.1
-      - name: Summary of static ananlysis
+
+      - name: Dev dependencies
+        run: yarn install
+
+      - name: Summary of static analysis
         run: |
           slither . --print human-summary
-      - name: Contract summary of static ananlysis
+      - name: Contract summary of static analysis
         run: |
           slither . --print contract-summary
       - name: Function summary
