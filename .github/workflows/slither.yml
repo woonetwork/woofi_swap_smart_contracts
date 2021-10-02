@@ -22,6 +22,9 @@ jobs:
         with:
           node-version: 12
 
+      - name: Setup dev
+        run: yarn install
+
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
@@ -33,8 +36,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install slither-analyzer==0.8.1 solc-select==0.2.1
 
-      - name: Dev dependencies
-        run: yarn install
+      - name: setup solc-select
+        run: |
+          solc-select install 0.6.12
+          solc-select use 0.6.12
 
       - name: Summary of static analysis
         run: |
