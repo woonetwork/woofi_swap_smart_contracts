@@ -94,25 +94,25 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
 
     constructor(
         address owner,
-        address _quoteToken,
-        address _priceOracle,
+        address newQuoteToken,
+        address newPriceOracle,
         address quoteChainlinkRefOracle
     ) public {
-        init(owner, _quoteToken, _priceOracle, quoteChainlinkRefOracle);
+        init(owner, newQuoteToken, newPriceOracle, quoteChainlinkRefOracle);
     }
 
     function init(
         address owner,
-        address _quoteToken,
-        address _priceOracle,
+        address newQuoteToken,
+        address newPriceOracle,
         address quoteChainlinkRefOracle
     ) public nonReentrant {
         require(owner != address(0), 'INVALID_OWNER');
-        require(_quoteToken != address(0), 'INVALID_QUOTE');
-        require(_priceOracle != address(0), 'INVALID_ORACLE');
+        require(newQuoteToken != address(0), 'INVALID_QUOTE');
+        require(newPriceOracle != address(0), 'INVALID_ORACLE');
 
         initOwner(owner);
-        quoteToken = _quoteToken;
+        quoteToken = newQuoteToken;
         TokenInfo storage quoteInfo = tokenInfo[quoteToken];
         quoteInfo.isValid = true;
         quoteInfo.chainlinkRefOracle = quoteChainlinkRefOracle;
@@ -126,7 +126,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
             require(refPriceFixCoeff <= type(uint96).max);
             quoteInfo.refPriceFixCoeff = uint96(refPriceFixCoeff);
         }
-        priceOracle = _priceOracle;
+        priceOracle = newPriceOracle;
 
         emit ChainlinkRefOracleUpdated(quoteToken, quoteChainlinkRefOracle);
     }
@@ -135,8 +135,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         return pairsInfo;
     }
 
-    function setPairsInfo(string calldata _pairsInfo) external nonReentrant onlyStrategist {
-        pairsInfo = _pairsInfo;
+    function setPairsInfo(string calldata newPairsInfo) external nonReentrant onlyStrategist {
+        pairsInfo = newPairsInfo;
     }
 
     function autoUpdate(
