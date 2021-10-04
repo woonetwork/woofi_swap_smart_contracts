@@ -38,6 +38,7 @@ pragma experimental ABIEncoderV2;
 import './libraries/InitializableOwnable.sol';
 import './libraries/DecimalMath.sol';
 import './interfaces/IOracle.sol';
+import './interfaces/IRewardManager.sol';
 import './interfaces/AggregatorV3Interface.sol';
 
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
@@ -46,7 +47,7 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
-contract RewardManager is InitializableOwnable {
+contract RewardManager is InitializableOwnable, IRewardManager {
     using SafeMath for uint256;
     using DecimalMath for uint256;
     using SafeERC20 for IERC20;
@@ -80,45 +81,45 @@ contract RewardManager is InitializableOwnable {
 
     constructor(
         address owner,
-        uint256 _rewardRatio,
-        address _rewardToken,
-        address _priceOracle,
-        address _rewardChainlinkRefOracle,
-        address _quoteChainlinkRefOracle,
+        uint256 newRewardRatio,
+        address newRewardToken,
+        address newPriceOracle,
+        address newRewardChainlinkRefOracle,
+        address newQuoteChainlinkRefOracle,
         address quoteToken
     ) public {
         init(
             owner,
-            _rewardRatio,
-            _rewardToken,
-            _priceOracle,
-            _rewardChainlinkRefOracle,
-            _quoteChainlinkRefOracle,
+            newRewardRatio,
+            newRewardToken,
+            newPriceOracle,
+            newRewardChainlinkRefOracle,
+            newQuoteChainlinkRefOracle,
             quoteToken
         );
     }
 
     function init(
         address owner,
-        uint256 _rewardRatio,
-        address _rewardToken,
-        address _priceOracle,
-        address _rewardChainlinkRefOracle,
-        address _quoteChainlinkRefOracle,
+        uint256 newRewardRatio,
+        address newRewardToken,
+        address newPriceOracle,
+        address newRewardChainlinkRefOracle,
+        address newQuoteChainlinkRefOracle,
         address quoteToken
     ) public {
         require(owner != address(0), 'INVALID_OWNER');
-        require(_rewardRatio <= 1e18, 'INVALID_REWARD_RATIO');
-        require(_rewardToken != address(0), 'INVALID_RAWARD_TOKEN');
-        require(_priceOracle != address(0), 'INVALID_ORACLE');
+        require(newRewardRatio <= 1e18, 'INVALID_REWARD_RATIO');
+        require(newRewardToken != address(0), 'INVALID_RAWARD_TOKEN');
+        require(newPriceOracle != address(0), 'INVALID_ORACLE');
         require(quoteToken != address(0), 'INVALID_QUOTE');
 
         initOwner(owner);
-        rewardRatio = _rewardRatio;
-        rewardToken = _rewardToken;
-        priceOracle = _priceOracle;
-        rewardChainlinkRefOracle = _rewardChainlinkRefOracle;
-        quoteChainlinkRefOracle = _quoteChainlinkRefOracle;
+        rewardRatio = newRewardRatio;
+        rewardToken = newRewardToken;
+        priceOracle = newPriceOracle;
+        rewardChainlinkRefOracle = newRewardChainlinkRefOracle;
+        quoteChainlinkRefOracle = newQuoteChainlinkRefOracle;
         // TODO: (@qinchao) double check with UBC team
         quoteDecimals = ERC20(quoteToken).decimals();
         if (rewardChainlinkRefOracle != address(0) && quoteChainlinkRefOracle != address(0)) {
@@ -135,8 +136,8 @@ contract RewardManager is InitializableOwnable {
             refPriceFixCoeff = rewardRefPriceFixCoeff.divFloor(quoteRefPriceFixCoeff);
         }
 
-        emit PriceOracleUpdated(_priceOracle);
-        emit ChainlinkRefOracleUpdated(_rewardChainlinkRefOracle, _quoteChainlinkRefOracle);
+        emit PriceOracleUpdated(newPriceOracle);
+        emit ChainlinkRefOracleUpdated(newRewardChainlinkRefOracle, newQuoteChainlinkRefOracle);
     }
 
     function addReward(address user, uint256 amount) external onlyApproved {
