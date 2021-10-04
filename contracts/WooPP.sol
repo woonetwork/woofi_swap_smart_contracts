@@ -47,7 +47,7 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 
-contract WooPP is InitializableOwnable, ReentrancyGuard {
+contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     using SafeMathEnhanced for uint256;
     using DecimalMath for uint256;
     using SafeERC20 for IERC20;
@@ -106,7 +106,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         address _quoteToken,
         address _priceOracle,
         address quoteChainlinkRefOracle
-    ) public {
+    ) public nonReentrant {
         require(owner != address(0), 'INVALID_OWNER');
         require(_quoteToken != address(0), 'INVALID_QUOTE');
         require(_priceOracle != address(0), 'INVALID_ORACLE');
@@ -135,7 +135,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         return pairsInfo;
     }
 
-    function setPairsInfo(string calldata _pairsInfo) external onlyStrategist {
+    function setPairsInfo(string calldata _pairsInfo) external nonReentrant onlyStrategist {
         pairsInfo = _pairsInfo;
     }
 
@@ -412,7 +412,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         return IERC20(token).balanceOf(address(this));
     }
 
-    function setPriceOracle(address newPriceOracle) external onlyStrategist {
+    function setPriceOracle(address newPriceOracle) external nonReentrant onlyStrategist {
         require(newPriceOracle != address(0), 'INVALID_ORACLE');
         priceOracle = newPriceOracle;
         emit PriceOracleUpdated(newPriceOracle);
@@ -434,7 +434,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         emit ChainlinkRefOracleUpdated(token, newChainlinkRefOracle);
     }
 
-    function setRewardManager(address newRewardManager) external onlyStrategist {
+    function setRewardManager(address newRewardManager) external nonReentrant onlyStrategist {
         rewardManager = newRewardManager;
         emit RewardManagerUpdated(newRewardManager);
     }
@@ -445,7 +445,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         uint256 lpFeeRate,
         uint256 R,
         address chainlinkRefOracle
-    ) public nonReentrant onlyStrategist {
+    ) external nonReentrant onlyStrategist {
         require(threshold <= type(uint112).max, 'THRESHOLD_OUT_OF_RANGE');
         require(lpFeeRate <= 1e18, 'LP_FEE_RATE_OUT_OF_RANGE');
         require(R <= 1e18, 'R_OUT_OF_RANGE');
@@ -475,7 +475,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         emit ChainlinkRefOracleUpdated(baseToken, chainlinkRefOracle);
     }
 
-    function removeBaseToken(address baseToken) public nonReentrant onlyStrategist {
+    function removeBaseToken(address baseToken) external nonReentrant onlyStrategist {
         TokenInfo memory info = tokenInfo[baseToken];
         require(info.isValid, 'TOKEN_DOES_NOT_EXIST');
 
@@ -499,7 +499,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         uint256 newThreshold,
         uint256 newLpFeeRate,
         uint256 newR
-    ) public nonReentrant onlyStrategist {
+    ) external nonReentrant onlyStrategist {
         require(newThreshold <= type(uint112).max, 'THRESHOLD_OUT_OF_RANGE');
         require(newLpFeeRate <= 1e18, 'LP_FEE_RATE_OUT_OF_RANGE');
         require(newR <= 1e18, 'R_OUT_OF_RANGE');
@@ -520,7 +520,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
 
     // ========== Administrative functions ==========
 
-    function setStrategist(address strategist, bool flag) external onlyOwner {
+    function setStrategist(address strategist, bool flag) external nonReentrant onlyOwner {
         isStrategist[strategist] = flag;
         emit StrategistUpdated(strategist, flag);
     }
@@ -529,12 +529,12 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         address token,
         address to,
         uint256 amount
-    ) external onlyOwner {
+    ) external nonReentrant onlyOwner {
         IERC20(token).safeTransfer(to, amount);
         emit Withdraw(token, to, amount);
     }
 
-    function withdrawToOwner(address token, uint256 amount) external onlyStrategist {
+    function withdrawToOwner(address token, uint256 amount) external nonReentrant onlyStrategist {
         IERC20(token).safeTransfer(_OWNER_, amount);
         emit Withdraw(token, _OWNER_, amount);
     }
