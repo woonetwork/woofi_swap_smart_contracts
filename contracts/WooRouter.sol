@@ -78,18 +78,18 @@ contract WooRouter is Ownable, ReentrancyGuard {
 
     receive() external payable {}
 
-    constructor(address _quoteToken, address _pool) public {
-        require(_quoteToken != address(0), 'INVALID_QUOTE');
-        require(address(_pool) != address(0), 'Pool address cannot be 0');
-        quoteToken = _quoteToken;
-        pool = IWooPP(_pool);
-        emit PoolChanged(_pool);
+    constructor(address newQuoteToken, address newPool) public {
+        require(newQuoteToken != address(0), 'INVALID_QUOTE');
+        require(address(newPool) != address(0), 'Pool address cannot be 0');
+        quoteToken = newQuoteToken;
+        pool = IWooPP(newPool);
+        emit PoolChanged(newPool);
     }
 
-    function setPool(address _pool) external onlyOwner {
-        require(address(_pool) != address(0), 'Pool address cannot be 0');
-        pool = IWooPP(_pool);
-        emit PoolChanged(_pool);
+    function setPool(address newPool) external nonReentrant onlyOwner {
+        require(address(newPool) != address(0), 'Pool address cannot be 0');
+        pool = IWooPP(newPool);
+        emit PoolChanged(newPool);
     }
 
     /* Swap functions */
@@ -101,7 +101,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         uint256 minToAmount,
         address payable to,
         address rebateTo
-    ) external payable returns (uint256 realToAmount) {
+    ) external payable nonReentrant returns (uint256 realToAmount) {
         bool isFromETH = fromToken == _ETH_ADDRESS_;
         bool isToETH = toToken == _ETH_ADDRESS_;
         fromToken = isFromETH ? _WETH_ADDRESS_ : fromToken;
@@ -119,6 +119,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
             if (isToETH) {
                 realToAmount = pool.sellQuote(toToken, fromAmount, minToAmount, address(this), address(this), rebateTo);
                 IWETH(_WETH_ADDRESS_).withdraw(realToAmount);
+                require(to != address(0), 'INVALID_TO_ADDRESS');
                 to.transfer(realToAmount);
             } else {
                 realToAmount = pool.sellQuote(toToken, fromAmount, minToAmount, address(this), to, rebateTo);
@@ -138,6 +139,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
                     rebateTo
                 );
                 IWETH(_WETH_ADDRESS_).withdraw(realToAmount);
+                require(to != address(0), 'INVALID_TO_ADDRESS');
                 to.transfer(realToAmount);
             } else {
                 realToAmount = pool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
@@ -160,7 +162,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         uint256 minQuoteAmount,
         address to,
         address rebateTo
-    ) external returns (uint256 realQuoteAmount) {
+    ) external nonReentrant returns (uint256 realQuoteAmount) {
         IERC20(baseToken).safeTransferFrom(msg.sender, address(this), baseAmount);
         IERC20(baseToken).safeApprove(address(pool), baseAmount);
         realQuoteAmount = pool.sellBase(baseToken, baseAmount, minQuoteAmount, address(this), to, rebateTo);
@@ -181,7 +183,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         uint256 minBaseAmount,
         address to,
         address rebateTo
-    ) external returns (uint256 realBaseAmount) {
+    ) external nonReentrant returns (uint256 realBaseAmount) {
         IERC20(quoteToken).safeTransferFrom(msg.sender, address(this), quoteAmount);
         IERC20(quoteToken).safeApprove(address(pool), quoteAmount);
         realBaseAmount = pool.sellQuote(baseToken, quoteAmount, minBaseAmount, address(this), to, rebateTo);
@@ -239,8 +241,8 @@ contract WooRouter is Ownable, ReentrancyGuard {
         }
 
         if (fromToken != _ETH_ADDRESS_) {
-            IERC20(fromToken).transferFrom(msg.sender, address(this), fromAmount);
-            IERC20(fromToken).approve(approveTarget, fromAmount);
+            IERC20(fromToken).safeTransferFrom(msg.sender, address(this), fromAmount);
+            IERC20(fromToken).safeApprove(approveTarget, fromAmount);
         } else {
             require(fromAmount == msg.value);
         }
@@ -271,17 +273,17 @@ contract WooRouter is Ownable, ReentrancyGuard {
         }
     }
 
-    function setWhitelisted(address target, bool whitelisted) external onlyOwner {
+    function setWhitelisted(address target, bool whitelisted) external nonReentrant onlyOwner {
         isWhitelisted[target] = whitelisted;
     }
 
     /* Misc functions */
 
-    function rescueFunds(IERC20 token, uint256 amount) external onlyOwner {
+    function rescueFunds(IERC20 token, uint256 amount) external nonReentrant onlyOwner {
         token.safeTransfer(msg.sender, amount);
     }
 
-    function destroy() external onlyOwner {
+    function destroy() external nonReentrant onlyOwner {
         selfdestruct(msg.sender);
     }
 
