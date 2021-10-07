@@ -103,39 +103,14 @@ contract Wooracle is InitializableOwnable {
         timestamp = block.timestamp;
     }
 
-    // function _setState(
-    //     address base,
-    //     uint256 newPrice,
-    //     uint64 newSpread,
-    //     uint128 newCoeff
-    // ) private {
-    //     if (newPrice == uint256(0)) {
-    //         isValid[base] = false;
-    //     } else {
-    //         price[base] = newPrice;
-    //         spread[base] = newSpread;
-    //         coeff[base] = newCoeff;
-    //         isValid[base] = true;
-    //     }
-
-    //     timestamp = block.timestamp;
-    // }
-
     function postState(
         address base,
         uint256 newPrice,
         uint64 newSpread,
         uint128 newCoeff
-    ) external onlyOwner {
-        if (newPrice == uint256(0)) {
-            isValid[base] = false;
-        } else {
-            price[base] = newPrice;
-            spread[base] = newSpread;
-            coeff[base] = newCoeff;
-            isValid[base] = true;
-        }
-
+    ) external onlyOwner
+    {
+        _setState(base, newPrice, newSpread, newCoeff);
         timestamp = block.timestamp;
     }
 
@@ -144,21 +119,14 @@ contract Wooracle is InitializableOwnable {
         uint256[] calldata newPrices,
         uint64[] calldata newSpreads,
         uint128[] calldata newCoeffs
-    ) external onlyOwner {
+    ) external onlyOwner
+    {
         uint256 length = bases.length;
         require(length == newPrices.length && length == newSpreads.length && length == newCoeffs.length);
 
         for (uint256 i = 0; i < length; i++) {
-            if (newPrices[i] == uint256(0)) {
-                isValid[bases[i]] = false;
-            } else {
-                price[bases[i]] = newPrices[i];
-                spread[bases[i]] = newSpreads[i];
-                coeff[bases[i]] = newCoeffs[i];
-                isValid[bases[i]] = true;
-            }
+            _setState(bases[i], newPrices[i], newSpreads[i], newCoeffs[i]);
         }
-
         timestamp = block.timestamp;
     }
 
@@ -189,5 +157,22 @@ contract Wooracle is InitializableOwnable {
 
     function isFeasible(address base) public view returns (bool) {
         return isValid[base] && !isStale();
+    }
+
+    function _setState(
+        address base,
+        uint256 newPrice,
+        uint64 newSpread,
+        uint128 newCoeff
+    ) private
+    {
+        if (newPrice == uint256(0)) {
+            isValid[base] = false;
+        } else {
+            price[base] = newPrice;
+            spread[base] = newSpread;
+            coeff[base] = newCoeff;
+            isValid[base] = true;
+        }
     }
 }
