@@ -108,8 +108,7 @@ contract Wooracle is InitializableOwnable {
         uint256 newPrice,
         uint64 newSpread,
         uint128 newCoeff
-    ) external onlyOwner
-    {
+    ) external onlyOwner {
         _setState(base, newPrice, newSpread, newCoeff);
         timestamp = block.timestamp;
     }
@@ -119,8 +118,7 @@ contract Wooracle is InitializableOwnable {
         uint256[] calldata newPrices,
         uint64[] calldata newSpreads,
         uint128[] calldata newCoeffs
-    ) external onlyOwner
-    {
+    ) external onlyOwner {
         uint256 length = bases.length;
         require(length == newPrices.length && length == newSpreads.length && length == newCoeffs.length);
 
@@ -164,8 +162,7 @@ contract Wooracle is InitializableOwnable {
         uint256 newPrice,
         uint64 newSpread,
         uint128 newCoeff
-    ) private
-    {
+    ) private {
         if (newPrice == uint256(0)) {
             isValid[base] = false;
         } else {
