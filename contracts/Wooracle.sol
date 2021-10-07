@@ -71,10 +71,7 @@ contract Wooracle is InitializableOwnable {
         timestamp = block.timestamp;
     }
 
-    function postPriceList(
-        address[] calldata bases,
-        uint256[] calldata newPrices
-    ) external onlyOwner {
+    function postPriceList(address[] calldata bases, uint256[] calldata newPrices) external onlyOwner {
         uint256 length = bases.length;
         require(length == newPrices.length);
 
@@ -95,10 +92,7 @@ contract Wooracle is InitializableOwnable {
         timestamp = block.timestamp;
     }
 
-    function postSpreadList(
-        address[] calldata bases,
-        uint64[] calldata newSpreads
-    ) external onlyOwner {
+    function postSpreadList(address[] calldata bases, uint64[] calldata newSpreads) external onlyOwner {
         uint256 length = bases.length;
         require(length == newSpreads.length);
 
@@ -127,7 +121,6 @@ contract Wooracle is InitializableOwnable {
     //     timestamp = block.timestamp;
     // }
 
-
     function postState(
         address base,
         uint256 newPrice,
@@ -153,11 +146,7 @@ contract Wooracle is InitializableOwnable {
         uint128[] calldata newCoeffs
     ) external onlyOwner {
         uint256 length = bases.length;
-        require(
-            length == newPrices.length &&
-            length == newSpreads.length &&
-            length == newCoeffs.length
-        );
+        require(length == newPrices.length && length == newSpreads.length && length == newCoeffs.length);
 
         for (uint256 i = 0; i < length; i++) {
             if (newPrices[i] == uint256(0)) {
@@ -173,11 +162,7 @@ contract Wooracle is InitializableOwnable {
         timestamp = block.timestamp;
     }
 
-    function getPrice(address base)
-        external
-        view
-        returns (uint256 priceNow, bool feasible)
-    {
+    function getPrice(address base) external view returns (uint256 priceNow, bool feasible) {
         priceNow = price[base];
         feasible = isFeasible(base);
     }
