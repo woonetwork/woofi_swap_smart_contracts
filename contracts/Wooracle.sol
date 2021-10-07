@@ -37,6 +37,7 @@ pragma experimental ABIEncoderV2;
 
 import './libraries/InitializableOwnable.sol';
 
+
 contract Wooracle is InitializableOwnable {
     mapping(address => uint256) public price;
     mapping(address => uint128) public coeff;

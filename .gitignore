@@ -125,3 +125,6 @@ dist
 
 artifacts/
 cache/
+build/
+typechain/
+

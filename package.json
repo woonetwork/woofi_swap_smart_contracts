@@ -7,6 +7,13 @@
   "author": "Woo Network",
   "license": "MIT",
   "private": true,
+  "scripts": {
+    "test": "export NODE_ENV=test && mocha",
+    "build": "waffle waffle.json",
+    "ht": "export NODE_ENV=test && hardhat test",
+    "lint": "eslint '{contracts,test}/**/*.ts'",
+    "lint:fix": "eslint --fix '{contracts,test}/**/*.ts'"
+  },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.0",
     "@nomiclabs/hardhat-etherscan": "^2.1.3",
@@ -15,7 +22,12 @@
     "@openzeppelin/contracts": "^3.4.1",
     "@openzeppelin/contracts-ethereum-package": "^3.0.0",
     "@openzeppelin/test-helpers": "^0.5.13",
-    "chai": "^4.2.0",
+    "@typechain/ethers-v5": "^7.1.2",
+    "@typechain/hardhat": "^2.3.0",
+    "@types/chai": "^4.2.22",
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^16.10.3",
+    "chai": "^4.3.4",
     "dotenv": "^10.0.0",
     "eslint": "^7.29.0",
     "eslint-config-prettier": "^8.3.0",
@@ -24,13 +36,17 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^3.4.0",
     "eslint-plugin-promise": "^5.1.0",
-    "ethereum-waffle": "^3.0.0",
+    "ethereum-waffle": "^3.4.0",
     "ethers": "^5.0.0",
     "hardhat": "^2.6.4",
     "hardhat-gas-reporter": "^1.0.4",
+    "mocha": "^7.1.2",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
     "solhint": "^3.3.6",
-    "solidity-coverage": "^0.7.16"
+    "solidity-coverage": "^0.7.16",
+    "ts-node": "^8.10.2",
+    "typechain": "^5.1.2",
+    "typescript": "^3.9.10"
   }
 }
