@@ -382,7 +382,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         emit WooSwap(quoteToken, baseToken, quoteAmount, realBaseAmount, from, to);
     }
 
-    function querySellBase(address baseToken, uint256 baseAmount) external override view returns (uint256 quoteAmount) {
+    function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
@@ -395,7 +395,12 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         require(quoteAmount <= IERC20(quoteToken).balanceOf(address(this)));
     }
 
-    function querySellQuote(address baseToken, uint256 quoteAmount) external override view returns (uint256 baseAmount) {
+    function querySellQuote(address baseToken, uint256 quoteAmount)
+        external
+        view
+        override
+        returns (uint256 baseAmount)
+    {
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
