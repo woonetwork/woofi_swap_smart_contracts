@@ -40,4 +40,7 @@ interface IRewardManager {
      * Set up the reward amount (in USD) for the specified user.
      */
     function addReward(address user, uint256 amount) external;
+
+    /// User claims the reward.
+    function claimReward(address user) external;
 }

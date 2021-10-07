@@ -140,7 +140,7 @@ contract RewardManager is InitializableOwnable, IRewardManager {
         emit ChainlinkRefOracleUpdated(newRewardChainlinkRefOracle, newQuoteChainlinkRefOracle);
     }
 
-    function addReward(address user, uint256 amount) external onlyApproved {
+    function addReward(address user, uint256 amount) external override onlyApproved {
         // amount in USDT
         if (user == address(0)) {
             return;
@@ -153,7 +153,7 @@ contract RewardManager is InitializableOwnable, IRewardManager {
         pendingReward[user] = pendingReward[user].add(rewardAmount);
     }
 
-    function claimReward(address user) external {
+    function claimReward(address user) external override {
         uint256 amount = pendingReward[user];
         uint256 balance = IERC20(rewardToken).balanceOf(address(this));
         uint256 amountToTransfer = amount < balance ? amount : balance;
