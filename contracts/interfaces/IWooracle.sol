@@ -36,13 +36,7 @@ pragma experimental ABIEncoderV2;
 */
 
 interface IWooracle {
-    function getPrice(address base)
-        external
-        view
-        returns (
-            uint256 latestPrice,
-            bool feasible
-        );
+    function getPrice(address base) external view returns (uint256 latestPrice, bool feasible);
 
     function getState(address base)
         external

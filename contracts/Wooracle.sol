@@ -129,15 +129,15 @@ contract Wooracle is InitializableOwnable, IWooracle {
         timestamp = block.timestamp;
     }
 
-    function getPrice(address base) external override view returns (uint256 priceNow, bool feasible) {
+    function getPrice(address base) external view override returns (uint256 priceNow, bool feasible) {
         priceNow = price[base];
         feasible = isFeasible(base);
     }
 
     function getState(address base)
         external
-        override
         view
+        override
         returns (
             uint256 priceNow,
             uint256 spreadNow,
