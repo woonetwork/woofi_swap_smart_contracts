@@ -18,7 +18,7 @@
     <img src='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/unit_tests.yml/badge.svg' alt='Unit Tests' />
   </a>
   <a href='https://t.me/woonetwork' style="text-decoration:none;">
-    <img src='https://img.shields.io/badge/chat-on%20telegram-9cf.svg?longCache=true' alt='Telegram' />
+    <img src='https://img.shields.io/badge/Chat-telegram-9cf.svg?longCache=true' alt='Telegram' />
   </a>
 </div>
 
