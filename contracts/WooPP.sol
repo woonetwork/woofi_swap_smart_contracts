@@ -46,9 +46,10 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
 
 contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
-    using SafeMathEnhanced for uint256;
+    using SafeMath for uint256;
     using DecimalMath for uint256;
     using SafeERC20 for IERC20;
 
