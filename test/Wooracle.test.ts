@@ -31,44 +31,45 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
-import { expect, use } from 'chai'
-import { MockProvider, solidity } from 'ethereum-waffle'
-
-import { expect, use } from 'chai'
-import { Contract } from 'ethers'
-import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
-import Wooracle from '../build/Wooracle.json'
+import { expect, use } from 'chai';
+import { Contract } from 'ethers';
+import { deployContract, MockProvider, solidity } from 'ethereum-waffle';
+import Wooracle from '../build/Wooracle.json';
 
 use(solidity)
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
 describe('Wooracle', () => {
-  const [owner, user, quoteToken] = new MockProvider().getWallets()
+    const [owner, user, quoteToken] = new MockProvider().getWallets()
 
-  describe('#ctor and setters', () => {
-    let wooracle: Contract
+    describe('#ctor and setters', () => {
+        let wooracle: Contract
 
-    beforeEach('deploy test oracle', async () => {
-      wooracle = await deployContract(owner, Wooracle, [])
+        beforeEach('deploy test oracle', async () => {
+        wooracle = await deployContract(owner, Wooracle, [])
+        })
+
+        it('init with correct owner', async () => {
+            expect(await wooracle._OWNER_()).to.eq(owner.address)
+        })
+
+        it('init fields', async () => {
+        expect(await wooracle.staleDuration()).to.eq(300)
+        expect(await wooracle.timestamp()).to.eq(0)
+        expect(await wooracle.quoteAddr()).to.eq(ZERO_ADDR)
+        })
+
+        it('setQuoteAddr', async () => {
+            expect(await wooracle.quoteAddr()).to.eq(ZERO_ADDR)
+            await wooracle.setQuoteAddr(quoteToken.address)
+            expect(await wooracle.quoteAddr()).to.eq(quoteToken.address)
+        })
+
+        it('setStaleDuration', async () => {
+            expect(await wooracle.staleDuration()).to.eq(300)
+            await wooracle.setStaleDuration(123123)
+            expect(await wooracle.staleDuration()).to.eq(123123)
+        })
     })
-
-    it('init', async () => {
-      expect(await wooracle._OWNER_()).to.eq(owner.address)
-    })
-
-    it('init fields', async () => {
-      expect(await wooracle.staleDuration()).to.eq(300)
-      expect(await wooracle.timestamp()).to.eq(0)
-      expect(await wooracle.quoteAddr()).to.eq(ZERO_ADDR)
-    })
-
-    it('setQuoteAddr', async () => {
-      expect(await wooracle.quoteAddr()).to.eq(ZERO_ADDR)
-      await wooracle.setQuoteAddr(quoteToken.address)
-      expect(await wooracle.quoteAddr()).to.eq(quoteToken.address)
-    })
-  })
-
-  // TODO: add more test cases.
-})
+});
