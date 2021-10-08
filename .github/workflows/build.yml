@@ -3,7 +3,7 @@ name: Compile & Build
 on:
   push:
     branches:
-      - '*'
+      - main
   pull_request:
 
 jobs:
@@ -31,5 +31,5 @@ jobs:
       - name: Build
         run: yarn build
 
-      - name: Compile
-        run: hardhat compile
+      - name: Build Test
+        run: yarn build-test

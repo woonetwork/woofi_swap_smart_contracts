@@ -8,8 +8,9 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "test": "export NODE_ENV=test && mocha",
-    "build": "waffle waffle.json",
+    "test": "hardhat test",
+    "build": "hardhat compile",
+    "build-test": "waffle waffle.json",
     "ht": "export NODE_ENV=test && hardhat test",
     "lint": "eslint '{contracts,test}/**/*.ts'",
     "lint:fix": "eslint --fix '{contracts,test}/**/*.ts'"
