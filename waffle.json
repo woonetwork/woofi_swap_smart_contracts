@@ -1,14 +1,14 @@
 {
-    "compilerType": "solcjs",
-    "compilerVersion": "0.6.12",
-    "compilerOptions": {
-        "optimizer": {
-            "enabled": true,
-            "runs": 200
-        }
-    },
-    "sourceDirectory": "./contracts",
-    "flattenOutputDirectory": "./custom_flatten",
-    "outputDirectory": "./build",
-    "typechainEnabled": true
+  "compilerType": "solcjs",
+  "compilerVersion": "0.6.12",
+  "compilerOptions": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    }
+  },
+  "sourceDirectory": "./contracts",
+  "flattenOutputDirectory": "./custom_flatten",
+  "outputDirectory": "./build",
+  "typechainEnabled": true
 }

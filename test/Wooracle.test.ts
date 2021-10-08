@@ -31,22 +31,21 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
+import { expect, use } from 'chai'
+import { MockProvider, solidity } from 'ethereum-waffle'
 
-import { expect, use } from 'chai';
-import { MockProvider, solidity } from 'ethereum-waffle';
-
-use(solidity);
+use(solidity)
 
 describe('Wooracle Test', () => {
-    const [walletFrom, walletTo] = new MockProvider().getWallets();
+  const [walletFrom, walletTo] = new MockProvider().getWallets()
 
-    it('Change balance of receiver wallet', async () => {
-        // await expect(() =>
-        //     walletFrom.sendTransaction({
-        //         to: walletTo.address,
-        //         gasPrice: 0,
-        //         value: 200
-        //     })
-        // ).to.changeBalance(walletTo, 200);
-    });
-});
+  it('Change balance of receiver wallet', async () => {
+    // await expect(() =>
+    //     walletFrom.sendTransaction({
+    //         to: walletTo.address,
+    //         gasPrice: 0,
+    //         value: 200
+    //     })
+    // ).to.changeBalance(walletTo, 200);
+  })
+})

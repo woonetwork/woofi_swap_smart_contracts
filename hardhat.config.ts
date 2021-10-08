@@ -14,10 +14,10 @@ const chainIds = {
   mainnet: 1,
   rinkeby: 4,
   ropsten: 3,
-};
+}
 
 // const MNEMONIC = process.env.MNEMONIC || "";
-const MNEMONIC = "";
+const MNEMONIC = ''
 
 export default {
   defaultNetwork: 'hardhat',
@@ -61,8 +61,8 @@ export default {
     artifacts: './artifacts',
   },
   typechain: {
-    outDir: "typechain",
-    target: "ethers-v5",
+    outDir: 'typechain',
+    target: 'ethers-v5',
   },
   mocha: {
     timeout: 2000,
