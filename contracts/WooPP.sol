@@ -94,26 +94,17 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     address public rewardManager;
 
     constructor(
-        address owner,
         address newQuoteToken,
         address newPriceOracle,
         address quoteChainlinkRefOracle
     ) public {
-        init(owner, newQuoteToken, newPriceOracle, quoteChainlinkRefOracle);
-    }
-
-    function init(
-        address owner,
-        address newQuoteToken,
-        address newPriceOracle,
-        address quoteChainlinkRefOracle
-    ) public nonReentrant {
-        require(owner != address(0), 'INVALID_OWNER');
         require(newQuoteToken != address(0), 'INVALID_QUOTE');
         require(newPriceOracle != address(0), 'INVALID_ORACLE');
 
-        initOwner(owner);
+        initOwner(msg.sender);
         quoteToken = newQuoteToken;
+        priceOracle = newPriceOracle;
+
         TokenInfo storage quoteInfo = tokenInfo[quoteToken];
         quoteInfo.isValid = true;
         quoteInfo.chainlinkRefOracle = quoteChainlinkRefOracle;
@@ -127,7 +118,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
             require(refPriceFixCoeff <= type(uint96).max);
             quoteInfo.refPriceFixCoeff = uint96(refPriceFixCoeff);
         }
-        priceOracle = newPriceOracle;
 
         emit ChainlinkRefOracleUpdated(quoteToken, quoteChainlinkRefOracle);
     }
