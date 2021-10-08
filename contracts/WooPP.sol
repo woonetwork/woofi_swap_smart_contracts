@@ -563,7 +563,10 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
             uint256 baseRefPrice = uint256(rawBaseRefPrice).mul(uint256(baseInfo.refPriceFixCoeff));
             uint256 quoteRefPrice = uint256(rawQuoteRefPrice).mul(uint256(quoteInfo.refPriceFixCoeff));
             uint256 refPrice = baseRefPrice.divFloor(quoteRefPrice);
-            require(refPrice.mulFloor(1e18 - 1e16) <= p && p <= refPrice.mulCeil(1e18 + 1e16), 'WooPP: PRICE_UNRELIABLE');
+            require(
+                refPrice.mulFloor(1e18 - 1e16) <= p && p <= refPrice.mulCeil(1e18 + 1e16),
+                'WooPP: PRICE_UNRELIABLE'
+            );
         }
     }
 }
