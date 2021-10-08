@@ -234,7 +234,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         address fromToken,
         uint256 fromAmount,
         bytes calldata data
-    ) internal {
+    ) private {
         require(isWhitelisted[approveTarget], 'APPROVE_TARGET_NOT_ALLOWED');
         if (approveTarget != swapTarget) {
             require(isWhitelisted[swapTarget], 'SWAP_TARGET_NOT_ALLOWED');
@@ -255,7 +255,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         address token,
         address payable to,
         uint256 amount
-    ) internal {
+    ) private {
         if (amount > 0) {
             if (token == _ETH_ADDRESS_) {
                 to.transfer(amount);
@@ -265,7 +265,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         }
     }
 
-    function _generalBalanceOf(address token, address who) internal view returns (uint256) {
+    function _generalBalanceOf(address token, address who) private view returns (uint256) {
         if (token == _ETH_ADDRESS_) {
             return who.balance;
         } else {
