@@ -548,12 +548,12 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         emit Withdraw(token, _OWNER_, amount);
     }
 
-    // ========== Internal functions ==========
+    // ========== Private functions ==========
     function ensurePriceReliable(
         uint256 p,
         TokenInfo memory baseInfo,
         TokenInfo memory quoteInfo
-    ) internal view {
+    ) private view {
         // check Chainlink
         if (baseInfo.chainlinkRefOracle != address(0) && quoteInfo.chainlinkRefOracle != address(0)) {
             (, int256 rawBaseRefPrice, , , ) = AggregatorV3Interface(baseInfo.chainlinkRefOracle).latestRoundData();
