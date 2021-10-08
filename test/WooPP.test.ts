@@ -34,37 +34,49 @@
 import { expect, use } from 'chai'
 import { Contract } from 'ethers'
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
-import Wooracle from '../build/Wooracle.json'
+import WooPP from '../build/WooPP.json'
+import InitializableOwnable from '../build/InitializableOwnable.json'
+import IWooPP from '../build/IWooPP.json'
 
 use(solidity)
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
 describe('WooPP', () => {
-  const [owner, user, quoteToken] = new MockProvider().getWallets()
+  const [owner, user, quoteToken, priceOracle, quoteChainLinkRefOracle]
+    = new MockProvider().getWallets()
 
-  describe('#ctor and setters', () => {
+  describe('#ctor and init', () => {
     let wooPP: Contract
 
-    // beforeEach('deploy test oracle', async () => {
-    //     wooracle = await deployContract(owner, Wooracle, []);
-    // })
+    before('deploy WooPP', async () => {
+        wooPP = await deployContract(
+            owner,
+            WooPP,
+            [quoteToken.address, priceOracle.address, ZERO_ADDR]);
+    })
 
-    // it('init', async () => {
-    //     expect(await wooracle._OWNER_()).to.eq(owner.address)
-    // })
+    it('ctor', async () => {
+        expect(await wooPP._OWNER_()).to.eq(owner.address)
+    })
 
-    // it('init fields', async () => {
-    //     expect(await wooracle.staleDuration()).to.eq(300)
-    //     expect(await wooracle.timestamp()).to.eq(0)
-    //     expect(await wooracle.quoteAddr()).to.eq(ZERO_ADDR)
-    // })
+    it('init', async () => {
+        expect(await wooPP.quoteToken()).to.eq(quoteToken.address)
+        expect(await wooPP.priceOracle()).to.eq(priceOracle.address)
+    })
 
-    // it('setQuoteAddr', async () => {
-    //     expect(await wooracle.quoteAddr()).to.eq(ZERO_ADDR)
-    //     await wooracle.setQuoteAddr(quoteToken.address)
-    //     expect(await wooracle.quoteAddr()).to.eq(quoteToken.address)
-    // })
+    it('tokenInfo', async () => {
+        const quoteInfo = await wooPP.tokenInfo(quoteToken.address)
+        expect(quoteInfo.isValid).to.eq(true)
+        expect(quoteInfo.chainlinkRefOracle).to.eq(ZERO_ADDR)
+        expect(quoteInfo.reserve).to.eq(0)
+        expect(quoteInfo.threshold).to.eq(0)
+        expect(quoteInfo.lastResetTimestamp).to.eq(0)
+        expect(quoteInfo.lpFeeRate).to.eq(0)
+        expect(quoteInfo.R).to.eq(0)
+        expect(quoteInfo.target).to.eq(0)
+        expect(quoteInfo.refPriceFixCoeff).to.eq(0)
+    })
   })
 
   // TODO: add more test cases.
