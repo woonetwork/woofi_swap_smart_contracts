@@ -59,7 +59,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     event ChainlinkRefOracleUpdated(address indexed token, address indexed newChainlinkRefOracle);
     event ParametersUpdated(address indexed baseToken, uint256 newThreshold, uint256 newLpFeeRate, uint256 newR);
     event Withdraw(address indexed token, address indexed to, uint256 amount);
-    event WooSwap(address fromToken, address toToken, uint256 fromAmount, uint256 toAmount, address from, address to);
+    event WooSwap(address indexed fromToken, address indexed toToken, uint256 fromAmount, uint256 toAmount, address from, address indexed to);
 
     mapping(address => bool) public isStrategist;
 
