@@ -2,19 +2,22 @@
 <p align="center"><img src="http://woofi.iamkun.com/_nuxt/img/8993400.png" width="320" /></p>
 
 <div align="center">
-  <a href="https://circleci.com/gh/dydxprotocol/workflows/solo/tree/master" style="text-decoration:none;">
-    <img src="https://img.shields.io/circleci/project/github/dydxprotocol/solo.svg" alt='CI' />
+  <a href="https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/build.yml" style="text-decoration:none;">
+    <img src="https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/build.yml/badge.svg" alt='Build' />
   </a>
-  <a href='https://www.npmjs.com/package/@dydxprotocol/solo' style="text-decoration:none;">
-    <img src='https://img.shields.io/npm/v/@dydxprotocol/solo.svg' alt='NPM' />
+  <a href='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/lint.yml' style="text-decoration:none;">
+    <img src='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/lint.yml/badge.svg' alt='Lint' />
   </a>
   <a href='https://coveralls.io/github/dydxprotocol/solo' style="text-decoration:none;">
     <img src='https://coveralls.io/repos/github/dydxprotocol/solo/badge.svg?t=toKMwT' alt='Coverage Status' />
   </a>
-  <a href='https://github.com/dydxprotocol/solo/blob/master/LICENSE' style="text-decoration:none;">
-    <img src='https://img.shields.io/github/license/dydxprotocol/protocol.svg?longCache=true' alt='License' />
+  <a href='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/slither.yml' style="text-decoration:none;">
+    <img src='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/slither.yml/badge.svg' alt='Slither' />
   </a>
-  <a href='https://t.me/joinchat/GBnMlBb9mQblQck2pThTgw' style="text-decoration:none;">
+  <a href='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/unit_tests.yml' style="text-decoration:none;">
+    <img src='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/unit_tests.yml/badge.svg' alt='Unit Tests' />
+  </a>
+  <a href='https://t.me/woonetwork' style="text-decoration:none;">
     <img src='https://img.shields.io/badge/chat-on%20telegram-9cf.svg?longCache=true' alt='Telegram' />
   </a>
 </div>
