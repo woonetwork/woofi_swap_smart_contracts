@@ -3618,6 +3618,11 @@
   "resolved" "https://registry.npmjs.org/decamelize/-/decamelize-1.2.0.tgz"
   "version" "1.2.0"
 
+"decimal@^0.0.2":
+  "integrity" "sha1-GUPsUjaKD996NywsEM8fy8kbk+M="
+  "resolved" "https://registry.npmjs.org/decimal/-/decimal-0.0.2.tgz"
+  "version" "0.0.2"
+
 "decode-uri-component@^0.2.0":
   "integrity" "sha1-6zkTMzRYd1y4TNGh+uBiEGu4dUU="
   "resolved" "https://registry.npmjs.org/decode-uri-component/-/decode-uri-component-0.2.0.tgz"
