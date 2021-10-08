@@ -158,8 +158,11 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
             baseInfo.lastResetTimestamp = priceTimestamp;
         }
         if (priceTimestamp != quoteInfo.lastResetTimestamp) {
-            if (quoteInfo.threshold > quoteInfo.reserve) quoteInfo.target = quoteInfo.threshold;
-            else quoteInfo.target = quoteInfo.reserve;
+            if (quoteInfo.threshold > quoteInfo.reserve) {
+                quoteInfo.target = quoteInfo.threshold;
+            } else {
+                quoteInfo.target = quoteInfo.reserve;
+            }
             quoteInfo.lastResetTimestamp = priceTimestamp;
         }
     }

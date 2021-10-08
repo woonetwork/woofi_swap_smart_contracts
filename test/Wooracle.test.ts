@@ -32,9 +32,6 @@
 */
 
 import { expect, use } from 'chai'
-import { MockProvider, solidity } from 'ethereum-waffle'
-
-import { expect, use } from 'chai'
 import { Contract } from 'ethers'
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
 import Wooracle from '../build/Wooracle.json'
@@ -53,7 +50,7 @@ describe('Wooracle', () => {
       wooracle = await deployContract(owner, Wooracle, [])
     })
 
-    it('init', async () => {
+    it('init with correct owner', async () => {
       expect(await wooracle._OWNER_()).to.eq(owner.address)
     })
 
@@ -68,7 +65,11 @@ describe('Wooracle', () => {
       await wooracle.setQuoteAddr(quoteToken.address)
       expect(await wooracle.quoteAddr()).to.eq(quoteToken.address)
     })
-  })
 
-  // TODO: add more test cases.
+    it('setStaleDuration', async () => {
+      expect(await wooracle.staleDuration()).to.eq(300)
+      await wooracle.setStaleDuration(123123)
+      expect(await wooracle.staleDuration()).to.eq(123123)
+    })
+  })
 })
