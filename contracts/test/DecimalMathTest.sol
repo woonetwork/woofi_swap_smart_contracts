@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity = 0.6.12;
+pragma solidity =0.6.12;
 
 import '../libraries/DecimalMath.sol';
 
 contract DecimalMathTest {
-    function mulFloor(uint256 target, uint256 d) external pure returns(uint256) {
+    function mulFloor(uint256 target, uint256 d) external pure returns (uint256) {
         return DecimalMath.mulFloor(target, d);
     }
 
