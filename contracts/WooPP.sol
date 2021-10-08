@@ -553,7 +553,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 p,
         TokenInfo memory baseInfo,
         TokenInfo memory quoteInfo
-    ) private view {
+    ) internal view {
         // check Chainlink
         if (baseInfo.chainlinkRefOracle != address(0) && quoteInfo.chainlinkRefOracle != address(0)) {
             (, int256 rawBaseRefPrice, , , ) = AggregatorV3Interface(baseInfo.chainlinkRefOracle).latestRoundData();
