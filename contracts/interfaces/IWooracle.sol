@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
 /*
@@ -35,9 +35,24 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
-interface IRewardManager {
-    /**
-     * Set up the reward amount (in USD) for the specified user.
-     */
-    function addReward(address user, uint256 amount) external;
+interface IWooracle {
+    function getPrice(address base)
+        external
+        view
+        returns (
+            uint256 latestPrice,
+            bool feasible
+        );
+
+    function getState(address base)
+        external
+        view
+        returns (
+            uint256 latestPrice,
+            uint256 spread,
+            uint256 coefficient,
+            bool feasible
+        );
+
+    function timestamp() external view returns (uint256);
 }
