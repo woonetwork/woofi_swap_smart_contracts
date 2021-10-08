@@ -37,7 +37,7 @@ pragma experimental ABIEncoderV2;
 
 import './libraries/InitializableOwnable.sol';
 import './libraries/DecimalMath.sol';
-import './interfaces/IOracle.sol';
+import './interfaces/IWooracle.sol';
 import './interfaces/IRewardManager.sol';
 import './interfaces/AggregatorV3Interface.sol';
 

@@ -349,9 +349,9 @@ interface AggregatorV3Interface {
         );
 }
 
-// File: contracts/IOracle.sol
+// File: contracts/IWooracle.sol
 
-interface IOracle {
+interface IWooracle {
     function getPrice(address base) external view returns (uint256 latestPrice, bool feasible);
 
     function getState(address base)
@@ -387,7 +387,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
 
     modifier isOraclePriceValid(address baseToken) {
         // TODO：security -- double check the swap price with multiple 3rd party oracles
-        (, bool isFeasible) = IOracle(priceOracle).getPrice(baseToken);
+        (, bool isFeasible) = IWooracle(priceOracle).getPrice(baseToken);
         require(isFeasible, 'ORACLE_PRICE_NOT_FEASIBLE');
         _;
     }
@@ -447,7 +447,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
     }
 
     function autoUpdate(TokenInfo memory info) internal view {
-        uint32 priceTimestamp = uint32(IOracle(priceOracle).timestamp() % 2**32);
+        uint32 priceTimestamp = uint32(IWooracle(priceOracle).timestamp() % 2**32);
         if (priceTimestamp != info.lastResetTimestamp) {
             // TODO add the condition about minimal pool size
             info.baseSold = 0;
@@ -528,7 +528,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         uint256 p0;
         uint256 s;
         uint256 k;
-        (p0, s, k, ) = IOracle(priceOracle).getState(baseToken);
+        (p0, s, k, ) = IWooracle(priceOracle).getState(baseToken);
 
         ensurePriceReliable(p0, info);
 
@@ -571,7 +571,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         uint256 p0;
         uint256 s;
         uint256 k;
-        (p0, s, k, ) = IOracle(priceOracle).getState(baseToken);
+        (p0, s, k, ) = IWooracle(priceOracle).getState(baseToken);
 
         ensurePriceReliable(p0, info);
 

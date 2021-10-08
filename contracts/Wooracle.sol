@@ -36,16 +36,17 @@ pragma experimental ABIEncoderV2;
 */
 
 import './libraries/InitializableOwnable.sol';
+import './interfaces/IWooracle.sol';
 
-contract Wooracle is InitializableOwnable {
+contract Wooracle is InitializableOwnable, IWooracle {
     mapping(address => uint256) public price;
-    mapping(address => uint128) public coeff;
-    mapping(address => uint64) public spread;
+    mapping(address => uint256) public coeff;
+    mapping(address => uint256) public spread;
     mapping(address => bool) public isValid;
 
-    uint256 public timestamp;
-    uint256 public staleDuration;
+    uint256 public override timestamp;
 
+    uint256 public staleDuration;
     address public quoteAddr;
 
     constructor() public {
@@ -87,12 +88,12 @@ contract Wooracle is InitializableOwnable {
         timestamp = block.timestamp;
     }
 
-    function postSpread(address base, uint64 newSpread) external onlyOwner {
+    function postSpread(address base, uint256 newSpread) external onlyOwner {
         spread[base] = newSpread;
         timestamp = block.timestamp;
     }
 
-    function postSpreadList(address[] calldata bases, uint64[] calldata newSpreads) external onlyOwner {
+    function postSpreadList(address[] calldata bases, uint256[] calldata newSpreads) external onlyOwner {
         uint256 length = bases.length;
         require(length == newSpreads.length);
 
@@ -106,8 +107,8 @@ contract Wooracle is InitializableOwnable {
     function postState(
         address base,
         uint256 newPrice,
-        uint64 newSpread,
-        uint128 newCoeff
+        uint256 newSpread,
+        uint256 newCoeff
     ) external onlyOwner {
         _setState(base, newPrice, newSpread, newCoeff);
         timestamp = block.timestamp;
@@ -116,8 +117,8 @@ contract Wooracle is InitializableOwnable {
     function postStateList(
         address[] calldata bases,
         uint256[] calldata newPrices,
-        uint64[] calldata newSpreads,
-        uint128[] calldata newCoeffs
+        uint256[] calldata newSpreads,
+        uint256[] calldata newCoeffs
     ) external onlyOwner {
         uint256 length = bases.length;
         require(length == newPrices.length && length == newSpreads.length && length == newCoeffs.length);
@@ -128,7 +129,7 @@ contract Wooracle is InitializableOwnable {
         timestamp = block.timestamp;
     }
 
-    function getPrice(address base) external view returns (uint256 priceNow, bool feasible) {
+    function getPrice(address base) external view override returns (uint256 priceNow, bool feasible) {
         priceNow = price[base];
         feasible = isFeasible(base);
     }
@@ -136,10 +137,11 @@ contract Wooracle is InitializableOwnable {
     function getState(address base)
         external
         view
+        override
         returns (
             uint256 priceNow,
-            uint64 spreadNow,
-            uint128 coeffNow,
+            uint256 spreadNow,
+            uint256 coeffNow,
             bool feasible
         )
     {
@@ -160,8 +162,8 @@ contract Wooracle is InitializableOwnable {
     function _setState(
         address base,
         uint256 newPrice,
-        uint64 newSpread,
-        uint128 newCoeff
+        uint256 newSpread,
+        uint256 newCoeff
     ) private {
         if (newPrice == uint256(0)) {
             isValid[base] = false;

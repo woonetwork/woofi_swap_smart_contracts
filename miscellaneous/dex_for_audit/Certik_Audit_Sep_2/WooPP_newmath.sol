@@ -96,7 +96,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         require(quoteReserve <= type(uint112).max);
         baseInfo.reserve = uint112(baseReserve);
         quoteInfo.reserve = uint112(quoteReserve);
-        uint32 priceTimestamp = uint32(IOracle(priceOracle).timestamp() % 2**32);
+        uint32 priceTimestamp = uint32(IWooracle(priceOracle).timestamp() % 2**32);
         if (priceTimestamp != baseInfo.lastResetTimestamp) {
             if (baseInfo.threshold > baseInfo.reserve) baseInfo.target = baseInfo.threshold;
             else baseInfo.target = baseInfo.reserve;
@@ -200,7 +200,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         uint256 s;
         uint256 k;
         bool isFeasible;
-        (p, s, k, isFeasible) = IOracle(priceOracle).getState(baseToken);
+        (p, s, k, isFeasible) = IWooracle(priceOracle).getState(baseToken);
         require(isFeasible, 'ORACLE_PRICE_NOT_FEASIBLE');
 
         ensurePriceReliable(p, baseInfo, quoteInfo);
@@ -237,7 +237,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard {
         uint256 s;
         uint256 k;
         bool isFeasible;
-        (p, s, k, isFeasible) = IOracle(priceOracle).getState(baseToken);
+        (p, s, k, isFeasible) = IWooracle(priceOracle).getState(baseToken);
         require(isFeasible, 'ORACLE_PRICE_NOT_FEASIBLE');
 
         ensurePriceReliable(p, baseInfo, quoteInfo);

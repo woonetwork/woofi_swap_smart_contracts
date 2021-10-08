@@ -43,8 +43,8 @@ interface IOracle {
         view
         returns (
             uint256 latestPrice,
-            uint64 spread,
-            uint64 coefficient,
+            uint256 spread,
+            uint256 coefficient,
             bool feasible
         );
 

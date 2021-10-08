@@ -73,7 +73,7 @@ contract RewardManager is InitializableOwnable {
     function addReward(address user, uint256 amount) external onlyApproved {
         // amount in USDT
         require(user != address(0), 'INVALID_OWNER');
-        (uint256 price, bool isFeasible) = IOracle(priceOracle).getPrice(rewardToken);
+        (uint256 price, bool isFeasible) = IWooracle(priceOracle).getPrice(rewardToken);
         if (!isFeasible || !isPriceReliable(price)) {
             return;
         }

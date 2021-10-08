@@ -37,7 +37,7 @@ pragma experimental ABIEncoderV2;
 
 import './libraries/InitializableOwnable.sol';
 import './libraries/DecimalMath.sol';
-import './interfaces/IOracle.sol';
+import './interfaces/IWooracle.sol';
 import './interfaces/IWooPP.sol';
 import './interfaces/IRewardManager.sol';
 import './interfaces/AggregatorV3Interface.sol';
@@ -151,7 +151,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         require(quoteReserve <= type(uint112).max);
         baseInfo.reserve = uint112(baseReserve);
         quoteInfo.reserve = uint112(quoteReserve);
-        uint32 priceTimestamp = uint32(IOracle(priceOracle).timestamp() % 2**32);
+        uint32 priceTimestamp = uint32(IWooracle(priceOracle).timestamp() % 2**32);
         if (priceTimestamp != baseInfo.lastResetTimestamp) {
             if (baseInfo.threshold > baseInfo.reserve) baseInfo.target = baseInfo.threshold;
             else baseInfo.target = baseInfo.reserve;
@@ -258,7 +258,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 s;
         uint256 k;
         bool isFeasible;
-        (p, s, k, isFeasible) = IOracle(priceOracle).getState(baseToken);
+        (p, s, k, isFeasible) = IWooracle(priceOracle).getState(baseToken);
         require(isFeasible, 'ORACLE_PRICE_NOT_FEASIBLE');
 
         ensurePriceReliable(p, baseInfo, quoteInfo);
@@ -297,7 +297,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 s;
         uint256 k;
         bool isFeasible;
-        (p, s, k, isFeasible) = IOracle(priceOracle).getState(baseToken);
+        (p, s, k, isFeasible) = IWooracle(priceOracle).getState(baseToken);
         require(isFeasible, 'ORACLE_PRICE_NOT_FEASIBLE');
 
         ensurePriceReliable(p, baseInfo, quoteInfo);
