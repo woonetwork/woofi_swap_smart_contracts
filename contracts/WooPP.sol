@@ -144,7 +144,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         address baseToken,
         TokenInfo memory baseInfo,
         TokenInfo memory quoteInfo
-    ) internal view {
+    ) private view {
         uint256 baseReserve = IERC20(baseToken).balanceOf(address(this));
         uint256 quoteReserve = IERC20(quoteToken).balanceOf(address(this));
         require(baseReserve <= type(uint112).max);
@@ -173,7 +173,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 k,
         uint256 r,
         uint256 baseAmount
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         // priceFactor = 1 + k * baseAmount * p * r;
         uint256 priceFactor = DecimalMath.ONE.add(k.mulCeil(baseAmount).mulCeil(p).mulCeil(r));
         // return baseAmount * p / priceFactor;
@@ -186,7 +186,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 k,
         uint256 r,
         uint256 quoteAmount
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         // priceFactor = (1 - k * quoteAmount * r);
         uint256 priceFactor = DecimalMath.ONE.sub(k.mulFloor(quoteAmount).mulFloor(r));
         // return quoteAmount * p^{-1} / priceFactor;
@@ -199,7 +199,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 k,
         uint256 r,
         uint256 quoteAmount
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         // priceFactor = 1 + k * quoteAmount * r;
         uint256 priceFactor = DecimalMath.ONE.add(k.mulCeil(quoteAmount).mulCeil(r));
         // return quoteAmount * p^{-1} / priceFactor;
@@ -212,7 +212,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 k,
         uint256 r,
         uint256 baseAmount
-    ) internal pure returns (uint256) {
+    ) private pure returns (uint256) {
         // priceFactor = 1 - k * baseAmount * p * r;
         uint256 priceFactor = DecimalMath.ONE.sub(k.mulFloor(baseAmount).mulFloor(p).mulFloor(r));
         // return baseAmount * p / priceFactor;
@@ -225,7 +225,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 p,
         uint256 k,
         bool isSellBase
-    ) internal pure returns (uint256 baseBought, uint256 quoteBought) {
+    ) private pure returns (uint256 baseBought, uint256 quoteBought) {
         uint256 baseSold = 0;
         if (baseInfo.reserve < baseInfo.target) baseBought = uint256(baseInfo.target).sub(uint256(baseInfo.reserve));
         else baseSold = uint256(baseInfo.reserve).sub(uint256(baseInfo.target));
@@ -253,7 +253,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 baseAmount,
         TokenInfo memory baseInfo,
         TokenInfo memory quoteInfo
-    ) internal view returns (uint256 quoteAmount) {
+    ) private view returns (uint256 quoteAmount) {
         uint256 p;
         uint256 s;
         uint256 k;
@@ -292,7 +292,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 quoteAmount,
         TokenInfo memory baseInfo,
         TokenInfo memory quoteInfo
-    ) internal view returns (uint256 baseAmount) {
+    ) private view returns (uint256 baseAmount) {
         uint256 p;
         uint256 s;
         uint256 k;
@@ -553,7 +553,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 p,
         TokenInfo memory baseInfo,
         TokenInfo memory quoteInfo
-    ) internal view {
+    ) private view {
         // check Chainlink
         if (baseInfo.chainlinkRefOracle != address(0) && quoteInfo.chainlinkRefOracle != address(0)) {
             (, int256 rawBaseRefPrice, , , ) = AggregatorV3Interface(baseInfo.chainlinkRefOracle).latestRoundData();
