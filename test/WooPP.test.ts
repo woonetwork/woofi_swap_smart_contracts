@@ -43,39 +43,35 @@ use(solidity)
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
 describe('WooPP', () => {
-  const [owner, user, quoteToken, priceOracle, quoteChainLinkRefOracle]
-    = new MockProvider().getWallets()
+  const [owner, user, quoteToken, priceOracle, quoteChainLinkRefOracle] = new MockProvider().getWallets()
 
   describe('#ctor and init', () => {
     let wooPP: Contract
 
     before('deploy WooPP', async () => {
-        wooPP = await deployContract(
-            owner,
-            WooPP,
-            [quoteToken.address, priceOracle.address, ZERO_ADDR]);
+      wooPP = await deployContract(owner, WooPP, [quoteToken.address, priceOracle.address, ZERO_ADDR])
     })
 
     it('ctor', async () => {
-        expect(await wooPP._OWNER_()).to.eq(owner.address)
+      expect(await wooPP._OWNER_()).to.eq(owner.address)
     })
 
     it('init', async () => {
-        expect(await wooPP.quoteToken()).to.eq(quoteToken.address)
-        expect(await wooPP.priceOracle()).to.eq(priceOracle.address)
+      expect(await wooPP.quoteToken()).to.eq(quoteToken.address)
+      expect(await wooPP.priceOracle()).to.eq(priceOracle.address)
     })
 
     it('tokenInfo', async () => {
-        const quoteInfo = await wooPP.tokenInfo(quoteToken.address)
-        expect(quoteInfo.isValid).to.eq(true)
-        expect(quoteInfo.chainlinkRefOracle).to.eq(ZERO_ADDR)
-        expect(quoteInfo.reserve).to.eq(0)
-        expect(quoteInfo.threshold).to.eq(0)
-        expect(quoteInfo.lastResetTimestamp).to.eq(0)
-        expect(quoteInfo.lpFeeRate).to.eq(0)
-        expect(quoteInfo.R).to.eq(0)
-        expect(quoteInfo.target).to.eq(0)
-        expect(quoteInfo.refPriceFixCoeff).to.eq(0)
+      const quoteInfo = await wooPP.tokenInfo(quoteToken.address)
+      expect(quoteInfo.isValid).to.eq(true)
+      expect(quoteInfo.chainlinkRefOracle).to.eq(ZERO_ADDR)
+      expect(quoteInfo.reserve).to.eq(0)
+      expect(quoteInfo.threshold).to.eq(0)
+      expect(quoteInfo.lastResetTimestamp).to.eq(0)
+      expect(quoteInfo.lpFeeRate).to.eq(0)
+      expect(quoteInfo.R).to.eq(0)
+      expect(quoteInfo.target).to.eq(0)
+      expect(quoteInfo.refPriceFixCoeff).to.eq(0)
     })
   })
 
