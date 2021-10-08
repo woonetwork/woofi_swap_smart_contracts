@@ -79,15 +79,15 @@ contract WooRouter is Ownable, ReentrancyGuard {
     receive() external payable {}
 
     constructor(address newQuoteToken, address newPool) public {
-        require(newQuoteToken != address(0), 'INVALID_QUOTE');
-        require(address(newPool) != address(0), 'Pool address cannot be 0');
+        require(newQuoteToken != address(0), 'WooRouter: INVALID_QUOTE');
+        require(address(newPool) != address(0), 'WooRouter: Pool address cannot be 0');
         quoteToken = newQuoteToken;
         pool = IWooPP(newPool);
         emit PoolChanged(newPool);
     }
 
     function setPool(address newPool) external nonReentrant onlyOwner {
-        require(address(newPool) != address(0), 'Pool address cannot be 0');
+        require(address(newPool) != address(0), 'WooRouter: Pool address cannot be 0');
         pool = IWooPP(newPool);
         emit PoolChanged(newPool);
     }
@@ -119,7 +119,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
             if (isToETH) {
                 realToAmount = pool.sellQuote(toToken, fromAmount, minToAmount, address(this), address(this), rebateTo);
                 IWETH(_WETH_ADDRESS_).withdraw(realToAmount);
-                require(to != address(0), 'INVALID_TO_ADDRESS');
+                require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
                 to.transfer(realToAmount);
             } else {
                 realToAmount = pool.sellQuote(toToken, fromAmount, minToAmount, address(this), to, rebateTo);
@@ -139,7 +139,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
                     rebateTo
                 );
                 IWETH(_WETH_ADDRESS_).withdraw(realToAmount);
-                require(to != address(0), 'INVALID_TO_ADDRESS');
+                require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
                 to.transfer(realToAmount);
             } else {
                 realToAmount = pool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
@@ -235,9 +235,9 @@ contract WooRouter is Ownable, ReentrancyGuard {
         uint256 fromAmount,
         bytes calldata data
     ) private {
-        require(isWhitelisted[approveTarget], 'APPROVE_TARGET_NOT_ALLOWED');
+        require(isWhitelisted[approveTarget], 'WooRouter: APPROVE_TARGET_NOT_ALLOWED');
         if (approveTarget != swapTarget) {
-            require(isWhitelisted[swapTarget], 'SWAP_TARGET_NOT_ALLOWED');
+            require(isWhitelisted[swapTarget], 'WooRouter: SWAP_TARGET_NOT_ALLOWED');
         }
 
         if (fromToken != _ETH_ADDRESS_) {
@@ -248,7 +248,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         }
 
         (bool success, ) = swapTarget.call{value: fromToken == _ETH_ADDRESS_ ? fromAmount : 0}(data);
-        require(success, 'FALLBACK_SWAP_FAILED');
+        require(success, 'WooRouter: FALLBACK_SWAP_FAILED');
     }
 
     function _generalTransfer(
