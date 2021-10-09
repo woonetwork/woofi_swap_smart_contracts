@@ -36,7 +36,7 @@ import { BigNumber, Contract } from 'ethers'
 import { ethers } from 'hardhat'
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
 import Wooracle from '../build/Wooracle.json'
-import base = Mocha.reporters.base;
+import base = Mocha.reporters.base
 
 use(solidity)
 
