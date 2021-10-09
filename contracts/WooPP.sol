@@ -77,7 +77,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
 
     // ============ Core Address ============
 
-    address public quoteToken;
+    address public override quoteToken;
 
     // ============ Variables for Pricing ============
 

@@ -55,9 +55,9 @@ contract WooRouter is Ownable, ReentrancyGuard {
     // Wrapper for native tokens (e.g. eth, bnb, matic, etc)
     address constant WETH_ADDRESS = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
-    address public immutable quoteToken;
+    address public quoteToken;
     mapping(address => bool) public isWhitelisted;
-    IWooPP public pool;
+    IWooPP public wooPool;
 
     enum SwapType {
         WooSwap,
@@ -74,21 +74,19 @@ contract WooRouter is Ownable, ReentrancyGuard {
         address to
     );
 
-    event PoolChanged(address newPool);
+    event WooPoolChanged(address newPool);
 
     receive() external payable {}
 
-    constructor(address newQuoteToken, address newPool) public {
-        require(newQuoteToken != address(0), 'WooRouter: INVALID_QUOTE');
-        require(newPool != address(0), 'WooRouter: pool_address_ZERO');
-        quoteToken = newQuoteToken;
-        pool = IWooPP(newPool);
-        emit PoolChanged(newPool);
+    constructor(address newPool) public {
+        setPool(newPool);
     }
 
-    function setPool(address newPool) external nonReentrant onlyOwner {
-        require(newPool != address(0), 'WooRouter: pool_address_ZERO');
-        pool = IWooPP(newPool);
+    function setPool(address newPool) public nonReentrant onlyOwner {
+        require(newPool != address(0), 'WooRouter: pool_ADDR_ZERO');
+        wooPool = IWooPP(newPool);
+        quoteToken = wooPool.quoteToken();
+        require(quoteToken != address(0), 'WooRouter: quoteToken_ADDR_ZERO');
         emit PoolChanged(newPool);
     }
 
@@ -113,24 +111,24 @@ contract WooRouter is Ownable, ReentrancyGuard {
         } else {
             IERC20(fromToken).safeTransferFrom(msg.sender, address(this), fromAmount);
         }
-        IERC20(fromToken).safeApprove(address(pool), fromAmount);
+        IERC20(fromToken).safeApprove(address(wooPool), fromAmount);
 
         if (fromToken == quoteToken) {
             if (isToETH) {
-                realToAmount = pool.sellQuote(toToken, fromAmount, minToAmount, address(this), address(this), rebateTo);
+                realToAmount = wooPool.sellQuote(toToken, fromAmount, minToAmount, address(this), address(this), rebateTo);
                 IWETH(WETH_ADDRESS).withdraw(realToAmount);
                 require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
                 to.transfer(realToAmount);
             } else {
-                realToAmount = pool.sellQuote(toToken, fromAmount, minToAmount, address(this), to, rebateTo);
+                realToAmount = wooPool.sellQuote(toToken, fromAmount, minToAmount, address(this), to, rebateTo);
             }
         } else if (toToken == quoteToken) {
-            realToAmount = pool.sellBase(fromToken, fromAmount, minToAmount, address(this), to, rebateTo);
+            realToAmount = wooPool.sellBase(fromToken, fromAmount, minToAmount, address(this), to, rebateTo);
         } else {
-            uint256 quoteAmount = pool.sellBase(fromToken, fromAmount, 0, address(this), address(this), rebateTo);
-            IERC20(quoteToken).safeApprove(address(pool), quoteAmount);
+            uint256 quoteAmount = wooPool.sellBase(fromToken, fromAmount, 0, address(this), address(this), rebateTo);
+            IERC20(quoteToken).safeApprove(address(wooPool), quoteAmount);
             if (isToETH) {
-                realToAmount = pool.sellQuote(
+                realToAmount = wooPool.sellQuote(
                     toToken,
                     quoteAmount,
                     minToAmount,
@@ -142,7 +140,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
                 require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
                 to.transfer(realToAmount);
             } else {
-                realToAmount = pool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
+                realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
             }
         }
         emit WooRouterSwap(
@@ -164,8 +162,8 @@ contract WooRouter is Ownable, ReentrancyGuard {
         address rebateTo
     ) external nonReentrant returns (uint256 realQuoteAmount) {
         IERC20(baseToken).safeTransferFrom(msg.sender, address(this), baseAmount);
-        IERC20(baseToken).safeApprove(address(pool), baseAmount);
-        realQuoteAmount = pool.sellBase(baseToken, baseAmount, minQuoteAmount, address(this), to, rebateTo);
+        IERC20(baseToken).safeApprove(address(wooPool), baseAmount);
+        realQuoteAmount = wooPool.sellBase(baseToken, baseAmount, minQuoteAmount, address(this), to, rebateTo);
         emit WooRouterSwap(
             SwapType.WooSwap,
             baseToken,
@@ -185,8 +183,8 @@ contract WooRouter is Ownable, ReentrancyGuard {
         address rebateTo
     ) external nonReentrant returns (uint256 realBaseAmount) {
         IERC20(quoteToken).safeTransferFrom(msg.sender, address(this), quoteAmount);
-        IERC20(quoteToken).safeApprove(address(pool), quoteAmount);
-        realBaseAmount = pool.sellQuote(baseToken, quoteAmount, minBaseAmount, address(this), to, rebateTo);
+        IERC20(quoteToken).safeApprove(address(wooPool), quoteAmount);
+        realBaseAmount = wooPool.sellQuote(baseToken, quoteAmount, minBaseAmount, address(this), to, rebateTo);
         emit WooRouterSwap(
             SwapType.WooSwap,
             quoteToken,
@@ -297,22 +295,22 @@ contract WooRouter is Ownable, ReentrancyGuard {
         fromToken = (fromToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : fromToken;
         toToken = (toToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : toToken;
         if (fromToken == quoteToken) {
-            toAmount = pool.querySellQuote(toToken, fromAmount);
+            toAmount = wooPool.querySellQuote(toToken, fromAmount);
         } else if (toToken == quoteToken) {
-            toAmount = pool.querySellBase(fromToken, fromAmount);
+            toAmount = wooPool.querySellBase(fromToken, fromAmount);
         } else {
-            uint256 quoteAmount = pool.querySellBase(fromToken, fromAmount);
-            toAmount = pool.querySellQuote(toToken, quoteAmount);
+            uint256 quoteAmount = wooPool.querySellBase(fromToken, fromAmount);
+            toAmount = wooPool.querySellQuote(toToken, quoteAmount);
         }
     }
 
     function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount) {
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : baseToken;
-        quoteAmount = pool.querySellBase(baseToken, baseAmount);
+        quoteAmount = wooPool.querySellBase(baseToken, baseAmount);
     }
 
     function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount) {
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : baseToken;
-        baseAmount = pool.querySellQuote(baseToken, quoteAmount);
+        baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);
     }
 }
