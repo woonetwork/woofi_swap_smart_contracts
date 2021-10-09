@@ -55,7 +55,7 @@ contract RewardManager is InitializableOwnable, IRewardManager {
     mapping(address => bool) public isApproved;
 
     modifier onlyApproved() {
-        require(msg.sender == _OWNER_ || isApproved[msg.sender], 'NOT_APPROVED');
+        require(msg.sender == _OWNER_ || isApproved[msg.sender], 'RewardManager: NOT_APPROVED');
         _;
     }
 
@@ -108,11 +108,11 @@ contract RewardManager is InitializableOwnable, IRewardManager {
         address newQuoteChainlinkRefOracle,
         address quoteToken
     ) public {
-        require(owner != address(0), 'INVALID_OWNER');
-        require(newRewardRatio <= 1e18, 'INVALID_REWARD_RATIO');
-        require(newRewardToken != address(0), 'INVALID_RAWARD_TOKEN');
-        require(newPriceOracle != address(0), 'INVALID_ORACLE');
-        require(quoteToken != address(0), 'INVALID_QUOTE');
+        require(owner != address(0), 'RewardManager: INVALID_OWNER');
+        require(newRewardRatio <= 1e18, 'RewardManager: INVALID_REWARD_RATIO');
+        require(newRewardToken != address(0), 'RewardManager: INVALID_RAWARD_TOKEN');
+        require(newPriceOracle != address(0), 'RewardManager: INVALID_ORACLE');
+        require(quoteToken != address(0), 'RewardManager: INVALID_QUOTE');
 
         initOwner(owner);
         rewardRatio = newRewardRatio;
@@ -186,7 +186,7 @@ contract RewardManager is InitializableOwnable, IRewardManager {
     }
 
     function setPriceOracle(address newPriceOracle) external onlyApproved {
-        require(newPriceOracle != address(0), 'INVALID_ORACLE');
+        require(newPriceOracle != address(0), 'RewardManager: INVALID_ORACLE');
         priceOracle = newPriceOracle;
         emit PriceOracleUpdated(newPriceOracle);
     }
@@ -202,12 +202,12 @@ contract RewardManager is InitializableOwnable, IRewardManager {
                 uint256(AggregatorV3Interface(rewardChainlinkRefOracle).decimals())
             );
             uint256 rewardRefPriceFixCoeff = 10**(uint256(36).sub(rewardDecimalsToFix));
-            require(rewardRefPriceFixCoeff < type(uint96).max);
+            require(rewardRefPriceFixCoeff < type(uint96).max, 'RewardManager: PriceFixCoeff_OVERFLOW');
             uint256 quoteDecimalsToFix = uint256(quoteDecimals).add(
                 uint256(AggregatorV3Interface(quoteChainlinkRefOracle).decimals())
             );
             uint256 quoteRefPriceFixCoeff = 10**(uint256(36).sub(quoteDecimalsToFix));
-            require(quoteRefPriceFixCoeff < type(uint96).max);
+            require(quoteRefPriceFixCoeff < type(uint96).max, 'RewardManager: PriceFixCoeff_OVERFLOW');
             refPriceFixCoeff = rewardRefPriceFixCoeff.divFloor(quoteRefPriceFixCoeff);
         }
 
@@ -221,9 +221,9 @@ contract RewardManager is InitializableOwnable, IRewardManager {
         }
 
         (, int256 rawRewardRefPrice, , , ) = AggregatorV3Interface(rewardChainlinkRefOracle).latestRoundData();
-        require(rawRewardRefPrice >= 0, 'INVALID_CHAINLINK_PRICE');
+        require(rawRewardRefPrice >= 0, 'RewardManager: INVALID_CHAINLINK_PRICE');
         (, int256 rawQuoteRefPrice, , , ) = AggregatorV3Interface(quoteChainlinkRefOracle).latestRoundData();
-        require(rawQuoteRefPrice >= 0, 'INVALID_CHAINLINK_QUOTE_PRICE');
+        require(rawQuoteRefPrice >= 0, 'RewardManager: INVALID_CHAINLINK_QUOTE_PRICE');
         uint256 refPrice = uint256(rawRewardRefPrice).divFloor(uint256(rawQuoteRefPrice));
         refPrice = refPrice.mul(refPriceFixCoeff);
         return uint256(refPrice).mulFloor(1e18 - 1e16) <= price && price <= uint256(refPrice).mulCeil(1e18 + 1e16);

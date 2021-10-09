@@ -80,14 +80,14 @@ contract WooRouter is Ownable, ReentrancyGuard {
 
     constructor(address newQuoteToken, address newPool) public {
         require(newQuoteToken != address(0), 'WooRouter: INVALID_QUOTE');
-        require(address(newPool) != address(0), 'WooRouter: Pool address cannot be 0');
+        require(newPool != address(0), 'WooRouter: pool_address_ZERO');
         quoteToken = newQuoteToken;
         pool = IWooPP(newPool);
         emit PoolChanged(newPool);
     }
 
     function setPool(address newPool) external nonReentrant onlyOwner {
-        require(address(newPool) != address(0), 'WooRouter: Pool address cannot be 0');
+        require(newPool != address(0), 'WooRouter: pool_address_ZERO');
         pool = IWooPP(newPool);
         emit PoolChanged(newPool);
     }
@@ -108,7 +108,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         toToken = isToETH ? _WETH_ADDRESS_ : toToken;
 
         if (isFromETH) {
-            require(fromAmount == msg.value);
+            require(fromAmount == msg.value, 'WooRouter: fromAmount != msg.value');
             IWETH(_WETH_ADDRESS_).deposit{value: msg.value}();
         } else {
             IERC20(fromToken).safeTransferFrom(msg.sender, address(this), fromAmount);
@@ -147,8 +147,8 @@ contract WooRouter is Ownable, ReentrancyGuard {
         }
         emit WooRouterSwap(
             SwapType.WooSwap,
-            isFromETH ? _ETH_ADDRESS_ : address(fromToken),
-            isToETH ? _ETH_ADDRESS_ : address(toToken),
+            fromToken,
+            toToken,
             fromAmount,
             realToAmount,
             msg.sender,
@@ -244,7 +244,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
             IERC20(fromToken).safeTransferFrom(msg.sender, address(this), fromAmount);
             IERC20(fromToken).safeApprove(approveTarget, fromAmount);
         } else {
-            require(fromAmount == msg.value);
+            require(fromAmount == msg.value, 'WooRouter: fromAmount_INVALID');
         }
 
         (bool success, ) = swapTarget.call{value: fromToken == _ETH_ADDRESS_ ? fromAmount : 0}(data);

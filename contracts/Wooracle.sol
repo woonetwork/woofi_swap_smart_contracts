@@ -74,7 +74,7 @@ contract Wooracle is InitializableOwnable, IWooracle {
 
     function postPriceList(address[] calldata bases, uint256[] calldata newPrices) external onlyOwner {
         uint256 length = bases.length;
-        require(length == newPrices.length);
+        require(length == newPrices.length, 'Wooracle: length_INVALID');
 
         for (uint256 i = 0; i < length; i++) {
             if (newPrices[i] == uint256(0)) {
@@ -95,7 +95,7 @@ contract Wooracle is InitializableOwnable, IWooracle {
 
     function postSpreadList(address[] calldata bases, uint256[] calldata newSpreads) external onlyOwner {
         uint256 length = bases.length;
-        require(length == newSpreads.length);
+        require(length == newSpreads.length, 'Wooracle: length_INVALID');
 
         for (uint256 i = 0; i < length; i++) {
             spread[bases[i]] = newSpreads[i];
@@ -121,7 +121,10 @@ contract Wooracle is InitializableOwnable, IWooracle {
         uint256[] calldata newCoeffs
     ) external onlyOwner {
         uint256 length = bases.length;
-        require(length == newPrices.length && length == newSpreads.length && length == newCoeffs.length);
+        require(
+            length == newPrices.length && length == newSpreads.length && length == newCoeffs.length,
+            'Wooracle: length_INVALID'
+        );
 
         for (uint256 i = 0; i < length; i++) {
             _setState(bases[i], newPrices[i], newSpreads[i], newCoeffs[i]);
