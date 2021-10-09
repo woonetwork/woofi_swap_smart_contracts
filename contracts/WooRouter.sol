@@ -145,15 +145,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
                 realToAmount = pool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
             }
         }
-        emit WooRouterSwap(
-            SwapType.WooSwap,
-            fromToken,
-            toToken,
-            fromAmount,
-            realToAmount,
-            msg.sender,
-            to
-        );
+        emit WooRouterSwap(SwapType.WooSwap, fromToken, toToken, fromAmount, realToAmount, msg.sender, to);
     }
 
     function sellBase(
