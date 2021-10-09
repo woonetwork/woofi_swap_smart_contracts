@@ -2,7 +2,10 @@
 
 // File @openzeppelin/contracts/utils/Context.sol@v3.4.1
 
+
+
 pragma solidity >=0.6.0 <0.8.0;
+
 
 // File contracts/WooRouter.sol
 
@@ -13,16 +16,15 @@ contract WooRouter is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    address constant _ETH_ADDRESS_ = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE; // erc20 for bnb
+    address constant _ETH_ADDRESS_ = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;  // erc20 for bnb
     address constant _WETH_ADDRESS_ = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c; // WBNB
 
     address public immutable quoteToken;
-    mapping(address => bool) public isWhitelisted;
+    mapping (address => bool) public isWhitelisted;
     IWooPP public pool;
 
     enum SwapType {
-        WooSwap,
-        DodoSwap
+        WooSwap, DodoSwap
     }
 
     event WooRouterSwap(
@@ -39,28 +41,25 @@ contract WooRouter is Ownable, ReentrancyGuard {
 
     receive() external payable {}
 
-    constructor(address _quoteToken, address _pool) {
-        require(_quoteToken != address(0), 'INVALID_QUOTE');
+    constructor (address _quoteToken, address _pool) {
+        require(_quoteToken != address(0), "INVALID_QUOTE");
         quoteToken = _quoteToken;
         pool = IWooPP(_pool);
         emit PoolChanged(_pool);
     }
 
-    function setPool(address _pool) external onlyOwner {
+    function setPool(address _pool) onlyOwner external {
         pool = IWooPP(_pool);
         emit PoolChanged(_pool);
     }
 
     /* Swap functions */
 
-    function swap(
-        address fromToken,
-        address toToken,
-        uint256 fromAmount,
-        uint256 minToAmount,
-        address payable to,
-        address rebateTo
-    ) external payable returns (uint256 realToAmount) {
+    function swap(address fromToken, address toToken, uint256 fromAmount, uint256 minToAmount, address payable to, address rebateTo)
+        external
+        payable
+        returns (uint256 realToAmount)
+    {
         bool isFromETH = fromToken == _ETH_ADDRESS_;
         bool isToETH = toToken == _ETH_ADDRESS_;
         fromToken = isFromETH ? _WETH_ADDRESS_ : fromToken;
@@ -88,14 +87,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
             uint256 quoteAmount = pool.sellBase(fromToken, fromAmount, 0, address(this), address(this), rebateTo);
             IERC20(quoteToken).safeApprove(address(pool), quoteAmount);
             if (isToETH) {
-                realToAmount = pool.sellQuote(
-                    toToken,
-                    quoteAmount,
-                    minToAmount,
-                    address(this),
-                    address(this),
-                    rebateTo
-                );
+                realToAmount = pool.sellQuote(toToken, quoteAmount, minToAmount, address(this), address(this), rebateTo);
                 IWETH(_WETH_ADDRESS_).withdraw(realToAmount);
                 to.transfer(realToAmount);
             } else {
@@ -113,13 +105,10 @@ contract WooRouter is Ownable, ReentrancyGuard {
         );
     }
 
-    function sellBase(
-        address baseToken,
-        uint256 baseAmount,
-        uint256 minQuoteAmount,
-        address to,
-        address rebateTo
-    ) external returns (uint256 realQuoteAmount) {
+    function sellBase(address baseToken, uint256 baseAmount, uint256 minQuoteAmount, address to, address rebateTo)
+        external
+        returns (uint256 realQuoteAmount)
+    {
         IERC20(baseToken).safeTransferFrom(msg.sender, address(this), baseAmount);
         IERC20(baseToken).safeApprove(address(pool), baseAmount);
         realQuoteAmount = pool.sellBase(baseToken, baseAmount, minQuoteAmount, address(this), to, rebateTo);
@@ -134,13 +123,10 @@ contract WooRouter is Ownable, ReentrancyGuard {
         );
     }
 
-    function sellQuote(
-        address baseToken,
-        uint256 quoteAmount,
-        uint256 minBaseAmount,
-        address to,
-        address rebateTo
-    ) external returns (uint256 realBaseAmount) {
+    function sellQuote(address baseToken, uint256 quoteAmount, uint256 minBaseAmount, address to, address rebateTo)
+        external
+        returns (uint256 realBaseAmount)
+    {
         IERC20(quoteToken).safeTransferFrom(msg.sender, address(this), quoteAmount);
         IERC20(quoteToken).safeApprove(address(pool), quoteAmount);
         realBaseAmount = pool.sellQuote(baseToken, quoteAmount, minBaseAmount, address(this), to, rebateTo);
@@ -192,9 +178,9 @@ contract WooRouter is Ownable, ReentrancyGuard {
         uint256 fromAmount,
         bytes calldata data
     ) internal {
-        require(isWhitelisted[approveTarget], 'APPROVE_TARGET_NOT_ALLOWED');
+        require(isWhitelisted[approveTarget], "APPROVE_TARGET_NOT_ALLOWED");
         if (approveTarget != swapTarget) {
-            require(isWhitelisted[swapTarget], 'SWAP_TARGET_NOT_ALLOWED');
+            require(isWhitelisted[swapTarget], "SWAP_TARGET_NOT_ALLOWED");
         }
 
         if (fromToken != _ETH_ADDRESS_) {
@@ -204,8 +190,10 @@ contract WooRouter is Ownable, ReentrancyGuard {
             require(fromAmount == msg.value);
         }
 
-        (bool success, ) = swapTarget.call{value: fromToken == _ETH_ADDRESS_ ? fromAmount : 0}(data);
-        require(success, 'FALLBACK_SWAP_FAILED');
+        (bool success, ) = swapTarget.call{
+            value: fromToken == _ETH_ADDRESS_ ? fromAmount : 0
+        }(data);
+        require(success, "FALLBACK_SWAP_FAILED");
     }
 
     function _generalTransfer(
@@ -222,8 +210,11 @@ contract WooRouter is Ownable, ReentrancyGuard {
         }
     }
 
-    function _generalBalanceOf(address token, address who) internal view returns (uint256) {
-        if (token == _ETH_ADDRESS_) {
+    function _generalBalanceOf(
+        address token,
+        address who
+    ) internal view returns (uint256) {
+        if (token == _ETH_ADDRESS_ ) {
             return who.balance;
         } else {
             return IERC20(token).balanceOf(who);
@@ -246,11 +237,11 @@ contract WooRouter is Ownable, ReentrancyGuard {
 
     /* Query functions */
 
-    function querySwap(
-        address fromToken,
-        address toToken,
-        uint256 fromAmount
-    ) external view returns (uint256 toAmount) {
+    function querySwap(address fromToken, address toToken, uint256 fromAmount)
+        external
+        view
+        returns (uint256 toAmount)
+    {
         fromToken = (fromToken == _ETH_ADDRESS_) ? _WETH_ADDRESS_ : fromToken;
         toToken = (toToken == _ETH_ADDRESS_) ? _WETH_ADDRESS_ : toToken;
         if (fromToken == quoteToken) {
@@ -263,12 +254,20 @@ contract WooRouter is Ownable, ReentrancyGuard {
         }
     }
 
-    function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount) {
+    function querySellBase(address baseToken, uint256 baseAmount)
+        external
+        view
+        returns (uint256 quoteAmount)
+    {
         baseToken = (baseToken == _ETH_ADDRESS_) ? _WETH_ADDRESS_ : baseToken;
         quoteAmount = pool.querySellBase(baseToken, baseAmount);
     }
 
-    function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount) {
+    function querySellQuote(address baseToken, uint256 quoteAmount)
+        external
+        view
+        returns (uint256 baseAmount)
+    {
         baseToken = (baseToken == _ETH_ADDRESS_) ? _WETH_ADDRESS_ : baseToken;
         baseAmount = pool.querySellQuote(baseToken, quoteAmount);
     }
