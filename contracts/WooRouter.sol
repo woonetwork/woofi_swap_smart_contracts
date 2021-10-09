@@ -273,9 +273,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
     function _generalBalanceOf(address token, address who) private view returns (uint256) {
         require(token != address(0), 'WooRouter: token_ADDR_ZERO');
         require(who != address(0), 'WooRouter: who_ADDR_ZERO');
-        return token == ETH_PLACEHOLDER_ADDR
-            ? who.balance
-            : IERC20(token).balanceOf(who);
+        return token == ETH_PLACEHOLDER_ADDR ? who.balance : IERC20(token).balanceOf(who);
     }
 
     function setWhitelisted(address target, bool whitelisted) external nonReentrant onlyOwner {
