@@ -115,7 +115,14 @@ contract WooRouter is Ownable, ReentrancyGuard {
 
         if (fromToken == quoteToken) {
             if (isToETH) {
-                realToAmount = wooPool.sellQuote(toToken, fromAmount, minToAmount, address(this), address(this), rebateTo);
+                realToAmount = wooPool.sellQuote(
+                    toToken,
+                    fromAmount,
+                    minToAmount,
+                    address(this),
+                    address(this),
+                    rebateTo
+                );
                 IWETH(WETH_ADDRESS).withdraw(realToAmount);
                 require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
                 to.transfer(realToAmount);
@@ -164,15 +171,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         IERC20(baseToken).safeTransferFrom(msg.sender, address(this), baseAmount);
         IERC20(baseToken).safeApprove(address(wooPool), baseAmount);
         realQuoteAmount = wooPool.sellBase(baseToken, baseAmount, minQuoteAmount, address(this), to, rebateTo);
-        emit WooRouterSwap(
-            SwapType.WooSwap,
-            baseToken,
-            quoteToken,
-            baseAmount,
-            realQuoteAmount,
-            msg.sender,
-            to
-        );
+        emit WooRouterSwap(SwapType.WooSwap, baseToken, quoteToken, baseAmount, realQuoteAmount, msg.sender, to);
     }
 
     function sellQuote(
@@ -185,15 +184,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         IERC20(quoteToken).safeTransferFrom(msg.sender, address(this), quoteAmount);
         IERC20(quoteToken).safeApprove(address(wooPool), quoteAmount);
         realBaseAmount = wooPool.sellQuote(baseToken, quoteAmount, minBaseAmount, address(this), to, rebateTo);
-        emit WooRouterSwap(
-            SwapType.WooSwap,
-            quoteToken,
-            baseToken,
-            quoteAmount,
-            realBaseAmount,
-            msg.sender,
-            to
-        );
+        emit WooRouterSwap(SwapType.WooSwap, quoteToken, baseToken, quoteAmount, realBaseAmount, msg.sender, to);
     }
 
     /* Fallback swap function */
