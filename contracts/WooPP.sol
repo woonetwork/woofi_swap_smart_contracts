@@ -124,7 +124,12 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         TokenInfo storage quoteInfo = tokenInfo[quoteToken];
         quoteInfo.isValid = true;
         quoteInfo.chainlinkRefOracle = quoteChainlinkRefOracle;
-        // reference price decimals should be 36-token.decimals, else we multiply it by refPriceFixCoeff
+        // About decimals:
+        // For a sell base trade, we have quoteSize = baseSize * price
+        // For calculation convenience, the decimals of price is 18-base.decimals()+quote.decimals()
+        // If we have price = basePrice / quotePrice, then decimals of tokenPrice should be 36-token.decimals()
+        // We use chainlink oracle price as token reference price, which decimals is chainlinkPrice.decimals()
+        // We should multiply it by 1e(36-token.decimals()+chainlinkPrice.decimals()), which is refPriceFixCoeff
         if (quoteChainlinkRefOracle != address(0)) {
             // TODO: (@qinchao) should use ERC20Detailed or IERC20 ?
             uint256 decimalsToFix = uint256(ERC20(quoteToken).decimals()).add(
