@@ -36,13 +36,12 @@ import { BigNumber, Contract } from 'ethers'
 import { ethers } from 'hardhat'
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
 import Wooracle from '../build/Wooracle.json'
-import base = Mocha.reporters.base
 
 use(solidity)
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
-const BN_1e18 = BigNumber.from('1000000000000000000')
-const BN_2e18 = BigNumber.from('2000000000000000000')
+const BN_1e18 = BigNumber.from(10).pow(18)
+const BN_2e18 = BN_1e18.mul(2)
 const ZERO = 0
 
 async function getCurrentBlockTimestamp() {
