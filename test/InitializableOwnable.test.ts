@@ -59,12 +59,16 @@ describe('InitializableOwnable', () => {
   it('onlyOwner', async () => {
     await initOwnable.initOwner(owner.address)
     expect(await initOwnable._OWNER_()).to.eq(owner.address)
-    await expect(initOwnable.connect(anotherOwner).transferOwnership(anotherOwner.address)).to.be.revertedWith('InitializableOwnable: NOT_OWNER')
+    await expect(initOwnable.connect(anotherOwner).transferOwnership(anotherOwner.address)).to.be.revertedWith(
+      'InitializableOwnable: NOT_OWNER'
+    )
   })
 
   it('notInitialized', async () => {
     await initOwnable.initOwner(owner.address)
-    await expect(initOwnable.connect(anotherOwner).initOwner(anotherOwner.address)).to.be.revertedWith('InitializableOwnable: SHOULD_NOT_BE_INITIALIZED')
+    await expect(initOwnable.connect(anotherOwner).initOwner(anotherOwner.address)).to.be.revertedWith(
+      'InitializableOwnable: SHOULD_NOT_BE_INITIALIZED'
+    )
   })
 
   it('initOwner', async () => {
