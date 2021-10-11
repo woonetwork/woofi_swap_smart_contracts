@@ -34,38 +34,60 @@
 import { expect, use } from 'chai'
 import { Contract } from 'ethers'
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
-import Wooracle from '../build/Wooracle.json'
+import InitializableOwnable from '../build/InitializableOwnable.json'
 
 use(solidity)
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
-describe('Wooracle', () => {
-  const [owner, user, quoteToken] = new MockProvider().getWallets()
+describe('InitializableOwnable', () => {
+  const [owner, anotherOwner, user, quoteToken] = new MockProvider().getWallets()
+  let initOwnable: Contract
 
-  describe('#ctor and setters', () => {
-    let initOwnable: Contract
-
-    // beforeEach('deploy test oracle', async () => {
-    //     wooracle = await deployContract(owner, Wooracle, []);
-    // })
-
-    // it('init', async () => {
-    //     expect(await wooracle._OWNER_()).to.eq(owner.address)
-    // })
-
-    // it('init fields', async () => {
-    //     expect(await wooracle.staleDuration()).to.eq(300)
-    //     expect(await wooracle.timestamp()).to.eq(0)
-    //     expect(await wooracle.quoteAddr()).to.eq(ZERO_ADDR)
-    // })
-
-    // it('setQuoteAddr', async () => {
-    //     expect(await wooracle.quoteAddr()).to.eq(ZERO_ADDR)
-    //     await wooracle.setQuoteAddr(quoteToken.address)
-    //     expect(await wooracle.quoteAddr()).to.eq(quoteToken.address)
-    // })
+  beforeEach(async () => {
+    initOwnable = await deployContract(owner, InitializableOwnable, [])
   })
 
-  // TODO: add more test cases.
+  it('_OWNER_ should be zero address when deployed', async () => {
+    expect(await initOwnable._OWNER_()).to.eq(ZERO_ADDR)
+  })
+
+  it('_NEW_OWNER_ should be zero address when deployed', async () => {
+    expect(await initOwnable._NEW_OWNER_()).to.eq(ZERO_ADDR)
+  })
+
+  it('initOwner', async () => {
+    await initOwnable.initOwner(owner.address)
+    expect(await initOwnable._OWNER_()).to.eq(owner.address)
+  })
+
+  it('transferOwnership', async () => {
+    await initOwnable.initOwner(owner.address)
+    await initOwnable.transferOwnership(anotherOwner.address)
+    expect(await initOwnable._NEW_OWNER_()).to.eq(anotherOwner.address)
+  })
+
+  it('Prevents non-owners from transferring', async () => {
+    await expect(
+      initOwnable.transferOwnership(owner.address)
+    ).to.be.revertedWith('NOT_OWNER')
+  })
+
+  it('claimOwnership', async () => {
+    await initOwnable.initOwner(owner.address)
+    await initOwnable.transferOwnership(anotherOwner.address)
+    expect(await initOwnable._NEW_OWNER_()).to.eq(anotherOwner.address)
+    await initOwnable.connect(anotherOwner).claimOwnership()
+    expect(await initOwnable._OWNER_()).to.eq(anotherOwner.address)
+    expect(await initOwnable._NEW_OWNER_()).to.eq(ZERO_ADDR)
+  })
+
+  it('Prevents invalid claiming', async () => {
+    await initOwnable.initOwner(owner.address)
+    await initOwnable.transferOwnership(anotherOwner.address)
+    expect(await initOwnable._NEW_OWNER_()).to.eq(anotherOwner.address)
+    await expect(
+      initOwnable.connect(owner).claimOwnership()
+    ).to.be.revertedWith('INVALID_CLAIM')
+  })
 })
