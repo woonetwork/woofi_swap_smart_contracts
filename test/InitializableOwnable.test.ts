@@ -56,6 +56,17 @@ describe('InitializableOwnable', () => {
     expect(await initOwnable._NEW_OWNER_()).to.eq(ZERO_ADDR)
   })
 
+  it('onlyOwner', async () => {
+    await initOwnable.initOwner(owner.address)
+    expect(await initOwnable._OWNER_()).to.eq(owner.address)
+    await expect(initOwnable.connect(anotherOwner).transferOwnership(anotherOwner.address)).to.be.revertedWith('InitializableOwnable: NOT_OWNER')
+  })
+
+  it('notInitialized', async () => {
+    await initOwnable.initOwner(owner.address)
+    await expect(initOwnable.connect(anotherOwner).initOwner(anotherOwner.address)).to.be.revertedWith('InitializableOwnable: SHOULD_NOT_BE_INITIALIZED')
+  })
+
   it('initOwner', async () => {
     await initOwnable.initOwner(owner.address)
     expect(await initOwnable._OWNER_()).to.eq(owner.address)
@@ -68,7 +79,7 @@ describe('InitializableOwnable', () => {
   })
 
   it('Prevents non-owners from transferring', async () => {
-    await expect(initOwnable.transferOwnership(owner.address)).to.be.revertedWith('NOT_OWNER')
+    await expect(initOwnable.transferOwnership(owner.address)).to.be.revertedWith('InitializableOwnable: NOT_OWNER')
   })
 
   it('claimOwnership', async () => {
@@ -84,6 +95,6 @@ describe('InitializableOwnable', () => {
     await initOwnable.initOwner(owner.address)
     await initOwnable.transferOwnership(anotherOwner.address)
     expect(await initOwnable._NEW_OWNER_()).to.eq(anotherOwner.address)
-    await expect(initOwnable.connect(owner).claimOwnership()).to.be.revertedWith('INVALID_CLAIM')
+    await expect(initOwnable.connect(owner).claimOwnership()).to.be.revertedWith('InitializableOwnable: INVALID_CLAIM')
   })
 })
