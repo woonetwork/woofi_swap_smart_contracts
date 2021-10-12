@@ -85,11 +85,9 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint112 reserve;
         uint112 threshold;
         uint32 lastResetTimestamp;
-
         uint64 lpFeeRate;
         uint64 R;
         uint112 target;
-
         address chainlinkRefOracle;
         uint96 refPriceFixCoeff;
         bool isValid;
