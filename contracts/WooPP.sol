@@ -82,15 +82,18 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     // ============ Variables for Pricing ============
 
     struct TokenInfo {
+
         uint112 reserve;
         uint112 threshold;
-        uint112 target;
-        uint96 refPriceFixCoeff;
+        uint32 lastResetTimestamp;
+
         uint64 lpFeeRate;
         uint64 R;
-        uint32 lastResetTimestamp;
+        uint112 target;
+
+        address chainlinkRefOracle;
+        uint96 refPriceFixCoeff;
         bool isValid;
-        address chainlinkRefOracle; // Reference
     }
 
     address public priceOracle; // WooOracle
