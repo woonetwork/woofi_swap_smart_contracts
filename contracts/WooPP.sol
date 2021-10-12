@@ -77,7 +77,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
 
     // ============ Core Address ============
 
-    address public override quoteToken;
+    address public immutable override quoteToken;
 
     // ============ Variables for Pricing ============
 
@@ -88,40 +88,31 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint64 lpFeeRate;
         uint64 R;
         uint112 target;
-        bool isValid;
-        address chainlinkRefOracle; // Reference
+        address chainlinkRefOracle;
         uint96 refPriceFixCoeff;
+        bool isValid;
     }
 
     address public priceOracle; // WooOracle
     mapping(address => TokenInfo) public tokenInfo;
 
-    string public pairsInfo;
+    string public pairsInfo; // e.g. BNB/ETH/BTCB/WOO-USDT  (only one single quoteToken supported)
 
     address public rewardManager;
 
     constructor(
-        address owner,
         address newQuoteToken,
         address newPriceOracle,
         address quoteChainlinkRefOracle
     ) public {
-        init(owner, newQuoteToken, newPriceOracle, quoteChainlinkRefOracle);
-    }
-
-    function init(
-        address owner,
-        address newQuoteToken,
-        address newPriceOracle,
-        address quoteChainlinkRefOracle
-    ) public nonReentrant {
-        require(owner != address(0), 'WooPP: INVALID_OWNER');
         require(newQuoteToken != address(0), 'WooPP: INVALID_QUOTE');
         require(newPriceOracle != address(0), 'WooPP: INVALID_ORACLE');
 
-        initOwner(owner);
+        initOwner(msg.sender);
         quoteToken = newQuoteToken;
-        TokenInfo storage quoteInfo = tokenInfo[quoteToken];
+        priceOracle = newPriceOracle;
+
+        TokenInfo storage quoteInfo = tokenInfo[newQuoteToken];
         quoteInfo.isValid = true;
         quoteInfo.chainlinkRefOracle = quoteChainlinkRefOracle;
         // About decimals:
@@ -132,31 +123,278 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         // We should multiply it by 1e(36-token.decimals()+chainlinkPrice.decimals()), which is refPriceFixCoeff
         if (quoteChainlinkRefOracle != address(0)) {
             // TODO: (@qinchao) should use ERC20Detailed or IERC20 ?
-            uint256 decimalsToFix = uint256(ERC20(quoteToken).decimals()).add(
+            uint256 decimalsToFix = uint256(ERC20(newQuoteToken).decimals()).add(
                 uint256(AggregatorV3Interface(quoteChainlinkRefOracle).decimals())
             );
             uint256 refPriceFixCoeff = 10**(uint256(36).sub(decimalsToFix));
             require(refPriceFixCoeff <= type(uint96).max);
             quoteInfo.refPriceFixCoeff = uint96(refPriceFixCoeff);
         }
-        priceOracle = newPriceOracle;
 
-        emit ChainlinkRefOracleUpdated(quoteToken, quoteChainlinkRefOracle);
-    }
-
-    function getPairInfo() external view returns (string memory) {
-        return pairsInfo;
+        emit ChainlinkRefOracleUpdated(newQuoteToken, quoteChainlinkRefOracle);
     }
 
     function setPairsInfo(string calldata newPairsInfo) external nonReentrant onlyStrategist {
         pairsInfo = newPairsInfo;
     }
 
-    function autoUpdate(
+    function sellBase(
+        address baseToken,
+        uint256 baseAmount,
+        uint256 minQuoteAmount,
+        address from,
+        address to,
+        address rebateTo
+    ) external override nonReentrant returns (uint256 realQuoteAmount) {
+        TokenInfo memory baseInfo = tokenInfo[baseToken];
+        require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
+        TokenInfo memory quoteInfo = tokenInfo[quoteToken];
+        _autoUpdate(baseToken, baseInfo, quoteInfo);
+
+        realQuoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
+        uint256 lpFee = realQuoteAmount.mulCeil(baseInfo.lpFeeRate);
+        realQuoteAmount = realQuoteAmount.sub(lpFee);
+
+        require(realQuoteAmount >= minQuoteAmount, 'WooPP: PRICE_EXCEEDS_LIMIT');
+        IERC20(baseToken).safeTransferFrom(from, address(this), baseAmount);
+        IERC20(quoteToken).safeTransfer(to, realQuoteAmount);
+        if (rewardManager != address(0)) {
+            IRewardManager(rewardManager).addReward(rebateTo, lpFee);
+        }
+
+        tokenInfo[baseToken] = baseInfo;
+        tokenInfo[quoteToken] = quoteInfo;
+
+        emit WooSwap(baseToken, quoteToken, baseAmount, realQuoteAmount, from, to);
+    }
+
+    function sellQuote(
+        address baseToken,
+        uint256 quoteAmount,
+        uint256 minBaseAmount,
+        address from,
+        address to,
+        address rebateTo
+    ) external override nonReentrant returns (uint256 realBaseAmount) {
+        TokenInfo memory baseInfo = tokenInfo[baseToken];
+        require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
+        TokenInfo memory quoteInfo = tokenInfo[quoteToken];
+        _autoUpdate(baseToken, baseInfo, quoteInfo);
+
+        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
+        quoteAmount = quoteAmount.sub(lpFee);
+        realBaseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
+
+        require(realBaseAmount >= minBaseAmount, 'WooPP: PRICE_EXCEEDS_LIMIT');
+        IERC20(quoteToken).safeTransferFrom(from, address(this), quoteAmount.add(lpFee));
+        IERC20(baseToken).safeTransfer(to, realBaseAmount);
+        if (rewardManager != address(0)) {
+            IRewardManager(rewardManager).addReward(rebateTo, lpFee);
+        }
+
+        tokenInfo[baseToken] = baseInfo;
+        tokenInfo[quoteToken] = quoteInfo;
+
+        emit WooSwap(quoteToken, baseToken, quoteAmount, realBaseAmount, from, to);
+    }
+
+    function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
+        TokenInfo memory baseInfo = tokenInfo[baseToken];
+        require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
+        TokenInfo memory quoteInfo = tokenInfo[quoteToken];
+        _autoUpdate(baseToken, baseInfo, quoteInfo);
+
+        quoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
+        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
+        quoteAmount = quoteAmount.sub(lpFee);
+
+        require(quoteAmount <= IERC20(quoteToken).balanceOf(address(this)));
+    }
+
+    function querySellQuote(address baseToken, uint256 quoteAmount)
+        external
+        view
+        override
+        returns (uint256 baseAmount)
+    {
+        TokenInfo memory baseInfo = tokenInfo[baseToken];
+        require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
+        TokenInfo memory quoteInfo = tokenInfo[quoteToken];
+        _autoUpdate(baseToken, baseInfo, quoteInfo);
+
+        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
+        quoteAmount = quoteAmount.sub(lpFee);
+        baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
+
+        require(baseAmount <= IERC20(baseToken).balanceOf(address(this)));
+    }
+
+    function poolSize(address token) external view returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
+    }
+
+    function setPriceOracle(address newPriceOracle) external nonReentrant onlyStrategist {
+        require(newPriceOracle != address(0), 'WooPP: INVALID_ORACLE');
+        priceOracle = newPriceOracle;
+        emit PriceOracleUpdated(newPriceOracle);
+    }
+
+    function setChainlinkRefOracle(address token, address newChainlinkRefOracle) external nonReentrant onlyStrategist {
+        TokenInfo storage info = tokenInfo[token];
+        require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
+        info.chainlinkRefOracle = newChainlinkRefOracle;
+        if (newChainlinkRefOracle != address(0)) {
+            // TODO: (@qinchao) should use ERC20Detailed or IERC20 ?
+            uint256 decimalsToFix = uint256(ERC20(token).decimals()).add(
+                uint256(AggregatorV3Interface(newChainlinkRefOracle).decimals())
+            );
+            uint256 refPriceFixCoeff = 10**(uint256(36).sub(decimalsToFix));
+            require(refPriceFixCoeff <= type(uint96).max);
+            info.refPriceFixCoeff = uint96(refPriceFixCoeff);
+        }
+        emit ChainlinkRefOracleUpdated(token, newChainlinkRefOracle);
+    }
+
+    function setRewardManager(address newRewardManager) external nonReentrant onlyStrategist {
+        rewardManager = newRewardManager;
+        emit RewardManagerUpdated(newRewardManager);
+    }
+
+    function addBaseToken(
+        address baseToken,
+        uint256 threshold,
+        uint256 lpFeeRate,
+        uint256 R,
+        address chainlinkRefOracle
+    ) external nonReentrant onlyStrategist {
+        require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
+        require(baseToken != quoteToken, 'WooPP: BASE_TOKEN_INVALID');
+        require(threshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
+        require(lpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE_OUT_OF_RANGE');
+        require(R <= 1e18, 'WooPP: R_OUT_OF_RANGE');
+
+        TokenInfo memory info = tokenInfo[baseToken];
+        require(!info.isValid, 'WooPP: TOKEN_ALREADY_EXISTS');
+
+        // TODO(@qinchao): update info.reserve and lastResetTimestamp ?
+        info.threshold = uint112(threshold);
+        info.lpFeeRate = uint64(lpFeeRate);
+        info.R = uint64(R);
+        info.target = max(info.threshold, info.target);
+        info.isValid = true;
+        info.chainlinkRefOracle = chainlinkRefOracle;
+        if (chainlinkRefOracle != address(0)) {
+            // TODO: (@qinchao) should use ERC20Detailed or IERC20 ?
+            uint256 decimalsToFix = uint256(ERC20(baseToken).decimals()).add(
+                uint256(AggregatorV3Interface(chainlinkRefOracle).decimals())
+            );
+            uint256 refPriceFixCoeff = 10**(uint256(36).sub(decimalsToFix));
+            require(refPriceFixCoeff <= type(uint96).max);
+            info.refPriceFixCoeff = uint96(refPriceFixCoeff);
+        }
+
+        tokenInfo[baseToken] = info;
+        emit ParametersUpdated(baseToken, threshold, lpFeeRate, R);
+        emit ChainlinkRefOracleUpdated(baseToken, chainlinkRefOracle);
+    }
+
+    function removeBaseToken(address baseToken) external nonReentrant onlyStrategist {
+        require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
+        TokenInfo memory info = tokenInfo[baseToken];
+        require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
+
+        info.reserve = 0;
+        info.threshold = 0;
+        info.lastResetTimestamp = 0;
+        info.lpFeeRate = 0;
+        info.R = 0;
+        info.target = 0;
+        info.isValid = false;
+        info.chainlinkRefOracle = address(0);
+        info.refPriceFixCoeff = 0;
+
+        tokenInfo[baseToken] = info;
+        emit ParametersUpdated(baseToken, 0, 0, 0);
+        emit ChainlinkRefOracleUpdated(baseToken, address(0));
+    }
+
+    function tuneParameters(
+        address baseToken,
+        uint256 newThreshold,
+        uint256 newLpFeeRate,
+        uint256 newR
+    ) external nonReentrant onlyStrategist {
+        require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
+        require(newThreshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
+        require(newLpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE_OUT_OF_RANGE');
+        require(newR <= 1e18, 'WooPP: R_OUT_OF_RANGE');
+
+        TokenInfo memory info = tokenInfo[baseToken];
+        require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
+
+        info.threshold = uint112(newThreshold);
+        info.lpFeeRate = uint64(newLpFeeRate);
+        info.R = uint64(newR);
+        info.target = max(info.threshold, info.target);
+
+        tokenInfo[baseToken] = info;
+        emit ParametersUpdated(baseToken, newThreshold, newLpFeeRate, newR);
+    }
+
+    // ========== Administrative functions ==========
+
+    function setStrategist(address strategist, bool flag) external nonReentrant onlyOwner {
+        require(strategist != address(0), 'WooPP: strategist_ZERO_ADDR');
+        isStrategist[strategist] = flag;
+        emit StrategistUpdated(strategist, flag);
+    }
+
+    function withdraw(
+        address token,
+        address to,
+        uint256 amount
+    ) external nonReentrant onlyOwner {
+        require(token != address(0), 'WooPP: token_ZERO_ADDR');
+        require(to != address(0), 'WooPP: to_ZERO_ADDR');
+        IERC20(token).safeTransfer(to, amount);
+        emit Withdraw(token, to, amount);
+    }
+
+    function withdrawToOwner(address token, uint256 amount) external nonReentrant onlyStrategist {
+        require(token != address(0), 'WooPP: token_ZERO_ADDR');
+        IERC20(token).safeTransfer(_OWNER_, amount);
+        emit Withdraw(token, _OWNER_, amount);
+    }
+
+    // ========== Private functions ========== //
+
+    function _ensurePriceReliable(
+        uint256 p,
+        TokenInfo memory baseInfo,
+        TokenInfo memory quoteInfo
+    ) private view {
+        // check Chainlink
+        if (baseInfo.chainlinkRefOracle != address(0) && quoteInfo.chainlinkRefOracle != address(0)) {
+            (, int256 rawBaseRefPrice, , , ) = AggregatorV3Interface(baseInfo.chainlinkRefOracle).latestRoundData();
+            require(rawBaseRefPrice >= 0, 'WooPP: INVALID_CHAINLINK_PRICE');
+            (, int256 rawQuoteRefPrice, , , ) = AggregatorV3Interface(quoteInfo.chainlinkRefOracle).latestRoundData();
+            require(rawQuoteRefPrice >= 0, 'WooPP: INVALID_CHAINLINK_QUOTE_PRICE');
+            uint256 baseRefPrice = uint256(rawBaseRefPrice).mul(uint256(baseInfo.refPriceFixCoeff));
+            uint256 quoteRefPrice = uint256(rawQuoteRefPrice).mul(uint256(quoteInfo.refPriceFixCoeff));
+            uint256 refPrice = baseRefPrice.divFloor(quoteRefPrice);
+            require(
+                refPrice.mulFloor(1e18 - 1e16) <= p && p <= refPrice.mulCeil(1e18 + 1e16),
+                'WooPP: PRICE_UNRELIABLE'
+            );
+        }
+    }
+
+    function _autoUpdate(
         address baseToken,
         TokenInfo memory baseInfo,
         TokenInfo memory quoteInfo
     ) private view {
+        require(baseToken != address(0), 'WooPP: BASETOKEN_ZERO_ADDR');
         uint256 baseReserve = IERC20(baseToken).balanceOf(address(this));
         uint256 quoteReserve = IERC20(quoteToken).balanceOf(address(this));
         require(baseReserve <= type(uint112).max);
@@ -165,16 +403,11 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         quoteInfo.reserve = uint112(quoteReserve);
         uint32 priceTimestamp = uint32(IWooracle(priceOracle).timestamp() % 2**32);
         if (priceTimestamp != baseInfo.lastResetTimestamp) {
-            if (baseInfo.threshold > baseInfo.reserve) baseInfo.target = baseInfo.threshold;
-            else baseInfo.target = baseInfo.reserve;
+            baseInfo.target = max(baseInfo.threshold, baseInfo.reserve);
             baseInfo.lastResetTimestamp = priceTimestamp;
         }
         if (priceTimestamp != quoteInfo.lastResetTimestamp) {
-            if (quoteInfo.threshold > quoteInfo.reserve) {
-                quoteInfo.target = quoteInfo.threshold;
-            } else {
-                quoteInfo.target = quoteInfo.reserve;
-            }
+            quoteInfo.target = max(quoteInfo.threshold, quoteInfo.reserve);
             quoteInfo.lastResetTimestamp = priceTimestamp;
         }
     }
@@ -273,7 +506,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         (p, s, k, isFeasible) = IWooracle(priceOracle).getState(baseToken);
         require(isFeasible, 'WooPP: ORACLE_PRICE_NOT_FEASIBLE');
 
-        ensurePriceReliable(p, baseInfo, quoteInfo);
+        _ensurePriceReliable(p, baseInfo, quoteInfo);
         p = p.mulFloor(DecimalMath.ONE.sub(DecimalMath.divCeil(s, DecimalMath.TWO)));
 
         uint256 baseBought;
@@ -312,7 +545,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         (p, s, k, isFeasible) = IWooracle(priceOracle).getState(baseToken);
         require(isFeasible, 'WooPP: ORACLE_PRICE_NOT_FEASIBLE');
 
-        ensurePriceReliable(p, baseInfo, quoteInfo);
+        _ensurePriceReliable(p, baseInfo, quoteInfo);
         p = p.mulCeil(DecimalMath.ONE.add(DecimalMath.divCeil(s, DecimalMath.TWO)));
 
         uint256 baseBought;
@@ -338,247 +571,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         }
     }
 
-    function sellBase(
-        address baseToken,
-        uint256 baseAmount,
-        uint256 minQuoteAmount,
-        address from,
-        address to,
-        address rebateTo
-    ) external override nonReentrant returns (uint256 realQuoteAmount) {
-        TokenInfo memory baseInfo = tokenInfo[baseToken];
-        require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
-        TokenInfo memory quoteInfo = tokenInfo[quoteToken];
-        autoUpdate(baseToken, baseInfo, quoteInfo);
-
-        realQuoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
-        uint256 lpFee = realQuoteAmount.mulCeil(baseInfo.lpFeeRate);
-        realQuoteAmount = realQuoteAmount.sub(lpFee);
-
-        require(realQuoteAmount >= minQuoteAmount, 'WooPP: PRICE_EXCEEDS_LIMIT');
-        IERC20(baseToken).safeTransferFrom(from, address(this), baseAmount);
-        IERC20(quoteToken).safeTransfer(to, realQuoteAmount);
-        if (rewardManager != address(0)) {
-            IRewardManager(rewardManager).addReward(rebateTo, lpFee);
-        }
-
-        tokenInfo[baseToken] = baseInfo;
-        tokenInfo[quoteToken] = quoteInfo;
-
-        emit WooSwap(baseToken, quoteToken, baseAmount, realQuoteAmount, from, to);
-    }
-
-    function sellQuote(
-        address baseToken,
-        uint256 quoteAmount,
-        uint256 minBaseAmount,
-        address from,
-        address to,
-        address rebateTo
-    ) external override nonReentrant returns (uint256 realBaseAmount) {
-        TokenInfo memory baseInfo = tokenInfo[baseToken];
-        require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
-        TokenInfo memory quoteInfo = tokenInfo[quoteToken];
-        autoUpdate(baseToken, baseInfo, quoteInfo);
-
-        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
-        quoteAmount = quoteAmount.sub(lpFee);
-        realBaseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
-
-        require(realBaseAmount >= minBaseAmount, 'WooPP: PRICE_EXCEEDS_LIMIT');
-        IERC20(quoteToken).safeTransferFrom(from, address(this), quoteAmount.add(lpFee));
-        IERC20(baseToken).safeTransfer(to, realBaseAmount);
-        if (rewardManager != address(0)) {
-            IRewardManager(rewardManager).addReward(rebateTo, lpFee);
-        }
-
-        tokenInfo[baseToken] = baseInfo;
-        tokenInfo[quoteToken] = quoteInfo;
-
-        emit WooSwap(quoteToken, baseToken, quoteAmount, realBaseAmount, from, to);
-    }
-
-    function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
-        TokenInfo memory baseInfo = tokenInfo[baseToken];
-        require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
-        TokenInfo memory quoteInfo = tokenInfo[quoteToken];
-        autoUpdate(baseToken, baseInfo, quoteInfo);
-
-        quoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
-        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
-        quoteAmount = quoteAmount.sub(lpFee);
-
-        require(quoteAmount <= IERC20(quoteToken).balanceOf(address(this)));
-    }
-
-    function querySellQuote(address baseToken, uint256 quoteAmount)
-        external
-        view
-        override
-        returns (uint256 baseAmount)
-    {
-        TokenInfo memory baseInfo = tokenInfo[baseToken];
-        require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
-        TokenInfo memory quoteInfo = tokenInfo[quoteToken];
-        autoUpdate(baseToken, baseInfo, quoteInfo);
-
-        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
-        quoteAmount = quoteAmount.sub(lpFee);
-        baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
-
-        require(baseAmount <= IERC20(baseToken).balanceOf(address(this)));
-    }
-
-    function poolSize(address token) external view returns (uint256) {
-        return IERC20(token).balanceOf(address(this));
-    }
-
-    function setPriceOracle(address newPriceOracle) external nonReentrant onlyStrategist {
-        require(newPriceOracle != address(0), 'WooPP: INVALID_ORACLE');
-        priceOracle = newPriceOracle;
-        emit PriceOracleUpdated(newPriceOracle);
-    }
-
-    function setChainlinkRefOracle(address token, address newChainlinkRefOracle) external nonReentrant onlyStrategist {
-        TokenInfo storage info = tokenInfo[token];
-        require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
-        info.chainlinkRefOracle = newChainlinkRefOracle;
-        if (newChainlinkRefOracle != address(0)) {
-            // TODO: (@qinchao) should use ERC20Detailed or IERC20 ?
-            uint256 decimalsToFix = uint256(ERC20(token).decimals()).add(
-                uint256(AggregatorV3Interface(newChainlinkRefOracle).decimals())
-            );
-            uint256 refPriceFixCoeff = 10**(uint256(36).sub(decimalsToFix));
-            require(refPriceFixCoeff <= type(uint96).max);
-            info.refPriceFixCoeff = uint96(refPriceFixCoeff);
-        }
-        emit ChainlinkRefOracleUpdated(token, newChainlinkRefOracle);
-    }
-
-    function setRewardManager(address newRewardManager) external nonReentrant onlyStrategist {
-        rewardManager = newRewardManager;
-        emit RewardManagerUpdated(newRewardManager);
-    }
-
-    function addBaseToken(
-        address baseToken,
-        uint256 threshold,
-        uint256 lpFeeRate,
-        uint256 R,
-        address chainlinkRefOracle
-    ) external nonReentrant onlyStrategist {
-        require(threshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
-        require(lpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE_OUT_OF_RANGE');
-        require(R <= 1e18, 'WooPP: R_OUT_OF_RANGE');
-        require(baseToken != quoteToken, 'WooPP: BASE_QUOTE_CAN_NOT_BE_SAME');
-
-        TokenInfo memory info = tokenInfo[baseToken];
-        require(!info.isValid, 'WooPP: TOKEN_ALREADY_EXISTS');
-
-        info.threshold = uint112(threshold);
-        info.lpFeeRate = uint64(lpFeeRate);
-        info.R = uint64(R);
-        if (info.threshold > info.target) info.target = info.threshold;
-        info.isValid = true;
-        info.chainlinkRefOracle = chainlinkRefOracle;
-        if (chainlinkRefOracle != address(0)) {
-            // TODO: (@qinchao) should use ERC20Detailed or IERC20 ?
-            uint256 decimalsToFix = uint256(ERC20(baseToken).decimals()).add(
-                uint256(AggregatorV3Interface(chainlinkRefOracle).decimals())
-            );
-            uint256 refPriceFixCoeff = 10**(uint256(36).sub(decimalsToFix));
-            require(refPriceFixCoeff <= type(uint96).max);
-            info.refPriceFixCoeff = uint96(refPriceFixCoeff);
-        }
-
-        tokenInfo[baseToken] = info;
-        emit ParametersUpdated(baseToken, threshold, lpFeeRate, R);
-        emit ChainlinkRefOracleUpdated(baseToken, chainlinkRefOracle);
-    }
-
-    function removeBaseToken(address baseToken) external nonReentrant onlyStrategist {
-        TokenInfo memory info = tokenInfo[baseToken];
-        require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
-
-        info.reserve = 0;
-        info.threshold = 0;
-        info.lastResetTimestamp = 0;
-        info.lpFeeRate = 0;
-        info.R = 0;
-        info.target = 0;
-        info.isValid = false;
-        info.chainlinkRefOracle = address(0);
-        info.refPriceFixCoeff = 0;
-
-        tokenInfo[baseToken] = info;
-        emit ParametersUpdated(baseToken, 0, 0, 0);
-        emit ChainlinkRefOracleUpdated(baseToken, address(0));
-    }
-
-    function tuneParameters(
-        address baseToken,
-        uint256 newThreshold,
-        uint256 newLpFeeRate,
-        uint256 newR
-    ) external nonReentrant onlyStrategist {
-        require(newThreshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
-        require(newLpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE_OUT_OF_RANGE');
-        require(newR <= 1e18, 'WooPP: R_OUT_OF_RANGE');
-
-        TokenInfo memory info = tokenInfo[baseToken];
-        require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
-
-        info.threshold = uint112(newThreshold);
-        info.lpFeeRate = uint64(newLpFeeRate);
-        info.R = uint64(newR);
-        if (info.threshold > info.target) {
-            info.target = info.threshold;
-        }
-
-        tokenInfo[baseToken] = info;
-        emit ParametersUpdated(baseToken, newThreshold, newLpFeeRate, newR);
-    }
-
-    // ========== Administrative functions ==========
-
-    function setStrategist(address strategist, bool flag) external nonReentrant onlyOwner {
-        isStrategist[strategist] = flag;
-        emit StrategistUpdated(strategist, flag);
-    }
-
-    function withdraw(
-        address token,
-        address to,
-        uint256 amount
-    ) external nonReentrant onlyOwner {
-        IERC20(token).safeTransfer(to, amount);
-        emit Withdraw(token, to, amount);
-    }
-
-    function withdrawToOwner(address token, uint256 amount) external nonReentrant onlyStrategist {
-        IERC20(token).safeTransfer(_OWNER_, amount);
-        emit Withdraw(token, _OWNER_, amount);
-    }
-
-    // ========== Private functions ==========
-    function ensurePriceReliable(
-        uint256 p,
-        TokenInfo memory baseInfo,
-        TokenInfo memory quoteInfo
-    ) private view {
-        // check Chainlink
-        if (baseInfo.chainlinkRefOracle != address(0) && quoteInfo.chainlinkRefOracle != address(0)) {
-            (, int256 rawBaseRefPrice, , , ) = AggregatorV3Interface(baseInfo.chainlinkRefOracle).latestRoundData();
-            require(rawBaseRefPrice >= 0, 'WooPP: INVALID_CHAINLINK_PRICE');
-            (, int256 rawQuoteRefPrice, , , ) = AggregatorV3Interface(quoteInfo.chainlinkRefOracle).latestRoundData();
-            require(rawQuoteRefPrice >= 0, 'WooPP: INVALID_CHAINLINK_QUOTE_PRICE');
-            uint256 baseRefPrice = uint256(rawBaseRefPrice).mul(uint256(baseInfo.refPriceFixCoeff));
-            uint256 quoteRefPrice = uint256(rawQuoteRefPrice).mul(uint256(quoteInfo.refPriceFixCoeff));
-            uint256 refPrice = baseRefPrice.divFloor(quoteRefPrice);
-            require(
-                refPrice.mulFloor(1e18 - 1e16) <= p && p <= refPrice.mulCeil(1e18 + 1e16),
-                'WooPP: PRICE_UNRELIABLE'
-            );
-        }
+    function max(uint112 a, uint112 b) private pure returns (uint112) {
+        return a >= b ? a : b;
     }
 }
