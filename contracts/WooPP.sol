@@ -85,9 +85,11 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint112 reserve;
         uint112 threshold;
         uint32 lastResetTimestamp;
+
         uint64 lpFeeRate;
         uint64 R;
         uint112 target;
+
         address chainlinkRefOracle;
         uint96 refPriceFixCoeff;
         bool isValid;
@@ -326,8 +328,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     ) external nonReentrant onlyStrategist {
         require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
         require(newThreshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
-        require(newLpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE_OUT_OF_RANGE');
-        require(newR <= 1e18, 'WooPP: R_OUT_OF_RANGE');
+        require(newLpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE>1');
+        require(newR <= 1e18, 'WooPP: R>1');
 
         TokenInfo memory info = tokenInfo[baseToken];
         require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');

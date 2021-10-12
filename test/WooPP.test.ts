@@ -52,8 +52,9 @@ const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 const POW_8 = BigNumber.from(10).pow(8)
 const POW_9 = BigNumber.from(10).pow(9)
 const ONE = BigNumber.from(10).pow(18)
-const OVERFLOW_UINT112 = BigNumber.from(52).pow(32)
-const OVERFLOW_UINT64 = BigNumber.from(19).pow(18)
+const OVERFLOW_UINT112 = BigNumber.from(10).pow(32).mul(52)
+const OVERFLOW_UINT64 = BigNumber.from(10).pow(18).mul(19)
+const POW_18 = BigNumber.from(10).pow(18)
 
 describe('WooPP', () => {
   const [owner, user1, user2, priceOracle, quoteChainLinkRefOracle] = new MockProvider().getWallets()
@@ -304,6 +305,28 @@ describe('WooPP', () => {
       expect(info.target).to.eq(111)
     })
 
+    it('tuneParameters accuracy3', async () => {
+        await wooPP.addBaseToken(baseToken1.address, 111, 222, 333, ZERO_ADDR)
+        let info = await wooPP.tokenInfo(baseToken1.address)
+        expect(info.isValid).to.eq(true)
+        expect(info.chainlinkRefOracle).to.eq(ZERO_ADDR)
+        expect(info.reserve).to.eq(0)
+        expect(info.threshold).to.eq(111)
+        expect(info.lpFeeRate).to.eq(222)
+        expect(info.R).to.eq(333)
+        expect(info.target).to.eq(111)
+        expect(info.lastResetTimestamp).to.eq(0)
+        expect(info.refPriceFixCoeff).to.eq(0)
+
+        await wooPP.tuneParameters(baseToken1.address, 11, POW_18, POW_18)
+
+        info = await wooPP.tokenInfo(baseToken1.address)
+        expect(info.threshold).to.eq(11)
+        expect(info.lpFeeRate).to.eq(POW_18)
+        expect(info.R).to.eq(POW_18)
+        expect(info.target).to.eq(111)
+    })
+
     it('tuneParameters revert1', async () => {
       await expect(wooPP.tuneParameters(ZERO_ADDR, 11, 22, 33)).to.be.revertedWith('WooPP: BASE_TOKEN_ZERO_ADDR')
     })
@@ -314,17 +337,32 @@ describe('WooPP', () => {
       )
     })
 
-    it('tuneParameters revert3', async () => {
+    it('tuneParameters revert3_1', async () => {
       await expect(wooPP.tuneParameters(baseToken1.address, 11, OVERFLOW_UINT64, 33)).to.be.revertedWith(
-        'WooPP: LP_FEE_RATE_OUT_OF_RANGE'
+        'WooPP: LP_FEE_RATE>1'
       )
     })
 
-    it('tuneParameters revert4', async () => {
+    it('tuneParameters revert3_2', async () => {
+        const lpFeeRate = POW_18.add(1)
+        await expect(wooPP.tuneParameters(baseToken1.address, 11, lpFeeRate, 33)).to.be.revertedWith(
+            'WooPP: LP_FEE_RATE>1'
+        )
+    })
+
+    it('tuneParameters revert4_1', async () => {
       await expect(wooPP.tuneParameters(baseToken1.address, 11, 22, OVERFLOW_UINT64)).to.be.revertedWith(
-        'WooPP: R_OUT_OF_RANGE'
+        'WooPP: R>1'
       )
     })
+
+    it('tuneParameters revert4_2', async () => {
+        const R = POW_18.add(1)
+        await expect(wooPP.tuneParameters(baseToken1.address, 11, 22, R)).to.be.revertedWith(
+            'WooPP: R>1'
+        )
+    })
+
 
     it('tuneParameters revert5', async () => {
       await expect(wooPP.tuneParameters(baseToken1.address, 11, 22, 33)).to.be.revertedWith(
