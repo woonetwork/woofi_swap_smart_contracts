@@ -146,6 +146,10 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         address to,
         address rebateTo
     ) external override nonReentrant returns (uint256 realQuoteAmount) {
+        require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
+        require(from != address(0), 'WooPP: from_ZERO_ADDR');
+        require(to != address(0), 'WooPP: to_ZERO_ADDR');
+
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
@@ -230,16 +234,18 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     }
 
     function poolSize(address token) external view returns (uint256) {
+        require(token != address(0), 'WooPP: token_ZERO_ADDR');
         return IERC20(token).balanceOf(address(this));
     }
 
     function setPriceOracle(address newPriceOracle) external nonReentrant onlyStrategist {
-        require(newPriceOracle != address(0), 'WooPP: INVALID_ORACLE');
+        require(newPriceOracle != address(0), 'WooPP: newPriceOracle_ZERO_ADDR');
         priceOracle = newPriceOracle;
         emit PriceOracleUpdated(newPriceOracle);
     }
 
     function setChainlinkRefOracle(address token, address newChainlinkRefOracle) external nonReentrant onlyStrategist {
+        require(token != address(0), 'WooPP: token_ZERO_ADDR');
         TokenInfo storage info = tokenInfo[token];
         require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         info.chainlinkRefOracle = newChainlinkRefOracle;
@@ -256,6 +262,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     }
 
     function setRewardManager(address newRewardManager) external nonReentrant onlyStrategist {
+        require(newRewardManager != address(0), 'WooPP: newRewardManager_ZERO_ADDR');
         rewardManager = newRewardManager;
         emit RewardManagerUpdated(newRewardManager);
     }

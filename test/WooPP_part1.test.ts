@@ -39,6 +39,9 @@ import { ethers } from 'hardhat'
 import WooPP from '../build/WooPP.json'
 import IERC20 from '../build/IERC20.json'
 import TestToken from '../build/TestToken.json'
+import IWooracle from '../build/IWooracle.json'
+import IRewardManager from '../build/IRewardManager.json'
+import AggregatorV3Interface from '../build/AggregatorV3Interface.json'
 
 const {
   BigNumber,
@@ -56,7 +59,7 @@ const OVERFLOW_UINT112 = BigNumber.from(10).pow(32).mul(52)
 const OVERFLOW_UINT64 = BigNumber.from(10).pow(18).mul(19)
 const POW_18 = BigNumber.from(10).pow(18)
 
-describe('WooPP', () => {
+describe('WooPP Test Suite 1', () => {
   const [owner, user1, user2, priceOracle, quoteChainLinkRefOracle] = new MockProvider().getWallets()
 
   describe('#ctor, init & info', () => {
@@ -444,16 +447,19 @@ describe('WooPP', () => {
     let wooPP: Contract
     let quoteToken: Contract
     let baseToken1: Contract
+    let wooOracle1: Contract
 
-    before('deploy ERC20', async () => {})
+    before('deploy ERC20', async () => {
+      wooOracle1 = await deployMockContract(owner, IWooracle.abi)
+    })
 
     beforeEach('deploy WooPP', async () => {
       quoteToken = await deployContract(owner, TestToken, [])
       baseToken1 = await deployContract(owner, TestToken, [])
 
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, priceOracle.address, ZERO_ADDR])
+      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooOracle1.address, ZERO_ADDR])
 
-      await quoteToken.mint(wooPP.address, 10000)
+      await quoteToken.mint(wooPP.address, 30000)
       await baseToken1.mint(wooPP.address, 10000)
 
       await baseToken1.mint(owner.address, 100)
@@ -507,6 +513,148 @@ describe('WooPP', () => {
       await expect(wooPP.withdrawToOwner(baseToken1.address, 123))
         .to.emit(wooPP, 'Withdraw')
         .withArgs(baseToken1.address, owner.address, 123)
+    })
+  })
+
+  describe('reward manager and oracles', () => {
+    let wooPP: Contract
+    let quoteToken: Contract
+    let baseToken1: Contract
+    let wooOracle1: Contract
+    let wooOracle2: Contract
+    let rewardManager: Contract
+    let chainlinkOracle: Contract
+
+    before('deploy ERC20', async () => {
+      wooOracle1 = await deployMockContract(owner, IWooracle.abi)
+      wooOracle2 = await deployMockContract(owner, IWooracle.abi)
+      rewardManager = await deployMockContract(owner, IRewardManager.abi)
+
+      chainlinkOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
+      await chainlinkOracle.mock.decimals.returns(18);
+    })
+
+    beforeEach('deploy WooPP', async () => {
+      quoteToken = await deployContract(owner, TestToken, [])
+      baseToken1 = await deployContract(owner, TestToken, [])
+
+      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooOracle1.address, ZERO_ADDR])
+
+      await quoteToken.mint(wooPP.address, 30000)
+      await baseToken1.mint(wooPP.address, 10000)
+
+      await baseToken1.mint(owner.address, 100)
+    })
+
+    it('pooSize accuracy', async () => {
+      expect(await wooPP.poolSize(quoteToken.address)).to.eq(30000)
+      expect(await wooPP.poolSize(baseToken1.address)).to.eq(10000)
+      await wooPP.withdrawToOwner(baseToken1.address, 1234)
+      expect(await wooPP.poolSize(baseToken1.address)).to.eq(10000 - 1234)
+    })
+
+    it('pooSize revert1', async () => {
+      await expect(wooPP.poolSize(ZERO_ADDR)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
+    })
+
+    it('priceOracle accuracy', async () => {
+      expect(await wooPP.priceOracle()).to.eq(wooOracle1.address)
+    })
+
+    it('setPriceOracle accuracy', async () => {
+      expect(await wooPP.priceOracle()).to.eq(wooOracle1.address)
+      await wooPP.setPriceOracle(wooOracle2.address)
+      expect(await wooPP.priceOracle()).to.eq(wooOracle2.address)
+    })
+
+    it('setPriceOracle revert1', async () => {
+      await expect(wooPP.setPriceOracle(ZERO_ADDR)).to.be.revertedWith('WooPP: newPriceOracle_ZERO_ADDR')
+    })
+
+    it('setPriceOracle event1', async () => {
+      await expect(wooPP.setPriceOracle(wooOracle2.address))
+        .to.emit(wooPP, 'PriceOracleUpdated')
+        .withArgs(wooOracle2.address)
+    })
+
+    // --------------------------------------------
+
+    it('chainlinkRefOracle accuracy', async () => {
+      const quoteInfo = await wooPP.tokenInfo(quoteToken.address)
+      expect(quoteInfo.isValid).to.eq(true)
+      expect(quoteInfo.chainlinkRefOracle).to.eq(ZERO_ADDR)
+    })
+
+    it('setChainlinkRefOracle accuracy1', async () => {
+      let quoteInfo = await wooPP.tokenInfo(quoteToken.address)
+      expect(quoteInfo.isValid).to.eq(true)
+      expect(quoteInfo.chainlinkRefOracle).to.eq(ZERO_ADDR)
+
+      await wooPP.setChainlinkRefOracle(quoteToken.address, chainlinkOracle.address)
+
+      quoteInfo = await wooPP.tokenInfo(quoteToken.address)
+      expect(quoteInfo.chainlinkRefOracle).to.eq(chainlinkOracle.address)
+    })
+
+    it('setChainlinkRefOracle accuracy2', async () => {
+      let quoteInfo = await wooPP.tokenInfo(quoteToken.address)
+      expect(quoteInfo.isValid).to.eq(true)
+      expect(quoteInfo.chainlinkRefOracle).to.eq(ZERO_ADDR)
+
+      await wooPP.setChainlinkRefOracle(quoteToken.address, chainlinkOracle.address)
+
+      quoteInfo = await wooPP.tokenInfo(quoteToken.address)
+      expect(quoteInfo.chainlinkRefOracle).to.eq(chainlinkOracle.address)
+
+      await wooPP.setChainlinkRefOracle(quoteToken.address, ZERO_ADDR)
+
+      quoteInfo = await wooPP.tokenInfo(quoteToken.address)
+      expect(quoteInfo.chainlinkRefOracle).to.eq(ZERO_ADDR)
+    })
+
+
+    it('setChainlinkRefOracle revert1', async () => {
+      await expect(wooPP.setChainlinkRefOracle(ZERO_ADDR, chainlinkOracle.address))
+      .to.be.revertedWith('WooPP: token_ZERO_ADDR')
+    })
+
+    it('setChainlinkRefOracle revert2', async () => {
+      await expect(wooPP.setChainlinkRefOracle(baseToken1.address, chainlinkOracle.address))
+        .to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
+    })
+
+    it('setChainlinkRefOracle event1', async () => {
+      await expect(wooPP.setChainlinkRefOracle(quoteToken.address, chainlinkOracle.address))
+        .to.emit(wooPP, 'ChainlinkRefOracleUpdated')
+        .withArgs(quoteToken.address, chainlinkOracle.address)
+    })
+
+    it('setChainlinkRefOracle event2', async () => {
+      await expect(wooPP.setChainlinkRefOracle(quoteToken.address, ZERO_ADDR))
+        .to.emit(wooPP, 'ChainlinkRefOracleUpdated')
+        .withArgs(quoteToken.address, ZERO_ADDR)
+    })
+
+    // --------------------------------------------
+
+    it('rewardManager accuracy', async () => {
+      expect(await wooPP.rewardManager()).to.eq(ZERO_ADDR)
+    })
+
+    it('setRewardManager accuracy', async () => {
+      expect(await wooPP.rewardManager()).to.eq(ZERO_ADDR)
+      await wooPP.setRewardManager(rewardManager.address)
+      expect(await wooPP.rewardManager()).to.eq(rewardManager.address)
+    })
+
+    it('setRewardManager revert1', async () => {
+      await expect(wooPP.setRewardManager(ZERO_ADDR)).to.be.revertedWith('WooPP: newRewardManager_ZERO_ADDR')
+    })
+
+    it('setRewardManager event1', async () => {
+      await expect(wooPP.setRewardManager(rewardManager.address))
+        .to.emit(wooPP, 'RewardManagerUpdated')
+        .withArgs(rewardManager.address)
     })
   })
 
