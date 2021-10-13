@@ -88,20 +88,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         TokenInfo storage quoteInfo = tokenInfo[newQuoteToken];
         quoteInfo.isValid = true;
         quoteInfo.chainlinkRefOracle = quoteChainlinkRefOracle;
-        // About decimals:
-        // For a sell base trade, we have quoteSize = baseSize * price
-        // For calculation convenience, the decimals of price is 18-base.decimals()+quote.decimals()
-        // If we have price = basePrice / quotePrice, then decimals of tokenPrice should be 36-token.decimals()
-        // We use chainlink oracle price as token reference price, which decimals is chainlinkPrice.decimals()
-        // We should multiply it by 1e(36-token.decimals()+chainlinkPrice.decimals()), which is refPriceFixCoeff
-        if (quoteChainlinkRefOracle != address(0)) {
-            uint256 decimalsToFix = uint256(ERC20(newQuoteToken).decimals()).add(
-                uint256(AggregatorV3Interface(quoteChainlinkRefOracle).decimals())
-            );
-            uint256 refPriceFixCoeff = 10**(uint256(36).sub(decimalsToFix));
-            require(refPriceFixCoeff <= type(uint96).max);
-            quoteInfo.refPriceFixCoeff = uint96(refPriceFixCoeff);
-        }
+        quoteInfo.refPriceFixCoeff = _refPriceFixCoeff(newQuoteToken, quoteChainlinkRefOracle);
 
         emit ChainlinkRefOracleUpdated(newQuoteToken, quoteChainlinkRefOracle);
     }
@@ -225,14 +212,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         TokenInfo storage info = tokenInfo[token];
         require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         info.chainlinkRefOracle = newChainlinkRefOracle;
-        if (newChainlinkRefOracle != address(0)) {
-            uint256 decimalsToFix = uint256(ERC20(token).decimals()).add(
-                uint256(AggregatorV3Interface(newChainlinkRefOracle).decimals())
-            );
-            uint256 refPriceFixCoeff = 10**(uint256(36).sub(decimalsToFix));
-            require(refPriceFixCoeff <= type(uint96).max);
-            info.refPriceFixCoeff = uint96(refPriceFixCoeff);
-        }
+        info.refPriceFixCoeff = _refPriceFixCoeff(token, newChainlinkRefOracle);
         emit ChainlinkRefOracleUpdated(token, newChainlinkRefOracle);
     }
 
@@ -258,23 +238,16 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         TokenInfo memory info = tokenInfo[baseToken];
         require(!info.isValid, 'WooPP: TOKEN_ALREADY_EXISTS');
 
-        // TODO(@qinchao): update info.reserve and lastResetTimestamp ?
         info.threshold = uint112(threshold);
         info.lpFeeRate = uint64(lpFeeRate);
         info.R = uint64(R);
         info.target = max(info.threshold, info.target);
         info.isValid = true;
         info.chainlinkRefOracle = chainlinkRefOracle;
-        if (chainlinkRefOracle != address(0)) {
-            uint256 decimalsToFix = uint256(ERC20(baseToken).decimals()).add(
-                uint256(AggregatorV3Interface(chainlinkRefOracle).decimals())
-            );
-            uint256 refPriceFixCoeff = 10**(uint256(36).sub(decimalsToFix));
-            require(refPriceFixCoeff <= type(uint96).max);
-            info.refPriceFixCoeff = uint96(refPriceFixCoeff);
-        }
+        info.refPriceFixCoeff = _refPriceFixCoeff(baseToken, chainlinkRefOracle);
 
         tokenInfo[baseToken] = info;
+
         emit ParametersUpdated(baseToken, threshold, lpFeeRate, R);
         emit ChainlinkRefOracleUpdated(baseToken, chainlinkRefOracle);
     }
@@ -547,6 +520,25 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
                 baseAmount = newBaseBought.sub(baseBought);
             }
         }
+    }
+
+    function _refPriceFixCoeff(address token, address chainlink) private view returns (uint96) {
+        if (chainlink == address(0)) {
+            return 0;
+        }
+
+        // About decimals:
+        // For a sell base trade, we have quoteSize = baseSize * price
+        // For calculation convenience, the decimals of price is 18-(base.decimals+quote.decimals)
+        // If we have price = basePrice / quotePrice, then decimals of tokenPrice should be 36-token.decimals()
+        // We use chainlink oracle price as token reference price, which decimals is chainlinkPrice.decimals()
+        // We should multiply it by 10e(36-(token.decimals+chainlinkPrice.decimals)), which is refPriceFixCoeff
+        uint256 decimalsToFix = uint256(ERC20(token).decimals()).add(
+            uint256(AggregatorV3Interface(chainlink).decimals())
+        );
+        uint256 refPriceFixCoeff = 10**(uint256(36).sub(decimalsToFix));
+        require(refPriceFixCoeff <= type(uint96).max);
+        return uint96(refPriceFixCoeff);
     }
 
     function max(uint112 a, uint112 b) private pure returns (uint112) {
