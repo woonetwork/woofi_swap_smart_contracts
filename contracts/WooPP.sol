@@ -55,7 +55,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
 
     event StrategistUpdated(address indexed strategist, bool flag);
     event RewardManagerUpdated(address indexed newRewardManager);
-    event PriceOracleUpdated(address indexed newPriceOracle);
+    event WooracleUpdated(address indexed newWooracle);
     event ChainlinkRefOracleUpdated(address indexed token, address indexed newChainlinkRefOracle);
     event ParametersUpdated(address indexed baseToken, uint256 newThreshold, uint256 newLpFeeRate, uint256 newR);
     event Withdraw(address indexed token, address indexed to, uint256 amount);
@@ -93,7 +93,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         bool isValid;
     }
 
-    address public priceOracle; // WooOracle
+    address public wooracle;
     mapping(address => TokenInfo) public tokenInfo;
 
     string public pairsInfo; // e.g. BNB/ETH/BTCB/WOO-USDT  (only one single quoteToken supported)
@@ -102,15 +102,15 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
 
     constructor(
         address newQuoteToken,
-        address newPriceOracle,
+        address newWooracle,
         address quoteChainlinkRefOracle
     ) public {
         require(newQuoteToken != address(0), 'WooPP: INVALID_QUOTE');
-        require(newPriceOracle != address(0), 'WooPP: INVALID_ORACLE');
+        require(newWooracle != address(0), 'WooPP: newWooracle_ZERO_ADDR');
 
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
-        priceOracle = newPriceOracle;
+        wooracle = newWooracle;
 
         TokenInfo storage quoteInfo = tokenInfo[newQuoteToken];
         quoteInfo.isValid = true;
@@ -202,7 +202,12 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         emit WooSwap(quoteToken, baseToken, quoteAmount, realBaseAmount, from, to);
     }
 
-    function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
+    function querySellBase(address baseToken, uint256 baseAmount)
+        external
+        view
+        override
+        returns (uint256 quoteAmount)
+    {
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
@@ -238,10 +243,10 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         return IERC20(token).balanceOf(address(this));
     }
 
-    function setPriceOracle(address newPriceOracle) external nonReentrant onlyStrategist {
-        require(newPriceOracle != address(0), 'WooPP: newPriceOracle_ZERO_ADDR');
-        priceOracle = newPriceOracle;
-        emit PriceOracleUpdated(newPriceOracle);
+    function setWooracle(address newWooracle) external nonReentrant onlyStrategist {
+        require(newWooracle != address(0), 'WooPP: newWooracle_ZERO_ADDR');
+        wooracle = newWooracle;
+        emit WooracleUpdated(newWooracle);
     }
 
     function setChainlinkRefOracle(address token, address newChainlinkRefOracle) external nonReentrant onlyStrategist {
@@ -250,7 +255,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         info.chainlinkRefOracle = newChainlinkRefOracle;
         if (newChainlinkRefOracle != address(0)) {
-            // TODO: (@qinchao) should use ERC20Detailed or IERC20 ?
             uint256 decimalsToFix = uint256(ERC20(token).decimals()).add(
                 uint256(AggregatorV3Interface(newChainlinkRefOracle).decimals())
             );
@@ -408,7 +412,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         require(quoteReserve <= type(uint112).max);
         baseInfo.reserve = uint112(baseReserve);
         quoteInfo.reserve = uint112(quoteReserve);
-        uint32 priceTimestamp = uint32(IWooracle(priceOracle).timestamp() % 2**32);
+        uint32 priceTimestamp = uint32(IWooracle(wooracle).timestamp() % 2**32);
         if (priceTimestamp != baseInfo.lastResetTimestamp) {
             baseInfo.target = max(baseInfo.threshold, baseInfo.reserve);
             baseInfo.lastResetTimestamp = priceTimestamp;
@@ -510,7 +514,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 s;
         uint256 k;
         bool isFeasible;
-        (p, s, k, isFeasible) = IWooracle(priceOracle).getState(baseToken);
+        (p, s, k, isFeasible) = IWooracle(wooracle).getState(baseToken);
         require(isFeasible, 'WooPP: ORACLE_PRICE_NOT_FEASIBLE');
 
         _ensurePriceReliable(p, baseInfo, quoteInfo);
@@ -549,7 +553,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         uint256 s;
         uint256 k;
         bool isFeasible;
-        (p, s, k, isFeasible) = IWooracle(priceOracle).getState(baseToken);
+        (p, s, k, isFeasible) = IWooracle(wooracle).getState(baseToken);
         require(isFeasible, 'WooPP: ORACLE_PRICE_NOT_FEASIBLE');
 
         _ensurePriceReliable(p, baseInfo, quoteInfo);

@@ -60,7 +60,7 @@ const OVERFLOW_UINT64 = BigNumber.from(10).pow(18).mul(19)
 const POW_18 = BigNumber.from(10).pow(18)
 
 describe('WooPP Test Suite 1', () => {
-  const [owner, user1, user2, priceOracle, quoteChainLinkRefOracle] = new MockProvider().getWallets()
+  const [owner, user1, user2, wooracle, quoteChainLinkRefOracle] = new MockProvider().getWallets()
 
   describe('#ctor, init & info', () => {
     let wooPP: Contract
@@ -71,7 +71,7 @@ describe('WooPP Test Suite 1', () => {
     })
 
     beforeEach('deploy WooPP', async () => {
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, priceOracle.address, ZERO_ADDR])
+      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
     })
 
     it('ctor', async () => {
@@ -79,20 +79,20 @@ describe('WooPP Test Suite 1', () => {
     })
 
     it('ctor failure1', async () => {
-      await expect(deployContract(owner, WooPP, [ZERO_ADDR, priceOracle.address, ZERO_ADDR])).to.be.revertedWith(
+      await expect(deployContract(owner, WooPP, [ZERO_ADDR, wooracle.address, ZERO_ADDR])).to.be.revertedWith(
         'WooPP: INVALID_QUOTE'
       )
     })
 
     it('ctor failure2', async () => {
       await expect(deployContract(owner, WooPP, [quoteToken.address, ZERO_ADDR, ZERO_ADDR])).to.be.revertedWith(
-        'WooPP: INVALID_ORACLE'
+        'WooPP: newWooracle_ZERO_ADDR'
       )
     })
 
     it('init', async () => {
       expect(await wooPP.quoteToken()).to.eq(quoteToken.address)
-      expect(await wooPP.priceOracle()).to.eq(priceOracle.address)
+      expect(await wooPP.wooracle()).to.eq(wooracle.address)
     })
 
     it('tokenInfo', async () => {
@@ -129,7 +129,7 @@ describe('WooPP Test Suite 1', () => {
     })
 
     beforeEach('deploy WooPP', async () => {
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, priceOracle.address, ZERO_ADDR])
+      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
     })
 
     it('addBaseToken', async () => {
@@ -261,7 +261,7 @@ describe('WooPP Test Suite 1', () => {
     })
 
     beforeEach('deploy WooPP', async () => {
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, priceOracle.address, ZERO_ADDR])
+      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
     })
 
     it('tuneParameters accuracy1', async () => {
@@ -402,7 +402,7 @@ describe('WooPP Test Suite 1', () => {
     })
 
     beforeEach('deploy WooPP', async () => {
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, priceOracle.address, ZERO_ADDR])
+      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
     })
 
     it('isStrategist accuracy1', async () => {
@@ -557,23 +557,23 @@ describe('WooPP Test Suite 1', () => {
       await expect(wooPP.poolSize(ZERO_ADDR)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
     })
 
-    it('priceOracle accuracy', async () => {
-      expect(await wooPP.priceOracle()).to.eq(wooOracle1.address)
+    it('wooracle accuracy', async () => {
+      expect(await wooPP.wooracle()).to.eq(wooOracle1.address)
     })
 
-    it('setPriceOracle accuracy', async () => {
-      expect(await wooPP.priceOracle()).to.eq(wooOracle1.address)
-      await wooPP.setPriceOracle(wooOracle2.address)
-      expect(await wooPP.priceOracle()).to.eq(wooOracle2.address)
+    it('setWooracle accuracy', async () => {
+      expect(await wooPP.wooracle()).to.eq(wooOracle1.address)
+      await wooPP.setWooracle(wooOracle2.address)
+      expect(await wooPP.wooracle()).to.eq(wooOracle2.address)
     })
 
-    it('setPriceOracle revert1', async () => {
-      await expect(wooPP.setPriceOracle(ZERO_ADDR)).to.be.revertedWith('WooPP: newPriceOracle_ZERO_ADDR')
+    it('setWooracle revert1', async () => {
+      await expect(wooPP.setWooracle(ZERO_ADDR)).to.be.revertedWith('WooPP: newWooracle_ZERO_ADDR')
     })
 
-    it('setPriceOracle event1', async () => {
-      await expect(wooPP.setPriceOracle(wooOracle2.address))
-        .to.emit(wooPP, 'PriceOracleUpdated')
+    it('setWooracle event1', async () => {
+      await expect(wooPP.setWooracle(wooOracle2.address))
+        .to.emit(wooPP, 'WooracleUpdated')
         .withArgs(wooOracle2.address)
     })
 
