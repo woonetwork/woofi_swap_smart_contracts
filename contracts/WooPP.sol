@@ -126,7 +126,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         // We use chainlink oracle price as token reference price, which decimals is chainlinkPrice.decimals()
         // We should multiply it by 1e(36-token.decimals()+chainlinkPrice.decimals()), which is refPriceFixCoeff
         if (quoteChainlinkRefOracle != address(0)) {
-            // TODO: (@qinchao) should use ERC20Detailed or IERC20 ?
             uint256 decimalsToFix = uint256(ERC20(newQuoteToken).decimals()).add(
                 uint256(AggregatorV3Interface(quoteChainlinkRefOracle).decimals())
             );
@@ -170,6 +169,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
             IRewardManager(rewardManager).addReward(rebateTo, lpFee);
         }
 
+        _updateReserve(baseToken, baseInfo, quoteInfo);
+
         tokenInfo[baseToken] = baseInfo;
         tokenInfo[quoteToken] = quoteInfo;
 
@@ -199,6 +200,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         if (rewardManager != address(0)) {
             IRewardManager(rewardManager).addReward(rebateTo, lpFee);
         }
+
+        _updateReserve(baseToken, baseInfo, quoteInfo);
 
         tokenInfo[baseToken] = baseInfo;
         tokenInfo[quoteToken] = quoteInfo;
@@ -294,7 +297,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         info.isValid = true;
         info.chainlinkRefOracle = chainlinkRefOracle;
         if (chainlinkRefOracle != address(0)) {
-            // TODO: (@qinchao) should use ERC20Detailed or IERC20 ?
             uint256 decimalsToFix = uint256(ERC20(baseToken).decimals()).add(
                 uint256(AggregatorV3Interface(chainlinkRefOracle).decimals())
             );
@@ -310,36 +312,24 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
 
     function removeBaseToken(address baseToken) external nonReentrant onlyStrategist {
         require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
-        TokenInfo memory info = tokenInfo[baseToken];
-        require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
-
-        info.reserve = 0;
-        info.threshold = 0;
-        info.lastResetTimestamp = 0;
-        info.lpFeeRate = 0;
-        info.R = 0;
-        info.target = 0;
-        info.isValid = false;
-        info.chainlinkRefOracle = address(0);
-        info.refPriceFixCoeff = 0;
-
-        tokenInfo[baseToken] = info;
+        require(tokenInfo[baseToken].isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
+        delete tokenInfo[baseToken];
         emit ParametersUpdated(baseToken, 0, 0, 0);
         emit ChainlinkRefOracleUpdated(baseToken, address(0));
     }
 
     function tuneParameters(
-        address baseToken,
+        address token,
         uint256 newThreshold,
         uint256 newLpFeeRate,
         uint256 newR
     ) external nonReentrant onlyStrategist {
-        require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
+        require(token != address(0), 'WooPP: token_ZERO_ADDR');
         require(newThreshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
         require(newLpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE>1');
         require(newR <= 1e18, 'WooPP: R>1');
 
-        TokenInfo memory info = tokenInfo[baseToken];
+        TokenInfo memory info = tokenInfo[token];
         require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
 
         info.threshold = uint112(newThreshold);
@@ -347,8 +337,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         info.R = uint64(newR);
         info.target = max(info.threshold, info.target);
 
-        tokenInfo[baseToken] = info;
-        emit ParametersUpdated(baseToken, newThreshold, newLpFeeRate, newR);
+        tokenInfo[token] = info;
+        emit ParametersUpdated(token, newThreshold, newLpFeeRate, newR);
     }
 
     /* ----- Admin Functions ----- */
@@ -405,13 +395,9 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         TokenInfo memory quoteInfo
     ) private view {
         require(baseToken != address(0), 'WooPP: BASETOKEN_ZERO_ADDR');
-        uint256 baseReserve = IERC20(baseToken).balanceOf(address(this));
-        uint256 quoteReserve = IERC20(quoteToken).balanceOf(address(this));
-        require(baseReserve <= type(uint112).max);
-        require(quoteReserve <= type(uint112).max);
-        baseInfo.reserve = uint112(baseReserve);
-        quoteInfo.reserve = uint112(quoteReserve);
-        uint32 priceTimestamp = uint32(IWooracle(wooracle).timestamp() % 2**32);
+        _updateReserve(baseToken, baseInfo, quoteInfo);
+        // TODO: double check with Qinshi
+        uint32 priceTimestamp = uint32(IWooracle(wooracle).timestamp());
         if (priceTimestamp != baseInfo.lastResetTimestamp) {
             baseInfo.target = max(baseInfo.threshold, baseInfo.reserve);
             baseInfo.lastResetTimestamp = priceTimestamp;
@@ -420,6 +406,19 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
             quoteInfo.target = max(quoteInfo.threshold, quoteInfo.reserve);
             quoteInfo.lastResetTimestamp = priceTimestamp;
         }
+    }
+
+    function _updateReserve(
+        address baseToken,
+        TokenInfo memory baseInfo,
+        TokenInfo memory quoteInfo
+    ) private view {
+        uint256 baseReserve = IERC20(baseToken).balanceOf(address(this));
+        uint256 quoteReserve = IERC20(quoteToken).balanceOf(address(this));
+        require(baseReserve <= type(uint112).max);
+        require(quoteReserve <= type(uint112).max);
+        baseInfo.reserve = uint112(baseReserve);
+        quoteInfo.reserve = uint112(quoteReserve);
     }
 
     // When baseSold >= 0 , users sold the base token

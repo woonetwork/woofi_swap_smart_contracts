@@ -218,8 +218,10 @@ contract WooRouter is Ownable, ReentrancyGuard {
         internalFallbackSwap(approveTarget, swapTarget, fromToken, fromAmount, data);
         uint256 postBalance = _generalBalanceOf(toToken, address(this));
 
+        require(preBalance <= postBalance, 'WooRouter: balance_ERROR');
+        uint256 swapBalance = postBalance.sub(preBalance);
         if (postBalance > preBalance) {
-            _generalTransfer(toToken, to, postBalance.sub(preBalance));
+            _generalTransfer(toToken, to, swapBalance);
         }
 
         emit WooRouterSwap(
@@ -227,7 +229,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
             fromToken,
             toToken,
             fromAmount,
-            postBalance.sub(preBalance),
+            swapBalance,
             msg.sender,
             to
         );
@@ -250,7 +252,9 @@ contract WooRouter is Ownable, ReentrancyGuard {
             require(fromAmount == msg.value, 'WooRouter: fromAmount_INVALID');
         }
 
-        (bool success, ) = swapTarget.call{value: fromToken == ETH_PLACEHOLDER_ADDR ? fromAmount : 0}(data);
+        (bool success, ) = swapTarget.call{
+            value: fromToken == ETH_PLACEHOLDER_ADDR ? fromAmount : 0
+        }(data);
         require(success, 'WooRouter: FALLBACK_SWAP_FAILED');
     }
 
@@ -273,7 +277,9 @@ contract WooRouter is Ownable, ReentrancyGuard {
     function _generalBalanceOf(address token, address who) private view returns (uint256) {
         require(token != address(0), 'WooRouter: token_ADDR_ZERO');
         require(who != address(0), 'WooRouter: who_ADDR_ZERO');
-        return token == ETH_PLACEHOLDER_ADDR ? who.balance : IERC20(token).balanceOf(who);
+        return token == ETH_PLACEHOLDER_ADDR
+            ? who.balance
+            : IERC20(token).balanceOf(who);
     }
 
     function setWhitelisted(address target, bool whitelisted) external nonReentrant onlyOwner {
