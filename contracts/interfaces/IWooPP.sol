@@ -36,6 +36,40 @@ pragma experimental ABIEncoderV2;
 */
 
 interface IWooPP {
+
+    /* ----- Type declarations ----- */
+
+    struct TokenInfo {
+        uint112 reserve;
+        uint112 threshold;
+        uint32 lastResetTimestamp;
+        uint64 lpFeeRate;
+        uint64 R;
+        uint112 target;
+        address chainlinkRefOracle;
+        uint96 refPriceFixCoeff;
+        bool isValid;
+    }
+
+    /* ----- Events ----- */
+
+    event StrategistUpdated(address indexed strategist, bool flag);
+    event RewardManagerUpdated(address indexed newRewardManager);
+    event WooracleUpdated(address indexed newWooracle);
+    event ChainlinkRefOracleUpdated(address indexed token, address indexed newChainlinkRefOracle);
+    event ParametersUpdated(address indexed baseToken, uint256 newThreshold, uint256 newLpFeeRate, uint256 newR);
+    event Withdraw(address indexed token, address indexed to, uint256 amount);
+    event WooSwap(
+        address indexed fromToken,
+        address indexed toToken,
+        uint256 fromAmount,
+        uint256 toAmount,
+        address from,
+        address indexed to
+    );
+
+    /* ----- External Functions ----- */
+
     function sellBase(
         address baseToken,
         uint256 baseAmount,
