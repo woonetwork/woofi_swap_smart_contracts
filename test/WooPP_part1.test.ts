@@ -531,7 +531,7 @@ describe('WooPP Test Suite 1', () => {
       rewardManager = await deployMockContract(owner, IRewardManager.abi)
 
       chainlinkOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
-      await chainlinkOracle.mock.decimals.returns(18);
+      await chainlinkOracle.mock.decimals.returns(18)
     })
 
     beforeEach('deploy WooPP', async () => {
@@ -612,15 +612,16 @@ describe('WooPP Test Suite 1', () => {
       expect(quoteInfo.chainlinkRefOracle).to.eq(ZERO_ADDR)
     })
 
-
     it('setChainlinkRefOracle revert1', async () => {
-      await expect(wooPP.setChainlinkRefOracle(ZERO_ADDR, chainlinkOracle.address))
-      .to.be.revertedWith('WooPP: token_ZERO_ADDR')
+      await expect(wooPP.setChainlinkRefOracle(ZERO_ADDR, chainlinkOracle.address)).to.be.revertedWith(
+        'WooPP: token_ZERO_ADDR'
+      )
     })
 
     it('setChainlinkRefOracle revert2', async () => {
-      await expect(wooPP.setChainlinkRefOracle(baseToken1.address, chainlinkOracle.address))
-        .to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
+      await expect(wooPP.setChainlinkRefOracle(baseToken1.address, chainlinkOracle.address)).to.be.revertedWith(
+        'WooPP: TOKEN_DOES_NOT_EXIST'
+      )
     })
 
     it('setChainlinkRefOracle event1', async () => {

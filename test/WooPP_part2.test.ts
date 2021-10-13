@@ -84,12 +84,9 @@ describe('WooPP Test Suite 2', () => {
     it('sellBase accuracy1', async () => {
       // expect(await baseToken1.balanceOf(user1.address)).to.eq(0)
       // expect(await baseToken1.balanceOf(wooPP.address)).to.eq(10000)
-
       // await wooPP.withdraw(baseToken1.address, user1.address, 2000)
-
       // // await expect(() => wooPP.withdraw(baseToken1.address, user1.address, 2000))
       // //     .to.changeTokenBalances(baseToken1, [wooPP, user1], [-2000, 2000]);
-
       // expect(await baseToken1.balanceOf(user1.address)).to.eq(2000)
       // expect(await baseToken1.balanceOf(wooPP.address)).to.eq(8000)
     })
@@ -107,7 +104,6 @@ describe('WooPP Test Suite 2', () => {
     //     .to.emit(wooPP, 'Withdraw')
     //     .withArgs(baseToken1.address, user1.address, 111)
     // })
-
   })
 
   // TODO: (@qinchao)
