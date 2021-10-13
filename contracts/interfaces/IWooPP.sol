@@ -36,7 +36,6 @@ pragma experimental ABIEncoderV2;
 */
 
 interface IWooPP {
-
     /* ----- Type declarations ----- */
 
     struct TokenInfo {
