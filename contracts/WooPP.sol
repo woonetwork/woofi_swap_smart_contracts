@@ -202,12 +202,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         emit WooSwap(quoteToken, baseToken, quoteAmount, realBaseAmount, from, to);
     }
 
-    function querySellBase(address baseToken, uint256 baseAmount)
-        external
-        view
-        override
-        returns (uint256 quoteAmount)
-    {
+    function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];

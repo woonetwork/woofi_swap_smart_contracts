@@ -572,9 +572,7 @@ describe('WooPP Test Suite 1', () => {
     })
 
     it('setWooracle event1', async () => {
-      await expect(wooPP.setWooracle(wooOracle2.address))
-        .to.emit(wooPP, 'WooracleUpdated')
-        .withArgs(wooOracle2.address)
+      await expect(wooPP.setWooracle(wooOracle2.address)).to.emit(wooPP, 'WooracleUpdated').withArgs(wooOracle2.address)
     })
 
     // --------------------------------------------
