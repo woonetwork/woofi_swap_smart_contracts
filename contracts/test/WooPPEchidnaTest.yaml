@@ -1,0 +1,13 @@
+filterBlacklist: false
+filterFunctions: [
+  "WooPPEchidnaTest.virtualSellBase(address,uint256)",
+  "WooPPEchidnaTest.virtualSellQuote(address,uint256)",
+  "WooPPEchidnaTest.smartSellBase(address)",
+  "WooPPEchidnaTest.smartSellQuote(address)"]
+  # "Test.bad1()"]
+  #"Test.bad(address,uint256)"]
+coverage: false
+# filterFunctions: ["Test.getPairInfo()"]
+# filterFunctions: [
+#   "Test.sellBase(address, uint256, uint256, address, address, address)",
+  # "Test.sellQuote(address, uint256, uint256, address, address, address)"]
