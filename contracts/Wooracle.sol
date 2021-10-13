@@ -39,6 +39,8 @@ import './libraries/InitializableOwnable.sol';
 import './interfaces/IWooracle.sol';
 
 contract Wooracle is InitializableOwnable, IWooracle {
+    /* ----- State variables ----- */
+
     mapping(address => uint256) public price;
     mapping(address => uint256) public coeff;
     mapping(address => uint256) public spread;
@@ -53,6 +55,8 @@ contract Wooracle is InitializableOwnable, IWooracle {
         initOwner(msg.sender);
         staleDuration = uint256(300);
     }
+
+    /* ----- External Functions ----- */
 
     function setQuoteAddr(address newQuoteAddr) external onlyOwner {
         quoteAddr = newQuoteAddr;
@@ -154,6 +158,8 @@ contract Wooracle is InitializableOwnable, IWooracle {
         feasible = isFeasible(base);
     }
 
+    /* ----- Public Functions ----- */
+
     function isStale() public view returns (bool) {
         return block.timestamp > timestamp + staleDuration * 1 seconds;
     }
@@ -161,6 +167,8 @@ contract Wooracle is InitializableOwnable, IWooracle {
     function isFeasible(address base) public view returns (bool) {
         return isValid[base] && !isStale();
     }
+
+    /* ----- Private Functions ----- */
 
     function _setState(
         address base,
