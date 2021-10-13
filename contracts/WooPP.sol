@@ -48,10 +48,8 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
-
 // TODO: add NatSpec documentation
 contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
-
     /* ----- Type declarations ----- */
 
     struct TokenInfo {
