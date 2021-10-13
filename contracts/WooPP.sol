@@ -48,10 +48,35 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
+
+// TODO: add NatSpec documentation
 contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
-    using SafeMath for uint256;
-    using DecimalMath for uint256;
-    using SafeERC20 for IERC20;
+
+    /* ----- Type declarations ----- */
+
+    struct TokenInfo {
+        uint112 reserve;
+        uint112 threshold;
+        uint32 lastResetTimestamp;
+        uint64 lpFeeRate;
+        uint64 R;
+        uint112 target;
+        address chainlinkRefOracle;
+        uint96 refPriceFixCoeff;
+        bool isValid;
+    }
+
+    /* ----- State variables ----- */
+
+    mapping(address => TokenInfo) public tokenInfo;
+    mapping(address => bool) public isStrategist;
+
+    address public immutable override quoteToken;
+    address public wooracle;
+    address public rewardManager;
+    string public pairsInfo; // e.g. BNB/ETH/BTCB/WOO-USDT
+
+    /* ----- Events ----- */
 
     event StrategistUpdated(address indexed strategist, bool flag);
     event RewardManagerUpdated(address indexed newRewardManager);
@@ -68,37 +93,18 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         address indexed to
     );
 
-    mapping(address => bool) public isStrategist;
+    /* ----- Modifiers ----- */
 
     modifier onlyStrategist() {
         require(msg.sender == _OWNER_ || isStrategist[msg.sender], 'WooPP: NOT_STRATEGIST');
         _;
     }
 
-    // ============ Core Address ============
+    /* ----- External Functions ----- */
 
-    address public immutable override quoteToken;
-
-    // ============ Variables for Pricing ============
-
-    struct TokenInfo {
-        uint112 reserve;
-        uint112 threshold;
-        uint32 lastResetTimestamp;
-        uint64 lpFeeRate;
-        uint64 R;
-        uint112 target;
-        address chainlinkRefOracle;
-        uint96 refPriceFixCoeff;
-        bool isValid;
-    }
-
-    address public wooracle;
-    mapping(address => TokenInfo) public tokenInfo;
-
-    string public pairsInfo; // e.g. BNB/ETH/BTCB/WOO-USDT  (only one single quoteToken supported)
-
-    address public rewardManager;
+    using SafeMath for uint256;
+    using DecimalMath for uint256;
+    using SafeERC20 for IERC20;
 
     constructor(
         address newQuoteToken,
@@ -347,7 +353,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         emit ParametersUpdated(baseToken, newThreshold, newLpFeeRate, newR);
     }
 
-    // ========== Administrative functions ==========
+    /* ----- Admin Functions ----- */
 
     function setStrategist(address strategist, bool flag) external nonReentrant onlyOwner {
         require(strategist != address(0), 'WooPP: strategist_ZERO_ADDR');
@@ -372,7 +378,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         emit Withdraw(token, _OWNER_, amount);
     }
 
-    // ========== Private functions ========== //
+    /* ----- Private Functions ----- */
 
     function _ensurePriceReliable(
         uint256 p,
