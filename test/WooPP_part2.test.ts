@@ -55,12 +55,11 @@ const WOO_PRICE = 0.85
 
 const ONE = BigNumber.from(10).pow(18)
 
-const WOOPP_BTC_BALANCE = utils.parseEther("100")       // 100 btc
-const WOOPP_USDT_BALANCE = utils.parseEther("10000000") // 10 million usdt
-const WOOPP_WOO_BALANCE = utils.parseEther("5000000")   // 5 million woo
+const WOOPP_BTC_BALANCE = utils.parseEther('100') // 100 btc
+const WOOPP_USDT_BALANCE = utils.parseEther('10000000') // 10 million usdt
+const WOOPP_WOO_BALANCE = utils.parseEther('5000000') // 5 million woo
 
 describe('WooPP Test Suite 2', () => {
-
   const [owner, user1, user2] = new MockProvider().getWallets()
 
   describe('', () => {
@@ -77,14 +76,15 @@ describe('WooPP Test Suite 2', () => {
       wooracle = await deployMockContract(owner, IWooracle.abi)
 
       await wooracle.mock.timestamp.returns(BigNumber.from(1634180070))
-      await wooracle.mock.getPrice.withArgs(btcToken.address).returns(
-        ONE.mul(BTC_PRICE),
-        true)
-      await wooracle.mock.getState.withArgs(btcToken.address).returns(
-        ONE.mul(BTC_PRICE),
-        BigNumber.from(10).pow(18).mul(1).div(10000),
-        BigNumber.from(10).pow(9).mul(2),
-        true)
+      await wooracle.mock.getPrice.withArgs(btcToken.address).returns(ONE.mul(BTC_PRICE), true)
+      await wooracle.mock.getState
+        .withArgs(btcToken.address)
+        .returns(
+          ONE.mul(BTC_PRICE),
+          BigNumber.from(10).pow(18).mul(1).div(10000),
+          BigNumber.from(10).pow(9).mul(2),
+          true
+        )
 
       // await usdtToken.mint(owner.address, ONE.mul(100000));
       // await btcToken.mint(owner.address, ONE.mul(1));
@@ -97,25 +97,18 @@ describe('WooPP Test Suite 2', () => {
       // const lpFeeRate = BigNumber.from(10).pow(18).mul(1).div(1000)
       const lpFeeRate = 0
       const R = BigNumber.from(0)
-      await wooPP.addBaseToken(
-        btcToken.address,
-        threshold,
-        lpFeeRate,
-        R,
-        ZERO_ADDR)
+      await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
 
-      await usdtToken.mint(wooPP.address, WOOPP_USDT_BALANCE);
-      await btcToken.mint(wooPP.address, WOOPP_BTC_BALANCE);
-      await wooToken.mint(wooPP.address, WOOPP_WOO_BALANCE);
+      await usdtToken.mint(wooPP.address, WOOPP_USDT_BALANCE)
+      await btcToken.mint(wooPP.address, WOOPP_BTC_BALANCE)
+      await wooToken.mint(wooPP.address, WOOPP_WOO_BALANCE)
     })
 
     it('querySellBase accuracy1', async () => {
       const baseAmount = ONE.mul(1)
       const minQuoteAmount = ONE.mul(BTC_PRICE).mul(99).div(100)
 
-      const quoteBigAmount = await wooPP.querySellBase(
-        btcToken.address,
-        baseAmount)
+      const quoteBigAmount = await wooPP.querySellBase(btcToken.address, baseAmount)
 
       console.log('Sell 1 BTC for: ', utils.formatEther(quoteBigAmount))
 
@@ -128,7 +121,7 @@ describe('WooPP Test Suite 2', () => {
     })
 
     it('sellBase accuracy1', async () => {
-      await btcToken.mint(user1.address, ONE.mul(3));
+      await btcToken.mint(user1.address, ONE.mul(3))
       const preUserUsdt = await usdtToken.balanceOf(user1.address)
       const preUserBtc = await btcToken.balanceOf(user1.address)
 
@@ -141,13 +134,9 @@ describe('WooPP Test Suite 2', () => {
       const quoteAmount = await wooPP.querySellBase(btcToken.address, baseAmount)
 
       await btcToken.connect(user1).approve(wooPP.address, ONE.mul(100))
-      await wooPP.connect(user1).sellBase(
-        btcToken.address,
-        baseAmount,
-        minQuoteAmount,
-        user1.address,
-        user1.address,
-        ZERO_ADDR)
+      await wooPP
+        .connect(user1)
+        .sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, user1.address, ZERO_ADDR)
 
       const usdtSize = await wooPP.poolSize(usdtToken.address)
       expect(preUsdtSize.sub(usdtSize)).to.eq(quoteAmount)
@@ -160,7 +149,6 @@ describe('WooPP Test Suite 2', () => {
 
       const userBtc = await btcToken.balanceOf(user1.address)
       expect(btcSize.sub(preBtcSize)).to.eq(preUserBtc.sub(userBtc))
-
 
       console.log('user1 usdt: ', utils.formatEther(preUserUsdt), utils.formatEther(userUsdt))
       console.log('user1 btc: ', utils.formatEther(preUserBtc), utils.formatEther(userBtc))
