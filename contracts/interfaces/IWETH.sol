@@ -2,6 +2,7 @@
 pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
+/// @title Switching ETH and WETH
 interface IWETH {
     /// @dev Deposit ETH into WETH
     function deposit() external payable;

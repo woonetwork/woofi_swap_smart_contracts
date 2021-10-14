@@ -35,6 +35,8 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
+/// @title TODO
+/// @notice TODO
 interface IRewardManager {
     /// @dev Set up the reward amount (in USD) for the specified user.
     /// @param user TODO
