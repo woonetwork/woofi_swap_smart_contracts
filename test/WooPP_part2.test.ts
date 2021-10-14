@@ -106,7 +106,7 @@ describe('WooPP Test Suite 2', () => {
 
     it('querySellBase accuracy1', async () => {
       const baseAmount = ONE.mul(1)
-      const minQuoteAmount = ONE.mul(BTC_PRICE).mul(99).div(100)
+      const minQuoteAmount = ONE.mul(BTC_PRICE).mul(999).div(1000)
 
       const quoteBigAmount = await wooPP.querySellBase(btcToken.address, baseAmount)
 
@@ -120,13 +120,29 @@ describe('WooPP Test Suite 2', () => {
       expect((benchmarkNum - quoteNum) / benchmarkNum).to.lessThan(0.0002)
     })
 
+    it('querySellQuote accuracy1', async () => {
+      const quoteAmount = ONE.mul(50000)
+      const minBaseAmount = ONE.mul(999).div(1000)
+
+      const baseBigAmount = await wooPP.querySellQuote(btcToken.address, quoteAmount)
+
+      console.log('Swap 50000 usdt for BTC: ', utils.formatEther(baseBigAmount))
+
+      const baseNumber = Number(utils.formatEther(baseBigAmount))
+      const minBaseNum = Number(utils.formatEther(minBaseAmount))
+      const benchmarkNum = 1
+
+      expect(baseNumber).to.greaterThanOrEqual(minBaseNum)
+      expect((benchmarkNum - baseNumber) / benchmarkNum).to.lessThan(0.0002)
+    })
+
     it('sellBase accuracy1', async () => {
       await btcToken.mint(user1.address, ONE.mul(3))
       const preUserUsdt = await usdtToken.balanceOf(user1.address)
       const preUserBtc = await btcToken.balanceOf(user1.address)
 
       const baseAmount = ONE.mul(1)
-      const minQuoteAmount = ONE.mul(BTC_PRICE).mul(99).div(100)
+      const minQuoteAmount = ONE.mul(BTC_PRICE).mul(999).div(1000)
 
       const preUsdtSize = await wooPP.poolSize(usdtToken.address)
       const preBtcSize = await wooPP.poolSize(btcToken.address)
@@ -149,6 +165,52 @@ describe('WooPP Test Suite 2', () => {
 
       const userBtc = await btcToken.balanceOf(user1.address)
       expect(btcSize.sub(preBtcSize)).to.eq(preUserBtc.sub(userBtc))
+
+      console.log('user1 usdt: ', utils.formatEther(preUserUsdt), utils.formatEther(userUsdt))
+      console.log('user1 btc: ', utils.formatEther(preUserBtc), utils.formatEther(userBtc))
+
+      console.log('owner usdt: ', utils.formatEther(await usdtToken.balanceOf(owner.address)))
+      console.log('owner btc: ', utils.formatEther(await btcToken.balanceOf(owner.address)))
+
+      console.log('wooPP usdt: ', utils.formatEther(preUsdtSize), utils.formatEther(usdtSize))
+      console.log('wooPP btc: ', utils.formatEther(preBtcSize), utils.formatEther(btcSize))
+    })
+
+    it('sellQuote accuracy1', async () => {
+      await usdtToken.mint(user1.address, ONE.mul(100000))
+      const preUserUsdt = await usdtToken.balanceOf(user1.address)
+      const preUserBtc = await btcToken.balanceOf(user1.address)
+
+      const quoteAmount = ONE.mul(100000)
+      const minBaseAmount = ONE.mul(999).div(1000)
+
+      const preUsdtSize = await wooPP.poolSize(usdtToken.address)
+      const preBtcSize = await wooPP.poolSize(btcToken.address)
+
+      const baseAmount = await wooPP.querySellQuote(btcToken.address, quoteAmount)
+
+      await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
+      await wooPP
+        .connect(user1)
+        .sellQuote(
+          btcToken.address,
+          quoteAmount,
+          minBaseAmount,
+          user1.address,
+          user1.address,
+          ZERO_ADDR)
+
+      const usdtSize = await wooPP.poolSize(usdtToken.address)
+      expect(usdtSize.sub(preUsdtSize)).to.eq(quoteAmount)
+
+      const userUsdt = await usdtToken.balanceOf(user1.address)
+      expect(usdtSize.sub(preUsdtSize)).to.eq(preUserUsdt.sub(userUsdt))
+
+      const btcSize = await wooPP.poolSize(btcToken.address)
+      expect(preBtcSize.sub(btcSize)).to.eq(baseAmount)
+
+      const userBtc = await btcToken.balanceOf(user1.address)
+      expect(preBtcSize.sub(btcSize)).to.eq(userBtc.sub(preUserBtc))
 
       console.log('user1 usdt: ', utils.formatEther(preUserUsdt), utils.formatEther(userUsdt))
       console.log('user1 btc: ', utils.formatEther(preUserBtc), utils.formatEther(userBtc))
