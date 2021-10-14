@@ -46,14 +46,20 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract WooRouter is Ownable, ReentrancyGuard {
+    /* ----- Type declarations ----- */
+
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+
+    /* ----- Constant variables ----- */
 
     // Erc20 placeholder address for native tokens (e.g. eth, bnb, matic, etc)
     address constant ETH_PLACEHOLDER_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     // Wrapper for native tokens (e.g. eth, bnb, matic, etc)
     address constant WETH_ADDRESS = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+
+    /* ----- State variables ----- */
 
     address public quoteToken;
     mapping(address => bool) public isWhitelisted;
@@ -63,6 +69,8 @@ contract WooRouter is Ownable, ReentrancyGuard {
         WooSwap,
         DodoSwap
     }
+
+    /* ----- Events ----- */
 
     event WooRouterSwap(
         SwapType swapType,
