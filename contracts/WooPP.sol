@@ -50,6 +50,13 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 
 // TODO: add NatSpec documentation
 contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
+
+    /* ----- Type declarations ----- */
+
+    using SafeMath for uint256;
+    using DecimalMath for uint256;
+    using SafeERC20 for IERC20;
+
     /* ----- State variables ----- */
 
     mapping(address => TokenInfo) public tokenInfo;
@@ -66,12 +73,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         require(msg.sender == _OWNER_ || isStrategist[msg.sender], 'WooPP: NOT_STRATEGIST');
         _;
     }
-
-    /* ----- External Functions ----- */
-
-    using SafeMath for uint256;
-    using DecimalMath for uint256;
-    using SafeERC20 for IERC20;
 
     constructor(
         address newQuoteToken,
@@ -92,6 +93,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
 
         emit ChainlinkRefOracleUpdated(newQuoteToken, quoteChainlinkRefOracle);
     }
+
+    /* ----- External Functions ----- */
 
     function setPairsInfo(string calldata newPairsInfo) external nonReentrant onlyStrategist {
         pairsInfo = newPairsInfo;
