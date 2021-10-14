@@ -50,7 +50,6 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 
 // TODO: add NatSpec documentation
 contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
-
     /* ----- Type declarations ----- */
 
     using SafeMath for uint256;
