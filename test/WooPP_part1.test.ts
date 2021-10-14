@@ -331,7 +331,7 @@ describe('WooPP Test Suite 1', () => {
     })
 
     it('tuneParameters revert1', async () => {
-      await expect(wooPP.tuneParameters(ZERO_ADDR, 11, 22, 33)).to.be.revertedWith('WooPP: BASE_TOKEN_ZERO_ADDR')
+      await expect(wooPP.tuneParameters(ZERO_ADDR, 11, 22, 33)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
     })
 
     it('tuneParameters revert2', async () => {
