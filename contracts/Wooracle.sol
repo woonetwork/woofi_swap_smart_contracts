@@ -164,21 +164,13 @@ contract Wooracle is InitializableOwnable, IWooracle {
         timestamp = block.timestamp;
     }
 
-    /// @dev Get baseToken price
-    /// @param base baseToken address
-    /// @return priceNow latest price of baseToken
-    /// @return feasible TODO
+    /// @inheritdoc IWooracle
     function getPrice(address base) external view override returns (uint256 priceNow, bool feasible) {
         priceNow = price[base];
         feasible = isFeasible(base);
     }
 
-    /// @dev TODO
-    /// @param base baseToken address
-    /// @return priceNow latest price of baseToken
-    /// @return spreadNow TODO
-    /// @return coeffNow TODO
-    /// @return feasible TODO
+    /// @inheritdoc IWooracle
     function getState(address base)
         external
         view

@@ -36,11 +36,12 @@ pragma experimental ABIEncoderV2;
 */
 
 interface IRewardManager {
-    /**
-     * Set up the reward amount (in USD) for the specified user.
-     */
+    /// @dev Set up the reward amount (in USD) for the specified user.
+    /// @param user TODO
+    /// @param amount TODO
     function addReward(address user, uint256 amount) external;
 
-    /// User claims the reward.
+    /// @dev User claims the reward.
+    /// @param user TODO
     function claimReward(address user) external;
 }

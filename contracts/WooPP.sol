@@ -62,6 +62,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     mapping(address => TokenInfo) public tokenInfo;
     mapping(address => bool) public isStrategist;
 
+    /// @inheritdoc IWooPP
     address public immutable override quoteToken;
     address public wooracle;
     address public rewardManager;
@@ -116,14 +117,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         pairsInfo = newPairsInfo;
     }
 
-    /// @dev Swap baseToken into quoteToken
-    /// @param baseToken TODO
-    /// @param baseAmount amount of baseToken that user want to swap
-    /// @param minQuoteAmount minimum amount of quoteToken that user accept to receive
-    /// @param from baseToken sender address
-    /// @param to quoteToken receiver address
-    /// @param rebateTo TODO
-    /// @return realQuoteAmount TODO
+    /// @inheritdoc IWooPP
     function sellBase(
         address baseToken,
         uint256 baseAmount,
@@ -158,14 +152,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         emit WooSwap(baseToken, quoteToken, baseAmount, realQuoteAmount, from, to);
     }
 
-    /// @dev Swap quoteToken into baseToken
-    /// @param baseToken TODO
-    /// @param quoteAmount amount of quoteToken that user want to swap
-    /// @param minBaseAmount minimum amount of baseToken that user accept to receive
-    /// @param from quoteToken sender address
-    /// @param to baseToken receiver address
-    /// @param rebateTo TODO
-    /// @return realBaseAmount TODO
+    /// @inheritdoc IWooPP
     function sellQuote(
         address baseToken,
         uint256 quoteAmount,
@@ -196,10 +183,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         emit WooSwap(quoteToken, baseToken, quoteAmount, realBaseAmount, from, to);
     }
 
-    /// @dev TODO
-    /// @param baseToken TODO
-    /// @param baseAmount TODO
-    /// @return quoteAmount TODO
+    /// @inheritdoc IWooPP
     function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
@@ -213,10 +197,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         require(quoteAmount <= IERC20(quoteToken).balanceOf(address(this)));
     }
 
-    /// @dev TODO
-    /// @param baseToken TODO
-    /// @param quoteAmount TODO
-    /// @return baseAmount TODO
+    /// @inheritdoc IWooPP
     function querySellQuote(address baseToken, uint256 quoteAmount)
         external
         view
