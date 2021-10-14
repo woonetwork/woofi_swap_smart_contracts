@@ -192,13 +192,7 @@ describe('WooPP Test Suite 2', () => {
       await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
       await wooPP
         .connect(user1)
-        .sellQuote(
-          btcToken.address,
-          quoteAmount,
-          minBaseAmount,
-          user1.address,
-          user1.address,
-          ZERO_ADDR)
+        .sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, user1.address, ZERO_ADDR)
 
       const usdtSize = await wooPP.poolSize(usdtToken.address)
       expect(usdtSize.sub(preUsdtSize)).to.eq(quoteAmount)
