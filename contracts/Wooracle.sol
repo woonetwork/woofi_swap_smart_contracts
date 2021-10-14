@@ -38,6 +38,8 @@ pragma experimental ABIEncoderV2;
 import './libraries/InitializableOwnable.sol';
 import './interfaces/IWooracle.sol';
 
+/// @title TODO
+/// @notice TODO
 contract Wooracle is InitializableOwnable, IWooracle {
     /* ----- State variables ----- */
 
@@ -58,14 +60,21 @@ contract Wooracle is InitializableOwnable, IWooracle {
 
     /* ----- External Functions ----- */
 
+    /// @dev Set quoteAddr from newQuoteAddr
+    /// @param newQuoteAddr token address
     function setQuoteAddr(address newQuoteAddr) external onlyOwner {
         quoteAddr = newQuoteAddr;
     }
 
+    /// @dev Set staleDuration from newStaleDuration
+    /// @param newStaleDuration TODO
     function setStaleDuration(uint256 newStaleDuration) external onlyOwner {
         staleDuration = newStaleDuration;
     }
 
+    /// @dev Update baseToken price
+    /// @param base baseToken address
+    /// @param newPrice TODO
     function postPrice(address base, uint256 newPrice) external onlyOwner {
         if (newPrice == uint256(0)) {
             isValid[base] = false;
@@ -76,6 +85,9 @@ contract Wooracle is InitializableOwnable, IWooracle {
         timestamp = block.timestamp;
     }
 
+    /// @dev Batch update baseTokens price
+    /// @param bases list of baseToken address
+    /// @param newPrices TODO
     function postPriceList(address[] calldata bases, uint256[] calldata newPrices) external onlyOwner {
         uint256 length = bases.length;
         require(length == newPrices.length, 'Wooracle: length_INVALID');
@@ -92,11 +104,17 @@ contract Wooracle is InitializableOwnable, IWooracle {
         timestamp = block.timestamp;
     }
 
+    /// @dev TODO
+    /// @param base baseToken address
+    /// @param newSpread TODO
     function postSpread(address base, uint256 newSpread) external onlyOwner {
         spread[base] = newSpread;
         timestamp = block.timestamp;
     }
 
+    /// @dev TODO
+    /// @param bases list of baseToken address
+    /// @param newSpreads TODO
     function postSpreadList(address[] calldata bases, uint256[] calldata newSpreads) external onlyOwner {
         uint256 length = bases.length;
         require(length == newSpreads.length, 'Wooracle: length_INVALID');
@@ -108,6 +126,11 @@ contract Wooracle is InitializableOwnable, IWooracle {
         timestamp = block.timestamp;
     }
 
+    /// @dev TODO
+    /// @param base baseToken address
+    /// @param newPrice TODO
+    /// @param newSpread TODO
+    /// @param newCoeff TODO
     function postState(
         address base,
         uint256 newPrice,
@@ -118,6 +141,11 @@ contract Wooracle is InitializableOwnable, IWooracle {
         timestamp = block.timestamp;
     }
 
+    /// @dev TODO
+    /// @param bases list of baseToken address
+    /// @param newPrices TODO
+    /// @param newSpreads TODO
+    /// @param newCoeffs TODO
     function postStateList(
         address[] calldata bases,
         uint256[] calldata newPrices,
@@ -136,11 +164,21 @@ contract Wooracle is InitializableOwnable, IWooracle {
         timestamp = block.timestamp;
     }
 
+    /// @dev Get baseToken price
+    /// @param base baseToken address
+    /// @return priceNow latest price of baseToken
+    /// @return feasible TODO
     function getPrice(address base) external view override returns (uint256 priceNow, bool feasible) {
         priceNow = price[base];
         feasible = isFeasible(base);
     }
 
+    /// @dev TODO
+    /// @param base baseToken address
+    /// @return priceNow latest price of baseToken
+    /// @return spreadNow TODO
+    /// @return coeffNow TODO
+    /// @return feasible TODO
     function getState(address base)
         external
         view
@@ -160,10 +198,15 @@ contract Wooracle is InitializableOwnable, IWooracle {
 
     /* ----- Public Functions ----- */
 
+    /// @dev TODO
+    /// @return TODO
     function isStale() public view returns (bool) {
         return block.timestamp > timestamp + staleDuration * 1 seconds;
     }
 
+    /// @dev TODO
+    /// @param base baseToken address
+    /// @return TODO
     function isFeasible(address base) public view returns (bool) {
         return isValid[base] && !isStale();
     }
