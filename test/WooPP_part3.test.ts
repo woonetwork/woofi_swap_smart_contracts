@@ -118,36 +118,19 @@ describe('WooPP Test Suite 2', () => {
       await wooPP.pause()
       expect(await wooPP.paused()).to.eq(true)
 
-      await expect(
-        wooPP.querySellBase(btcToken.address, ONE))
-      .to.be.revertedWith('Pausable: paused')
+      await expect(wooPP.querySellBase(btcToken.address, ONE)).to.be.revertedWith('Pausable: paused')
 
-      await expect(
-        wooPP.querySellQuote(btcToken.address, ONE.mul(50000)))
-      .to.be.revertedWith('Pausable: paused')
+      await expect(wooPP.querySellQuote(btcToken.address, ONE.mul(50000))).to.be.revertedWith('Pausable: paused')
 
       // await wooPP.unpause()
 
       await expect(
-        wooPP.sellBase(
-          btcToken.address,
-          ONE,
-          ONE.mul(49900),
-          owner.address,
-          owner.address,
-          ZERO_ADDR))
-      .to.be.revertedWith('Pausable: paused')
+        wooPP.sellBase(btcToken.address, ONE, ONE.mul(49900), owner.address, owner.address, ZERO_ADDR)
+      ).to.be.revertedWith('Pausable: paused')
 
       await expect(
-        wooPP.sellQuote(
-          btcToken.address,
-          ONE.mul(50500),
-          ONE,
-          owner.address,
-          owner.address,
-          ZERO_ADDR))
-        .to.be.revertedWith('Pausable: paused')
+        wooPP.sellQuote(btcToken.address, ONE.mul(50500), ONE, owner.address, owner.address, ZERO_ADDR)
+      ).to.be.revertedWith('Pausable: paused')
     })
-
   })
 })

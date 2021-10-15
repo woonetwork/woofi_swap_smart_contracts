@@ -99,10 +99,13 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     /* ----- External Functions ----- */
 
     /// @inheritdoc IWooPP
-    function querySellBase(
-        address baseToken,
-        uint256 baseAmount
-    )  external view override whenNotPaused returns (uint256 quoteAmount) {
+    function querySellBase(address baseToken, uint256 baseAmount)
+        external
+        view
+        override
+        whenNotPaused
+        returns (uint256 quoteAmount)
+    {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
 
         TokenInfo memory baseInfo = tokenInfo[baseToken];
@@ -118,10 +121,13 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     }
 
     /// @inheritdoc IWooPP
-    function querySellQuote(
-        address baseToken,
-        uint256 quoteAmount
-    ) external view override whenNotPaused returns (uint256 baseAmount) {
+    function querySellQuote(address baseToken, uint256 quoteAmount)
+        external
+        view
+        override
+        whenNotPaused
+        returns (uint256 baseAmount)
+    {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
 
         TokenInfo memory baseInfo = tokenInfo[baseToken];
@@ -367,10 +373,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     /// @dev TODO
     /// @param token TODO
     /// @param amount TODO
-    function withdrawToOwner(
-        address token,
-        uint256 amount
-    ) external nonReentrant onlyStrategist {
+    function withdrawToOwner(address token, uint256 amount) external nonReentrant onlyStrategist {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');
         IERC20(token).safeTransfer(_OWNER_, amount);
         emit Withdraw(token, _OWNER_, amount);

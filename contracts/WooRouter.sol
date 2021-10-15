@@ -48,7 +48,6 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 /// @title TODO
 /// @notice TODO
 contract WooRouter is Ownable, ReentrancyGuard {
-
     /* ----- Type declarations ----- */
 
     using SafeMath for uint256;
@@ -366,10 +365,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
     /// @param baseToken TODO
     /// @param baseAmount baseToken amount that user want to send
     /// @return quoteAmount quoteToken amount that user will be receive
-    function querySellBase(
-        address baseToken,
-        uint256 baseAmount
-    ) external view returns (uint256 quoteAmount) {
+    function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : baseToken;
         quoteAmount = wooPool.querySellBase(baseToken, baseAmount);
@@ -379,10 +375,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
     /// @param baseToken TODO
     /// @param quoteAmount quoteToken amount that user want to send
     /// @return baseAmount baseToken amount that user will be receive
-    function querySellQuote(
-        address baseToken,
-        uint256 quoteAmount
-    ) external view returns (uint256 baseAmount) {
+    function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : baseToken;
         baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);

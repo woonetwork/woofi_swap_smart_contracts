@@ -44,8 +44,8 @@ import TestToken from '../build/TestToken.json'
 use(solidity)
 
 const {
-    BigNumber,
-    constants: { MaxUint256 },
+  BigNumber,
+  constants: { MaxUint256 },
 } = ethers
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
@@ -201,68 +201,50 @@ describe('WooRouter', () => {
     })
   })
 
+  describe('WooPP Paused', () => {
+    let wooracle: Contract
+    let wooPP: Contract
+    let wooRouter: Contract
+    let baseToken: Contract
+    let quoteToken: Contract
 
-    describe('WooPP Paused', () => {
-        let wooracle: Contract
-        let wooPP: Contract
-        let wooRouter: Contract
-        let baseToken: Contract
-        let quoteToken: Contract
-
-        before('Deploy ERC20', async () => {
-            baseToken = await deployContract(owner, TestToken, [])
-            quoteToken = await deployContract(owner, TestToken, [])
-        })
-
-        beforeEach('Deploy WooRouter', async () => {
-            wooracle = await deployContract(owner, Wooracle, [])
-            wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
-            wooRouter = await deployContract(owner, WooRouter, [wooPP.address])
-
-            await baseToken.mint(wooPP.address, ONE.mul(3))
-            await quoteToken.mint(wooPP.address, ONE.mul(50000).mul(3))
-
-            await baseToken.mint(user.address, ONE)
-            await quoteToken.mint(user.address, ONE.mul(55000))
-        })
-
-        it('Woopp paused revert1', async () => {
-            await wooPP.pause()
-            expect(await wooPP.paused()).to.eq(true)
-
-            await baseToken.connect(user).approve(wooRouter.address, ONE.mul(3))
-            await quoteToken.connect(user).approve(wooRouter.address, ONE.mul(60000))
-
-            await expect(
-                wooRouter.connect(user).swap(
-                    quoteToken.address,
-                    baseToken.address,
-                    ONE.mul(50500),
-                    ONE,
-                    user.address,
-                    ZERO_ADDR
-                ))
-                .to.be.revertedWith('Pausable: paused')
-
-            await expect(
-                wooRouter.connect(user).sellBase(
-                    baseToken.address,
-                    ONE,
-                    ONE.mul(50000 - 500),
-                    user.address,
-                    ZERO_ADDR
-                ))
-                .to.be.revertedWith('Pausable: paused')
-
-            await expect(
-                wooRouter.connect(user).sellQuote(
-                    baseToken.address,
-                    ONE.mul(50000 + 500),
-                    ONE,
-                    user.address,
-                    ZERO_ADDR
-                ))
-                .to.be.revertedWith('Pausable: paused')
-        })
+    before('Deploy ERC20', async () => {
+      baseToken = await deployContract(owner, TestToken, [])
+      quoteToken = await deployContract(owner, TestToken, [])
     })
+
+    beforeEach('Deploy WooRouter', async () => {
+      wooracle = await deployContract(owner, Wooracle, [])
+      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
+      wooRouter = await deployContract(owner, WooRouter, [wooPP.address])
+
+      await baseToken.mint(wooPP.address, ONE.mul(3))
+      await quoteToken.mint(wooPP.address, ONE.mul(50000).mul(3))
+
+      await baseToken.mint(user.address, ONE)
+      await quoteToken.mint(user.address, ONE.mul(55000))
+    })
+
+    it('Woopp paused revert1', async () => {
+      await wooPP.pause()
+      expect(await wooPP.paused()).to.eq(true)
+
+      await baseToken.connect(user).approve(wooRouter.address, ONE.mul(3))
+      await quoteToken.connect(user).approve(wooRouter.address, ONE.mul(60000))
+
+      await expect(
+        wooRouter
+          .connect(user)
+          .swap(quoteToken.address, baseToken.address, ONE.mul(50500), ONE, user.address, ZERO_ADDR)
+      ).to.be.revertedWith('Pausable: paused')
+
+      await expect(
+        wooRouter.connect(user).sellBase(baseToken.address, ONE, ONE.mul(50000 - 500), user.address, ZERO_ADDR)
+      ).to.be.revertedWith('Pausable: paused')
+
+      await expect(
+        wooRouter.connect(user).sellQuote(baseToken.address, ONE.mul(50000 + 500), ONE, user.address, ZERO_ADDR)
+      ).to.be.revertedWith('Pausable: paused')
+    })
+  })
 })
