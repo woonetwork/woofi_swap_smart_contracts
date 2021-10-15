@@ -62,7 +62,7 @@ const WOOPP_WOO_BALANCE = utils.parseEther('5000000') // 5 million woo
 describe('WooPP Test Suite 2', () => {
   const [owner, user1, user2] = new MockProvider().getWallets()
 
-  describe('', () => {
+  describe('swap func', () => {
     let wooPP: Contract
     let wooracle: Contract
     let usdtToken: Contract
@@ -216,19 +216,441 @@ describe('WooPP Test Suite 2', () => {
       console.log('wooPP btc: ', utils.formatEther(preBtcSize), utils.formatEther(btcSize))
     })
 
-    // it('sellBase revert1', async () => {
-    //   await expect(wooPP.withdraw(ZERO_ADDR, user1.address, 100)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
-    // })
+    it('querySellBase reverted with zero addr', async () => {
+      const baseAmount = ONE.mul(1)
 
-    // it('sellBase revert2', async () => {
-    //   await expect(wooPP.withdraw(baseToken1.address, ZERO_ADDR, 100)).to.be.revertedWith('WooPP: to_ZERO_ADDR')
-    // })
+      await expect(wooPP.querySellBase(ZERO_ADDR, baseAmount)).to.be.revertedWith('WooPP: baseToken_ZERO_ADDR')
+    })
 
-    // it('sellBase event1', async () => {
-    //   await expect(wooPP.withdraw(baseToken1.address, user1.address, 111))
-    //     .to.emit(wooPP, 'Withdraw')
-    //     .withArgs(baseToken1.address, user1.address, 111)
-    // })
+    it('querySellBase reverted with token not exist', async () => {
+      const baseAmount = ONE.mul(1)
+
+      await expect(wooPP.querySellBase(wooToken.address, baseAmount)).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
+    })
+
+    it('querySellBase reverted with quoteAmount greater than balance', async () => {
+      // TODO: (@qinchao)
+      // require(quoteAmount <= IERC20(quoteToken).balanceOf(address(this)));
+    })
+
+    it('querySellQuote reverted with zero addr', async () => {
+      const quoteAmount = ONE.mul(50000)
+
+      await expect(wooPP.querySellQuote(ZERO_ADDR, quoteAmount)).to.be.revertedWith('WooPP: baseToken_ZERO_ADDR')
+    })
+
+    it('querySellQuote reverted with token not exist', async () => {
+      const quoteAmount = ONE.mul(50000)
+
+      await expect(wooPP.querySellBase(wooToken.address, quoteAmount)).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
+    })
+
+    it('querySellQuote reverted with baseAmount greater than balance', async () => {
+      // TODO: (@qinchao)
+      // require(baseAmount <= IERC20(baseToken).balanceOf(address(this)));
+    })
+
+    it('sellBase reverted with zero addr', async () => {
+      await btcToken.mint(user1.address, ONE.mul(3))
+
+      const baseAmount = ONE.mul(1)
+      const minQuoteAmount = ONE.mul(BTC_PRICE).mul(999).div(1000)
+
+      await btcToken.connect(user1).approve(wooPP.address, ONE.mul(100))
+
+      await expect(
+        wooPP.connect(user1).sellBase(ZERO_ADDR, baseAmount, minQuoteAmount, user1.address, user1.address, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: baseToken_ZERO_ADDR')
+
+      await expect(
+        wooPP.connect(user1).sellBase(btcToken.address, baseAmount, minQuoteAmount, ZERO_ADDR, user1.address, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: from_ZERO_ADDR')
+
+      await expect(
+        wooPP.connect(user1).sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: to_ZERO_ADDR')
+    })
+
+    it('sellBase reverted with token not exist', async () => {
+      await wooToken.mint(user1.address, ONE.mul(3))
+
+      const baseAmount = ONE.mul(1)
+      const minQuoteAmount = ONE.mul(BTC_PRICE).mul(999).div(1000)
+
+      await wooToken.connect(user1).approve(wooPP.address, ONE.mul(100))
+
+      await expect(
+        wooPP
+          .connect(user1)
+          .sellBase(wooToken.address, baseAmount, minQuoteAmount, user1.address, user1.address, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
+    })
+
+    it('sellBase reverted with quoteAmount less that minQuoteAmount', async () => {
+      await btcToken.mint(user1.address, ONE.mul(3))
+
+      const baseAmount = ONE.mul(1)
+      const minQuoteAmount = ONE.mul(BTC_PRICE).mul(2)
+
+      await btcToken.connect(user1).approve(wooPP.address, ONE.mul(100))
+
+      await expect(
+        wooPP
+          .connect(user1)
+          .sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, user1.address, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: quoteAmount<minQuoteAmount')
+    })
+
+    it('sellBase emit WooSwap event', async () => {
+      await btcToken.mint(user1.address, ONE.mul(3))
+
+      const baseAmount = ONE.mul(1)
+      const minQuoteAmount = ONE.mul(BTC_PRICE).mul(999).div(1000)
+
+      const quoteAmount = await wooPP.querySellBase(btcToken.address, baseAmount)
+
+      await btcToken.connect(user1).approve(wooPP.address, ONE.mul(100))
+
+      await expect(
+        wooPP
+          .connect(user1)
+          .sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, user1.address, ZERO_ADDR)
+      )
+        .to.emit(wooPP, 'WooSwap')
+        .withArgs(btcToken.address, usdtToken.address, baseAmount, quoteAmount, user1.address, user1.address)
+    })
+
+    it('sellQuote reverted with zero addr', async () => {
+      await usdtToken.mint(user1.address, ONE.mul(100000))
+
+      const quoteAmount = ONE.mul(100000)
+      const minBaseAmount = ONE.mul(999).div(1000)
+
+      await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
+
+      await expect(
+        wooPP.connect(user1).sellQuote(ZERO_ADDR, quoteAmount, minBaseAmount, user1.address, user1.address, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: baseToken_ZERO_ADDR')
+
+      await expect(
+        wooPP
+          .connect(user1)
+          .sellQuote(btcToken.address, quoteAmount, minBaseAmount, ZERO_ADDR, user1.address, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: from_ZERO_ADDR')
+
+      await expect(
+        wooPP
+          .connect(user1)
+          .sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: to_ZERO_ADDR')
+    })
+
+    it('sellQuote reverted with token not exist', async () => {
+      await usdtToken.mint(user1.address, ONE.mul(100000))
+
+      const quoteAmount = ONE.mul(100000)
+      const minBaseAmount = ONE.mul(999).div(1000)
+
+      await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
+
+      await expect(
+        wooPP
+          .connect(user1)
+          .sellQuote(wooToken.address, quoteAmount, minBaseAmount, user1.address, user1.address, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
+    })
+
+    it('sellQuote reverted with price exceeds limit', async () => {
+      await usdtToken.mint(user1.address, ONE.mul(100000))
+
+      const quoteAmount = ONE.mul(100000)
+      const minBaseAmount = ONE.mul(3)
+
+      await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
+
+      await expect(
+        wooPP
+          .connect(user1)
+          .sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, user1.address, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: PRICE_EXCEEDS_LIMIT')
+    })
+
+    it('sellQuote emit WooSwap event', async () => {
+      await usdtToken.mint(user1.address, ONE.mul(100000))
+
+      const quoteAmount = ONE.mul(100000)
+      const minBaseAmount = ONE.mul(999).div(1000)
+
+      const baseAmount = await wooPP.querySellQuote(btcToken.address, quoteAmount)
+
+      await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
+
+      await expect(
+        wooPP
+          .connect(user1)
+          .sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, user1.address, ZERO_ADDR)
+      )
+        .to.emit(wooPP, 'WooSwap')
+        .withArgs(usdtToken.address, btcToken.address, quoteAmount, baseAmount, user1.address, user1.address)
+    })
+  })
+
+  describe('access control', () => {
+    let wooPP: Contract
+    let wooracle: Contract
+    let usdtToken: Contract
+    let btcToken: Contract
+    let wooToken: Contract
+
+    before('deploy tokens & wooracle', async () => {
+      usdtToken = await deployContract(owner, TestToken, [])
+      btcToken = await deployContract(owner, TestToken, [])
+      wooToken = await deployContract(owner, TestToken, [])
+      wooracle = await deployMockContract(owner, IWooracle.abi)
+
+      await wooracle.mock.timestamp.returns(BigNumber.from(1634180070))
+      await wooracle.mock.getPrice.withArgs(btcToken.address).returns(ONE.mul(BTC_PRICE), true)
+      await wooracle.mock.getState
+        .withArgs(btcToken.address)
+        .returns(
+          ONE.mul(BTC_PRICE),
+          BigNumber.from(10).pow(18).mul(1).div(10000),
+          BigNumber.from(10).pow(9).mul(2),
+          true
+        )
+    })
+
+    beforeEach('deploy WooPP & Tokens', async () => {
+      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, ZERO_ADDR])
+
+      const threshold = 0
+      // const lpFeeRate = BigNumber.from(10).pow(18).mul(1).div(1000)
+      const lpFeeRate = 0
+      const R = BigNumber.from(0)
+      await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
+
+      await wooPP.connect(owner).setStrategist(user1.address, true)
+      await expect(await wooPP.isStrategist(user1.address)).to.be.equal(true)
+
+      await usdtToken.mint(wooPP.address, WOOPP_USDT_BALANCE)
+      await btcToken.mint(wooPP.address, WOOPP_BTC_BALANCE)
+      await wooToken.mint(wooPP.address, WOOPP_WOO_BALANCE)
+    })
+
+    it('setStrategist', async () => {
+      await wooPP.connect(owner).setStrategist(user2.address, true)
+      await expect(await wooPP.isStrategist(user2.address)).to.be.equal(true)
+      await wooPP.connect(owner).setStrategist(user2.address, false)
+      await expect(await wooPP.isStrategist(user2.address)).to.be.equal(false)
+    })
+
+    it('Prevents zero addr from setStrategist', async () => {
+      await expect(wooPP.connect(owner).setStrategist(ZERO_ADDR, true)).to.be.revertedWith(
+        'WooPP: strategist_ZERO_ADDR'
+      )
+    })
+
+    it('setStrategist emit StrategistUpdated event', async () => {
+      await expect(wooPP.connect(owner).setStrategist(user2.address, true))
+        .to.emit(wooPP, 'StrategistUpdated')
+        .withArgs(user2.address, true)
+      await expect(wooPP.connect(owner).setStrategist(user2.address, false))
+        .to.emit(wooPP, 'StrategistUpdated')
+        .withArgs(user2.address, false)
+    })
+
+    it('withdraw', async () => {
+      await expect(await btcToken.balanceOf(wooPP.address)).to.be.equal(WOOPP_BTC_BALANCE)
+      await expect(await btcToken.balanceOf(user1.address)).to.be.equal(0)
+      await wooPP.withdraw(btcToken.address, user1.address, ONE)
+      await expect(await btcToken.balanceOf(user1.address)).to.be.equal(ONE)
+    })
+
+    it('Prevents zero addr from withdraw', async () => {
+      await expect(wooPP.withdraw(ZERO_ADDR, user1.address, ONE)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
+      await expect(wooPP.withdraw(btcToken.address, ZERO_ADDR, ONE)).to.be.revertedWith('WooPP: to_ZERO_ADDR')
+    })
+
+    it('withdraw emit Withdraw event', async () => {
+      await expect(wooPP.withdraw(btcToken.address, user1.address, ONE))
+        .to.emit(wooPP, 'Withdraw')
+        .withArgs(btcToken.address, user1.address, ONE)
+    })
+
+    it('withdrawToOwner', async () => {
+      await expect(await btcToken.balanceOf(wooPP.address)).to.be.equal(WOOPP_BTC_BALANCE)
+      await expect(await btcToken.balanceOf(owner.address)).to.be.equal(0)
+      await wooPP.connect(user1).withdrawToOwner(btcToken.address, ONE)
+      await expect(await btcToken.balanceOf(owner.address)).to.be.equal(ONE)
+    })
+
+    it('Prevents zero addr from withdrawToOwner', async () => {
+      await expect(wooPP.withdrawToOwner(ZERO_ADDR, ONE)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
+    })
+
+    it('withdrawToOwner emit Withdraw event', async () => {
+      await expect(wooPP.connect(user1).withdrawToOwner(btcToken.address, ONE))
+        .to.emit(wooPP, 'Withdraw')
+        .withArgs(btcToken.address, owner.address, ONE)
+    })
+
+    it('setPairsInfo', async () => {
+      let newPairsInfo = 'test'
+      await wooPP.connect(user1).setPairsInfo(newPairsInfo)
+      await expect(await wooPP.pairsInfo()).to.be.equal(newPairsInfo)
+    })
+
+    it('setWooracle', async () => {
+      let newWooracle = await deployMockContract(owner, IWooracle.abi)
+      await wooPP.connect(user1).setWooracle(newWooracle.address)
+      await expect(await wooPP.wooracle()).to.be.equal(newWooracle.address)
+    })
+
+    it('Prevents zero addr from setWooracle', async () => {
+      await expect(wooPP.connect(user1).setWooracle(ZERO_ADDR)).to.be.revertedWith('WooPP: newWooracle_ZERO_ADDR')
+    })
+
+    it('setWooracle emit WooracleUpdated event', async () => {
+      let newWooracle = await deployMockContract(owner, IWooracle.abi)
+      await expect(wooPP.connect(user1).setWooracle(newWooracle.address))
+        .to.emit(wooPP, 'WooracleUpdated')
+        .withArgs(newWooracle.address)
+    })
+
+    it('setChainlinkRefOracle', async () => {
+      // TODO: (@qinchao)
+      // test point:
+      // 1.succeed function process
+      // 2.require(token != address(0), 'WooPP: token_ZERO_ADDR');
+      // 3.require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
+      // 4.emit ChainlinkRefOracleUpdated(token, newChainlinkRefOracle);
+    })
+
+    it('setRewardManager', async () => {
+      await expect(wooPP.connect(user1).setRewardManager(ZERO_ADDR)).to.be.revertedWith(
+        'WooPP: newRewardManager_ZERO_ADDR'
+      )
+
+      await expect(wooPP.connect(user1).setRewardManager(user2.address))
+        .to.emit(wooPP, 'RewardManagerUpdated')
+        .withArgs(user2.address)
+
+      await wooPP.connect(user1).setRewardManager(user2.address)
+      await expect(await wooPP.rewardManager()).to.be.equal(user2.address)
+    })
+
+    it('addBaseToken', async () => {
+      let threshold = 0
+      let lpFeeRate = 0
+      let R = BigNumber.from(0)
+
+      await expect(wooPP.addBaseToken(ZERO_ADDR, threshold, lpFeeRate, R, ZERO_ADDR)).to.be.revertedWith(
+        'WooPP: BASE_TOKEN_ZERO_ADDR'
+      )
+
+      await expect(wooPP.addBaseToken(usdtToken.address, threshold, lpFeeRate, R, ZERO_ADDR)).to.be.revertedWith(
+        'WooPP: BASE_TOKEN_INVALID'
+      )
+
+      let overRangeThreshold = BigNumber.from(2).pow(112)
+      await expect(
+        wooPP.addBaseToken(wooToken.address, overRangeThreshold, lpFeeRate, R, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: THRESHOLD_OUT_OF_RANGE')
+
+      let overRangeLpFeeRate = ONE.mul(2)
+      await expect(
+        wooPP.addBaseToken(wooToken.address, threshold, overRangeLpFeeRate, R, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: LP_FEE_RATE_OUT_OF_RANGE')
+
+      let overRangeR = ONE.mul(2)
+      await expect(
+        wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, overRangeR, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: R_OUT_OF_RANGE')
+
+      await expect(wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R, ZERO_ADDR)).to.be.revertedWith(
+        'WooPP: TOKEN_ALREADY_EXISTS'
+      )
+
+      let testEventToken0 = await deployContract(owner, TestToken, [])
+      await expect(wooPP.addBaseToken(testEventToken0.address, threshold, lpFeeRate, R, ZERO_ADDR))
+        .to.emit(wooPP, 'ParametersUpdated')
+        .withArgs(testEventToken0.address, threshold, lpFeeRate, R)
+
+      let testEventToken1 = await deployContract(owner, TestToken, [])
+      await expect(wooPP.addBaseToken(testEventToken1.address, threshold, lpFeeRate, R, ZERO_ADDR))
+        .to.emit(wooPP, 'ChainlinkRefOracleUpdated')
+        .withArgs(testEventToken1.address, ZERO_ADDR)
+
+      await wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
+      let info = await wooPP.tokenInfo(wooToken.address)
+      await expect(await info.isValid).to.be.equal(true)
+    })
+
+    it('removeBaseToken', async () => {
+      await expect(wooPP.removeBaseToken(ZERO_ADDR)).to.be.revertedWith('WooPP: BASE_TOKEN_ZERO_ADDR')
+
+      await expect(wooPP.removeBaseToken(wooToken.address)).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
+
+      let threshold = 0
+      let lpFeeRate = 0
+      let R = BigNumber.from(0)
+
+      let testEventToken0 = await deployContract(owner, TestToken, [])
+      await wooPP.addBaseToken(testEventToken0.address, threshold, lpFeeRate, R, ZERO_ADDR)
+      await expect(wooPP.removeBaseToken(testEventToken0.address))
+        .to.emit(wooPP, 'ParametersUpdated')
+        .withArgs(testEventToken0.address, 0, 0, 0)
+
+      let testEventToken1 = await deployContract(owner, TestToken, [])
+      await wooPP.addBaseToken(testEventToken1.address, threshold, lpFeeRate, R, ZERO_ADDR)
+      await expect(wooPP.removeBaseToken(testEventToken1.address))
+        .to.emit(wooPP, 'ChainlinkRefOracleUpdated')
+        .withArgs(testEventToken1.address, ZERO_ADDR)
+
+      await wooPP.removeBaseToken(btcToken.address)
+      let info = await wooPP.tokenInfo(btcToken.address)
+      await expect(info.isValid).to.be.equal(false)
+    })
+
+    it('tuneParameters', async () => {
+      let newThreshold = ONE.div(2)
+      let newLpFeeRate = ONE.div(2)
+      let newR = ONE.div(2)
+
+      await expect(wooPP.tuneParameters(ZERO_ADDR, newThreshold, newLpFeeRate, newR)).to.be.revertedWith(
+        'WooPP: token_ZERO_ADDR'
+      )
+
+      let overRangeThreshold = BigNumber.from(2).pow(112)
+      await expect(wooPP.tuneParameters(btcToken.address, overRangeThreshold, newLpFeeRate, newR)).to.be.revertedWith(
+        'WooPP: THRESHOLD_OUT_OF_RANGE'
+      )
+
+      let overRangeLpFeeRate = ONE.mul(2)
+      await expect(wooPP.tuneParameters(btcToken.address, newThreshold, overRangeLpFeeRate, newR)).to.be.revertedWith(
+        'WooPP: LP_FEE_RATE>1'
+      )
+
+      let overRangeR = ONE.mul(2)
+      await expect(wooPP.tuneParameters(btcToken.address, newThreshold, newLpFeeRate, overRangeR)).to.be.revertedWith(
+        'WooPP: R>1'
+      )
+
+      await expect(wooPP.tuneParameters(wooToken.address, newThreshold, newLpFeeRate, newR)).to.be.revertedWith(
+        'WooPP: TOKEN_DOES_NOT_EXIST'
+      )
+
+      await wooPP.addBaseToken(wooToken.address, 0, 0, 0, ZERO_ADDR)
+      await expect(wooPP.tuneParameters(wooToken.address, newThreshold, newLpFeeRate, newR))
+        .to.emit(wooPP, 'ParametersUpdated')
+        .withArgs(wooToken.address, newThreshold, newLpFeeRate, newR)
+
+      await wooPP.tuneParameters(btcToken.address, newThreshold, newLpFeeRate, newR)
+      let info = await wooPP.tokenInfo(btcToken.address)
+      await expect(await info.threshold).to.be.equal(newThreshold)
+      await expect(await info.lpFeeRate).to.be.equal(newLpFeeRate)
+      await expect(await info.R).to.be.equal(newR)
+    })
   })
 
   // TODO: (@qinchao)
