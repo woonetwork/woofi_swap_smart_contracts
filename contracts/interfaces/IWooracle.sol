@@ -61,6 +61,6 @@ interface IWooracle {
         );
 
     /// @dev TODO
-    /// return TODO
+    /// return last updated timestamp
     function timestamp() external view returns (uint256);
 }

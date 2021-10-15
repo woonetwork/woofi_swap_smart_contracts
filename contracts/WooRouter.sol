@@ -102,7 +102,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         emit WooPoolChanged(newPool);
     }
 
-    /* Swap functions */
+    /* ----- Swap functions ----- */
 
     /// @dev TODO
     /// @param fromToken TODO
@@ -229,7 +229,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         emit WooRouterSwap(SwapType.WooSwap, quoteToken, baseToken, quoteAmount, realBaseAmount, msg.sender, to);
     }
 
-    /* Fallback swap function */
+    /* ----- Fallback swap function ----- */
 
     /// @dev swap by DODO
     /// @param approveTarget address that need to approve
@@ -320,7 +320,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         isWhitelisted[target] = whitelisted;
     }
 
-    /* Misc functions */
+    /* ----- Misc functions ----- */
 
     /// @dev Get funds when stuck happen
     /// @param token token address
