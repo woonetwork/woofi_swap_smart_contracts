@@ -46,11 +46,12 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
 /// @title TODO
 /// @notice TODO
-contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
+contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     /* ----- Type declarations ----- */
 
     using SafeMath for uint256;
@@ -98,7 +99,10 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     /* ----- External Functions ----- */
 
     /// @inheritdoc IWooPP
-    function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
+    function querySellBase(
+        address baseToken,
+        uint256 baseAmount
+    )  external view override whenNotPaused returns (uint256 quoteAmount) {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
 
         TokenInfo memory baseInfo = tokenInfo[baseToken];
@@ -114,12 +118,10 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     }
 
     /// @inheritdoc IWooPP
-    function querySellQuote(address baseToken, uint256 quoteAmount)
-        external
-        view
-        override
-        returns (uint256 baseAmount)
-    {
+    function querySellQuote(
+        address baseToken,
+        uint256 quoteAmount
+    ) external view override whenNotPaused returns (uint256 baseAmount) {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
 
         TokenInfo memory baseInfo = tokenInfo[baseToken];
@@ -143,7 +145,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         address from,
         address to,
         address rebateTo
-    ) external override nonReentrant returns (uint256 quoteAmount) {
+    ) external override nonReentrant whenNotPaused returns (uint256 quoteAmount) {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
         require(from != address(0), 'WooPP: from_ZERO_ADDR');
         require(to != address(0), 'WooPP: to_ZERO_ADDR');
@@ -182,7 +184,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
         address from,
         address to,
         address rebateTo
-    ) external override nonReentrant returns (uint256 baseAmount) {
+    ) external override nonReentrant whenNotPaused returns (uint256 baseAmount) {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
         require(from != address(0), 'WooPP: from_ZERO_ADDR');
         require(to != address(0), 'WooPP: to_ZERO_ADDR');
@@ -328,10 +330,20 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
 
     /* ----- Admin Functions ----- */
 
+    /// @dev Pause the contract.
+    function pause() external onlyStrategist {
+        super._pause();
+    }
+
+    /// @dev Restart the contract.
+    function unpause() external onlyStrategist {
+        super._unpause();
+    }
+
     /// @dev TODO
     /// @param strategist TODO
     /// @param flag TODO
-    function setStrategist(address strategist, bool flag) external nonReentrant onlyOwner {
+    function setStrategist(address strategist, bool flag) external nonReentrant onlyStrategist {
         require(strategist != address(0), 'WooPP: strategist_ZERO_ADDR');
         isStrategist[strategist] = flag;
         emit StrategistUpdated(strategist, flag);
@@ -355,7 +367,10 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     /// @dev TODO
     /// @param token TODO
     /// @param amount TODO
-    function withdrawToOwner(address token, uint256 amount) external nonReentrant onlyStrategist {
+    function withdrawToOwner(
+        address token,
+        uint256 amount
+    ) external nonReentrant onlyStrategist {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');
         IERC20(token).safeTransfer(_OWNER_, amount);
         emit Withdraw(token, _OWNER_, amount);

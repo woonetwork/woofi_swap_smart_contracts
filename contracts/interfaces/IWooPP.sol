@@ -109,13 +109,19 @@ interface IWooPP {
     /// @param baseToken TODO
     /// @param baseAmount TODO
     /// @return quoteAmount TODO
-    function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
+    function querySellBase(
+        address baseToken,
+        uint256 baseAmount
+    ) external view returns (uint256 quoteAmount);
 
     /// @dev TODO
     /// @param baseToken TODO
     /// @param quoteAmount TODO
     /// @return baseAmount TODO
-    function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
+    function querySellQuote(
+        address baseToken,
+        uint256 quoteAmount
+    ) external view returns (uint256 baseAmount);
 
     /// @dev get quote token address
     /// @return address of quote token
