@@ -42,7 +42,7 @@ interface IWooracle {
     /// @param baseToken baseToken address
     /// @return priceNow latest price of baseToken
     /// @return feasible TODO
-    function getPrice(address baseToken) external view returns (uint256 priceNow, bool feasible);
+    function getPrice(address base) external view returns (uint256 priceNow, bool feasible);
 
     /// @dev TODO
     /// @param base baseToken address
@@ -50,7 +50,7 @@ interface IWooracle {
     /// @return spreadNow TODO
     /// @return coeffNow TODO
     /// @return feasible TODO
-    function getState(address baseToken)
+    function getState(address base)
         external
         view
         returns (
