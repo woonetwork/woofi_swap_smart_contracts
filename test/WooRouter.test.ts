@@ -173,11 +173,13 @@ describe('WooRouter', () => {
     })
 
     it('Prevents user directly send ETH', async () => {
-      await expect(user.sendTransaction({
-        to: wooRouter.address,
-        gasPrice: 10,
-        value: 100000
-      })).to.be.reverted
+      await expect(
+        user.sendTransaction({
+          to: wooRouter.address,
+          gasPrice: 10,
+          value: 100000,
+        })
+      ).to.be.reverted
     })
   })
 
