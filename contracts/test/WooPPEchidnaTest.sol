@@ -81,11 +81,11 @@ contract WooPPEchidnaTest is WooPPVirtual {
        )
        public
     {
-        Wooracle wooracle = new Wooracle();
-        wooracle.setQuoteAddr(usdt);
-        wooracle.postState(btc, 50000 * 1e18, 1e15, 1e15);
-        wooracle.postState(eth, 3000 * 1e18, 1e15, 1e15);
-        priceOracle = address(wooracle);
+        Wooracle _wooracle = new Wooracle();
+        _wooracle.setQuoteAddr(usdt);
+        _wooracle.postState(btc, 50000 * 1e18, 1e10, 1e15);
+        _wooracle.postState(eth, 3000 * 1e18, 1e10, 1e15);
+        wooracle = address(_wooracle);
 
         addBaseToken(btc, 0, 0, 1e18, address(0));
         addBaseToken(eth, 0, 0, 1e18, address(0));
