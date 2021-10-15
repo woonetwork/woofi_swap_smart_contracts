@@ -260,19 +260,13 @@ contract WooRouter is Ownable, ReentrancyGuard {
         internalFallbackSwap(approveTarget, swapTarget, fromToken, fromAmount, data);
         uint256 postBalance = _generalBalanceOf(toToken, address(this));
 
+        require(preBalance <= postBalance, 'WooRouter: balance_ERROR');
+        uint256 swapBalance = postBalance.sub(preBalance);
         if (postBalance > preBalance) {
-            _generalTransfer(toToken, to, postBalance.sub(preBalance));
+            _generalTransfer(toToken, to, swapBalance);
         }
 
-        emit WooRouterSwap(
-            SwapType.DodoSwap,
-            fromToken,
-            toToken,
-            fromAmount,
-            postBalance.sub(preBalance),
-            msg.sender,
-            to
-        );
+        emit WooRouterSwap(SwapType.DodoSwap, fromToken, toToken, fromAmount, swapBalance, msg.sender, to);
     }
 
     function internalFallbackSwap(

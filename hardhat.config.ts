@@ -66,6 +66,6 @@ export default {
     target: 'ethers-v5',
   },
   mocha: {
-    timeout: 2000,
+    timeout: 10000,
   },
 }

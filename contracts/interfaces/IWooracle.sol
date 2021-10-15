@@ -39,18 +39,19 @@ pragma experimental ABIEncoderV2;
 /// @notice TODO
 interface IWooracle {
     /// @dev Get baseToken price
-    /// @param base baseToken address
-    /// @return priceNow latest price of baseToken
+    /// @param baseToken baseToken address
+    /// @return latestPrice latest price of baseToken
     /// @return feasible TODO
-    function getPrice(address base) external view returns (uint256 latestPrice, bool feasible);
+    function getPrice(address baseToken) external view returns (uint256 latestPrice, bool feasible);
+
 
     /// @dev TODO
-    /// @param base baseToken address
-    /// @return priceNow latest price of baseToken
-    /// @return spreadNow TODO
-    /// @return coeffNow TODO
+    /// @param baseToken baseToken address
+    /// @return latestPrice latest price of baseToken
+    /// @return spread TODO
+    /// @return coefficient TODO
     /// @return feasible TODO
-    function getState(address base)
+    function getState(address baseToken)
         external
         view
         returns (
