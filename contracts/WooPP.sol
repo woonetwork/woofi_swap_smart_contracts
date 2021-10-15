@@ -112,7 +112,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
 
         require(quoteAmount <= IERC20(quoteToken).balanceOf(address(this)));
     }
-    
+
     /// @inheritdoc IWooPP
     function querySellQuote(address baseToken, uint256 quoteAmount)
         external
@@ -210,7 +210,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
 
         emit WooSwap(quoteToken, baseToken, quoteAmount, baseAmount, from, to);
     }
-    
+
     /// @dev Set pairsInfo from newPairsInfo
     /// @param newPairsInfo TODO
     function setPairsInfo(string calldata newPairsInfo) external nonReentrant onlyStrategist {

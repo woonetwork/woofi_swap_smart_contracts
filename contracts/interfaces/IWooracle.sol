@@ -44,7 +44,6 @@ interface IWooracle {
     /// @return feasible TODO
     function getPrice(address baseToken) external view returns (uint256 latestPrice, bool feasible);
 
-
     /// @dev TODO
     /// @param baseToken baseToken address
     /// @return latestPrice latest price of baseToken
