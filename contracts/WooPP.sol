@@ -48,6 +48,8 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
+
 
 /// @title TODO
 /// @notice TODO
@@ -167,8 +169,9 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
 
         require(quoteAmount >= minQuoteAmount, 'WooPP: quoteAmount<minQuoteAmount');
 
-        IERC20(baseToken).safeTransferFrom(from, address(this), baseAmount);
-        IERC20(quoteToken).safeTransfer(to, quoteAmount);
+        TransferHelper.safeTransferFrom(baseToken, from, address(this), baseAmount);
+        TransferHelper.safeTransfer(quoteToken, to, quoteAmount);
+
         if (rewardManager != address(0)) {
             IRewardManager(rewardManager).addReward(rebateTo, lpFee);
         }
@@ -205,8 +208,10 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
 
         require(baseAmount >= minBaseAmount, 'WooPP: PRICE_EXCEEDS_LIMIT');
-        IERC20(quoteToken).safeTransferFrom(from, address(this), quoteAmount.add(lpFee));
-        IERC20(baseToken).safeTransfer(to, baseAmount);
+
+        TransferHelper.safeTransferFrom(quoteToken, from, address(this), quoteAmount.add(lpFee));
+        TransferHelper.safeTransfer(baseToken, to, baseAmount);
+
         if (rewardManager != address(0)) {
             IRewardManager(rewardManager).addReward(rebateTo, lpFee);
         }
@@ -228,7 +233,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     /// @dev Get the pool's balance of token
     /// @param token token that maintain for swapping
     function poolSize(address token) external view returns (uint256) {
-        require(token != address(0), 'WooPP: token_ZERO_ADDR');
         return IERC20(token).balanceOf(address(this));
     }
 
@@ -366,7 +370,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     ) external nonReentrant onlyOwner {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');
         require(to != address(0), 'WooPP: to_ZERO_ADDR');
-        IERC20(token).safeTransfer(to, amount);
+        TransferHelper.safeTransfer(token, to, amount);
         emit Withdraw(token, to, amount);
     }
 
@@ -375,7 +379,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     /// @param amount TODO
     function withdrawToOwner(address token, uint256 amount) external nonReentrant onlyStrategist {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');
-        IERC20(token).safeTransfer(_OWNER_, amount);
+        TransferHelper.safeTransfer(token, _OWNER_, amount);
         emit Withdraw(token, _OWNER_, amount);
     }
 
@@ -395,6 +399,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
             uint256 baseRefPrice = uint256(rawBaseRefPrice).mul(uint256(baseInfo.refPriceFixCoeff));
             uint256 quoteRefPrice = uint256(rawQuoteRefPrice).mul(uint256(quoteInfo.refPriceFixCoeff));
             uint256 refPrice = baseRefPrice.divFloor(quoteRefPrice);
+
+            // TODO: make 1% as variable
             require(
                 refPrice.mulFloor(1e18 - 1e16) <= p && p <= refPrice.mulCeil(1e18 + 1e16),
                 'WooPP: PRICE_UNRELIABLE'
