@@ -553,10 +553,6 @@ describe('WooPP Test Suite 1', () => {
       expect(await wooPP.poolSize(baseToken1.address)).to.eq(10000 - 1234)
     })
 
-    it('pooSize revert1', async () => {
-      await expect(wooPP.poolSize(ZERO_ADDR)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
-    })
-
     it('wooracle accuracy', async () => {
       expect(await wooPP.wooracle()).to.eq(wooOracle1.address)
     })

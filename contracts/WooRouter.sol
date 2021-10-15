@@ -44,6 +44,7 @@ import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 /// @title TODO
 /// @notice TODO
@@ -133,9 +134,10 @@ contract WooRouter is Ownable, ReentrancyGuard {
             require(fromAmount == msg.value, 'WooRouter: fromAmount_INVALID');
             IWETH(WETH_ADDRESS).deposit{value: msg.value}();
         } else {
-            IERC20(fromToken).safeTransferFrom(msg.sender, address(this), fromAmount);
+            TransferHelper.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
         }
-        IERC20(fromToken).safeApprove(address(wooPool), fromAmount);
+
+        TransferHelper.safeApprove(fromToken, address(wooPool), fromAmount);
 
         if (fromToken == quoteToken) {
             if (isToETH) {
@@ -149,7 +151,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
                 );
                 IWETH(WETH_ADDRESS).withdraw(realToAmount);
                 require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
-                to.transfer(realToAmount);
+                TransferHelper.safeTransferETH(to, realToAmount);
             } else {
                 realToAmount = wooPool.sellQuote(toToken, fromAmount, minToAmount, address(this), to, rebateTo);
             }
@@ -157,7 +159,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
             realToAmount = wooPool.sellBase(fromToken, fromAmount, minToAmount, address(this), to, rebateTo);
         } else {
             uint256 quoteAmount = wooPool.sellBase(fromToken, fromAmount, 0, address(this), address(this), rebateTo);
-            IERC20(quoteToken).safeApprove(address(wooPool), quoteAmount);
+            TransferHelper.safeApprove(quoteToken, address(wooPool), quoteAmount);
             if (isToETH) {
                 realToAmount = wooPool.sellQuote(
                     toToken,
@@ -169,7 +171,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
                 );
                 IWETH(WETH_ADDRESS).withdraw(realToAmount);
                 require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
-                to.transfer(realToAmount);
+                TransferHelper.safeTransferETH(to, realToAmount);
             } else {
                 realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
             }
@@ -201,8 +203,8 @@ contract WooRouter is Ownable, ReentrancyGuard {
     ) external nonReentrant returns (uint256 realQuoteAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         require(to != address(0), 'WooRouter: to_ADDR_ZERO');
-        IERC20(baseToken).safeTransferFrom(msg.sender, address(this), baseAmount);
-        IERC20(baseToken).safeApprove(address(wooPool), baseAmount);
+        TransferHelper.safeTransferFrom(baseToken, msg.sender, address(this), baseAmount);
+        TransferHelper.safeApprove(baseToken, address(wooPool), baseAmount);
         realQuoteAmount = wooPool.sellBase(baseToken, baseAmount, minQuoteAmount, address(this), to, rebateTo);
         emit WooRouterSwap(SwapType.WooSwap, baseToken, quoteToken, baseAmount, realQuoteAmount, msg.sender, to);
     }
@@ -223,8 +225,8 @@ contract WooRouter is Ownable, ReentrancyGuard {
     ) external nonReentrant returns (uint256 realBaseAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         require(to != address(0), 'WooRouter: to_ADDR_ZERO');
-        IERC20(quoteToken).safeTransferFrom(msg.sender, address(this), quoteAmount);
-        IERC20(quoteToken).safeApprove(address(wooPool), quoteAmount);
+        TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), quoteAmount);
+        TransferHelper.safeApprove(quoteToken, address(wooPool), quoteAmount);
         realBaseAmount = wooPool.sellQuote(baseToken, quoteAmount, minBaseAmount, address(this), to, rebateTo);
         emit WooRouterSwap(SwapType.WooSwap, quoteToken, baseToken, quoteAmount, realBaseAmount, msg.sender, to);
     }
@@ -280,8 +282,8 @@ contract WooRouter is Ownable, ReentrancyGuard {
         require(isWhitelisted[swapTarget], 'WooRouter: SWAP_TARGET_NOT_ALLOWED');
 
         if (fromToken != ETH_PLACEHOLDER_ADDR) {
-            IERC20(fromToken).safeTransferFrom(msg.sender, address(this), fromAmount);
-            IERC20(fromToken).safeApprove(approveTarget, fromAmount);
+            TransferHelper.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
+            TransferHelper.safeApprove(fromToken, approveTarget, fromAmount);
         } else {
             require(fromAmount == msg.value, 'WooRouter: fromAmount_INVALID');
         }
@@ -295,20 +297,16 @@ contract WooRouter is Ownable, ReentrancyGuard {
         address payable to,
         uint256 amount
     ) private {
-        require(token != address(0), 'WooRouter: token_ADDR_ZERO');
-        require(to != address(0), 'WooRouter: to_ADDR_ZERO');
         if (amount > 0) {
             if (token == ETH_PLACEHOLDER_ADDR) {
-                to.transfer(amount);
+                TransferHelper.safeTransferETH(to, amount);
             } else {
-                IERC20(token).safeTransfer(to, amount);
+                TransferHelper.safeTransfer(token, to, amount);
             }
         }
     }
 
     function _generalBalanceOf(address token, address who) private view returns (uint256) {
-        require(token != address(0), 'WooRouter: token_ADDR_ZERO');
-        require(who != address(0), 'WooRouter: who_ADDR_ZERO');
         return token == ETH_PLACEHOLDER_ADDR ? who.balance : IERC20(token).balanceOf(who);
     }
 
@@ -327,7 +325,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
     /// @param amount amount of token need to get
     function rescueFunds(address token, uint256 amount) external nonReentrant onlyOwner {
         require(token != address(0), 'WooRouter: token_ADDR_ZERO');
-        IERC20(token).safeTransfer(msg.sender, amount);
+        TransferHelper.safeTransfer(token, msg.sender, amount);
     }
 
     /// @dev Make contract invalid forever
