@@ -18,7 +18,6 @@ contract WooPPVirtual is WooPP {
 
     mapping(address => uint256) public virtualBalance;
     mapping(address => uint256) public initialBalance;
-    bool flag;
 
     function setVirtualBalance(address token, uint256 newBalance) public onlyOwner {
         initialBalance[token] = virtualBalance[token] = newBalance;
@@ -32,6 +31,19 @@ contract WooPPVirtual is WooPP {
         virtualBalance[token] = virtualBalance[token].sub(amount);
     }
 
+    function virtualUpdate(
+        address baseToken,
+        TokenInfo memory baseInfo,
+        TokenInfo memory quoteInfo
+    ) private view {
+        uint256 baseReserve = virtualBalance[baseToken];
+        uint256 quoteReserve = virtualBalance[quoteToken];
+        require(baseReserve <= type(uint112).max);
+        require(quoteReserve <= type(uint112).max);
+        baseInfo.reserve = uint112(baseReserve);
+        quoteInfo.reserve = uint112(quoteReserve);
+    }
+
     function virtualSellBase(
         address baseToken,
         uint256 baseAmount
@@ -39,12 +51,11 @@ contract WooPPVirtual is WooPP {
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
+        virtualUpdate(baseToken, baseInfo, quoteInfo);
 
         uint256 realQuoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
         virtualTransferIn(baseToken, baseAmount);
         virtualTransferOut(quoteToken, realQuoteAmount);
-
-        // flag = true;
     }
 
     function virtualSellQuote(
@@ -54,13 +65,11 @@ contract WooPPVirtual is WooPP {
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
+        virtualUpdate(baseToken, baseInfo, quoteInfo);
 
         uint256 realBaseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
-        // uint256 realBaseAmount = 1;   
         virtualTransferIn(quoteToken, quoteAmount);
         virtualTransferOut(baseToken, realBaseAmount);
-
-        // flag = true;
     }
 
     function bad(address token, uint256 amount) public {
@@ -103,10 +112,6 @@ contract WooPPEchidnaTest is WooPPVirtual {
         virtualSellQuote(baseToken, virtualBalance[quoteToken].sub(initialBalance[quoteToken]));
     }
 
-    // function bad1() public {
-    //     virtualSellQuote(btc, 1);
-    // }
-
     function echidna_owner() public returns (bool) {
         return _OWNER_ == 0x00a329C0648769a73afAC7F9381e08fb43DBEA70;
     }
@@ -120,16 +125,4 @@ contract WooPPEchidnaTest is WooPPVirtual {
                 || (virtualBalance[eth] < initialBalance[eth]));
         return !bad;
     }
-
-    // function echidna_flag() public returns (bool) {
-    //     return !flag;
-    // }
-
-    // function echidna_test1() public returns (bool) {
-    //     return !flag;
-    // }
-
-    // function echidna_test2() public returns (bool) {
-    //     return flag;
-    // }
 }
