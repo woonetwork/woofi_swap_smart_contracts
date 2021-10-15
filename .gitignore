@@ -127,4 +127,5 @@ artifacts/
 cache/
 build/
 typechain/
+crytic-export/
 
