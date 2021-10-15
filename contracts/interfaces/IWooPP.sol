@@ -35,6 +35,8 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
+/// @title TODO
+/// @notice TODO
 interface IWooPP {
     /* ----- Type declarations ----- */
 
@@ -69,6 +71,14 @@ interface IWooPP {
 
     /* ----- External Functions ----- */
 
+    /// @dev Swap baseToken into quoteToken
+    /// @param baseToken TODO
+    /// @param baseAmount amount of baseToken that user want to swap
+    /// @param minQuoteAmount minimum amount of quoteToken that user accept to receive
+    /// @param from baseToken sender address
+    /// @param to quoteToken receiver address
+    /// @param rebateTo TODO
+    /// @return realQuoteAmount TODO
     function sellBase(
         address baseToken,
         uint256 baseAmount,
@@ -78,6 +88,14 @@ interface IWooPP {
         address rebateTo
     ) external returns (uint256 realQuoteAmount);
 
+    /// @dev Swap quoteToken into baseToken
+    /// @param baseToken TODO
+    /// @param quoteAmount amount of quoteToken that user want to swap
+    /// @param minBaseAmount minimum amount of baseToken that user accept to receive
+    /// @param from quoteToken sender address
+    /// @param to baseToken receiver address
+    /// @param rebateTo TODO
+    /// @return realBaseAmount TODO
     function sellQuote(
         address baseToken,
         uint256 quoteAmount,
@@ -87,9 +105,19 @@ interface IWooPP {
         address rebateTo
     ) external returns (uint256 realBaseAmount);
 
+    /// @dev TODO
+    /// @param baseToken TODO
+    /// @param baseAmount TODO
+    /// @return quoteAmount TODO
     function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
 
+    /// @dev TODO
+    /// @param baseToken TODO
+    /// @param quoteAmount TODO
+    /// @return baseAmount TODO
     function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
 
+    /// @dev get quote token address
+    /// @return address of quote token
     function quoteToken() external view returns (address);
 }

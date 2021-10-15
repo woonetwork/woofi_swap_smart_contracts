@@ -35,9 +35,21 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
+/// @title TODO
+/// @notice TODO
 interface IWooracle {
+    /// @dev Get baseToken price
+    /// @param baseToken baseToken address
+    /// @return latestPrice latest price of baseToken
+    /// @return feasible TODO
     function getPrice(address baseToken) external view returns (uint256 latestPrice, bool feasible);
 
+    /// @dev TODO
+    /// @param baseToken baseToken address
+    /// @return latestPrice latest price of baseToken
+    /// @return spread TODO
+    /// @return coefficient TODO
+    /// @return feasible TODO
     function getState(address baseToken)
         external
         view
@@ -48,5 +60,7 @@ interface IWooracle {
             bool feasible
         );
 
+    /// @dev TODO
+    /// return TODO
     function timestamp() external view returns (uint256);
 }

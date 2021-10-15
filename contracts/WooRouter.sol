@@ -45,6 +45,8 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
+/// @title TODO
+/// @notice TODO
 contract WooRouter is Ownable, ReentrancyGuard {
     /* ----- Type declarations ----- */
 
@@ -90,6 +92,8 @@ contract WooRouter is Ownable, ReentrancyGuard {
         setPool(newPool);
     }
 
+    /// @dev Set wooPool from newPool
+    /// @param newPool Wooracle address
     function setPool(address newPool) public nonReentrant onlyOwner {
         require(newPool != address(0), 'WooRouter: pool_ADDR_ZERO');
         wooPool = IWooPP(newPool);
@@ -100,6 +104,14 @@ contract WooRouter is Ownable, ReentrancyGuard {
 
     /* Swap functions */
 
+    /// @dev TODO
+    /// @param fromToken TODO
+    /// @param toToken TODO
+    /// @param fromAmount TODO
+    /// @param minToAmount TODO
+    /// @param to TODO
+    /// @param rebateTo TODO
+    /// @return realToAmount TODO
     function swap(
         address fromToken,
         address toToken,
@@ -173,6 +185,13 @@ contract WooRouter is Ownable, ReentrancyGuard {
         );
     }
 
+    /// @dev TODO
+    /// @param baseToken TODO
+    /// @param baseAmount TODO
+    /// @param minQuoteAmount TODO
+    /// @param to TODO
+    /// @param rebateTo TODO
+    /// @return realQuoteAmount TODO
     function sellBase(
         address baseToken,
         uint256 baseAmount,
@@ -188,6 +207,13 @@ contract WooRouter is Ownable, ReentrancyGuard {
         emit WooRouterSwap(SwapType.WooSwap, baseToken, quoteToken, baseAmount, realQuoteAmount, msg.sender, to);
     }
 
+    /// @dev TODO
+    /// @param baseToken TODO
+    /// @param quoteAmount TODO
+    /// @param minBaseAmount TODO
+    /// @param to TODO
+    /// @param rebateTo TODO
+    /// @return realBaseAmount TODO
     function sellQuote(
         address baseToken,
         uint256 quoteAmount,
@@ -205,6 +231,14 @@ contract WooRouter is Ownable, ReentrancyGuard {
 
     /* Fallback swap function */
 
+    /// @dev swap by DODO
+    /// @param approveTarget address that need to approve
+    /// @param swapTarget dodo proxy address
+    /// @param fromToken TODO
+    /// @param toToken TODO
+    /// @param fromAmount TODO
+    /// @param to TODO
+    /// @param data calldata which for swap by dodo
     function externalSwap(
         address approveTarget,
         address swapTarget,
@@ -278,6 +312,9 @@ contract WooRouter is Ownable, ReentrancyGuard {
         return token == ETH_PLACEHOLDER_ADDR ? who.balance : IERC20(token).balanceOf(who);
     }
 
+    /// @dev Add target address into whitelist
+    /// @param target address that approved by WooRouter
+    /// @param whitelisted approve to using WooRouter or not
     function setWhitelisted(address target, bool whitelisted) external nonReentrant onlyOwner {
         require(target != address(0), 'WooRouter: target_ADDR_ZERO');
         isWhitelisted[target] = whitelisted;
@@ -285,17 +322,26 @@ contract WooRouter is Ownable, ReentrancyGuard {
 
     /* Misc functions */
 
+    /// @dev Get funds when stuck happen
+    /// @param token token address
+    /// @param amount amount of token need to get
     function rescueFunds(address token, uint256 amount) external nonReentrant onlyOwner {
         require(token != address(0), 'WooRouter: token_ADDR_ZERO');
         IERC20(token).safeTransfer(msg.sender, amount);
     }
 
+    /// @dev Make contract invalid forever
     function destroy() external nonReentrant onlyOwner {
         selfdestruct(msg.sender);
     }
 
     /* Query functions */
 
+    /// @dev Query toToken amount
+    /// @param fromToken TODO
+    /// @param toToken TODO
+    /// @param fromAmount fromToken amount that user want to send
+    /// @return toAmount toToken amount that user will be receive
     function querySwap(
         address fromToken,
         address toToken,
@@ -315,12 +361,20 @@ contract WooRouter is Ownable, ReentrancyGuard {
         }
     }
 
+    /// @dev Query quoteAmount when selling baseToken
+    /// @param baseToken TODO
+    /// @param baseAmount baseToken amount that user want to send
+    /// @return quoteAmount quoteToken amount that user will be receive
     function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : baseToken;
         quoteAmount = wooPool.querySellBase(baseToken, baseAmount);
     }
 
+    /// @dev Query baseAmount when selling quoteToken
+    /// @param baseToken TODO
+    /// @param quoteAmount quoteToken amount that user want to send
+    /// @return baseAmount baseToken amount that user will be receive
     function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : baseToken;
