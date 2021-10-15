@@ -78,7 +78,7 @@ interface IWooPP {
     /// @param from baseToken sender address
     /// @param to quoteToken receiver address
     /// @param rebateTo TODO
-    /// @return realQuoteAmount TODO
+    /// @return quoteAmount TODO
     function sellBase(
         address baseToken,
         uint256 baseAmount,
@@ -86,7 +86,7 @@ interface IWooPP {
         address from,
         address to,
         address rebateTo
-    ) external returns (uint256 realQuoteAmount);
+    ) external returns (uint256 quoteAmount);
 
     /// @dev Swap quoteToken into baseToken
     /// @param baseToken TODO
@@ -95,7 +95,7 @@ interface IWooPP {
     /// @param from quoteToken sender address
     /// @param to baseToken receiver address
     /// @param rebateTo TODO
-    /// @return realBaseAmount TODO
+    /// @return baseAmount TODO
     function sellQuote(
         address baseToken,
         uint256 quoteAmount,
@@ -103,7 +103,7 @@ interface IWooPP {
         address from,
         address to,
         address rebateTo
-    ) external returns (uint256 realBaseAmount);
+    ) external returns (uint256 baseAmount);
 
     /// @dev TODO
     /// @param baseToken TODO

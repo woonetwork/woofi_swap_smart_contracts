@@ -299,7 +299,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, IWooPP {
     }
 
     /// @dev TODO
-    /// @param baseToken TODO
+    /// @param token TODO
     /// @param newThreshold TODO
     /// @param newLpFeeRate TODO
     /// @param newR TODO
