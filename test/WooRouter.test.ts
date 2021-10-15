@@ -171,6 +171,14 @@ describe('WooRouter', () => {
     it('Prevents non-owners from destroy', async () => {
       expect(wooRouter.connect(user).destroy()).to.be.revertedWith('Ownable: caller is not the owner')
     })
+
+    it('Prevents user directly send ETH', async () => {
+      await expect(user.sendTransaction({
+        to: wooRouter.address,
+        gasPrice: 10,
+        value: 100000
+      })).to.be.reverted
+    })
   })
 
   describe('core func', () => {

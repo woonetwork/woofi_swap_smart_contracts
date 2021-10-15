@@ -87,7 +87,13 @@ contract WooRouter is Ownable, ReentrancyGuard {
 
     event WooPoolChanged(address newPool);
 
-    receive() external payable {}
+    /* ----- Callback Function ----- */
+
+    receive() external payable {
+        assert(msg.sender == WETH_ADDRESS); // only accept ETH via fallback from the WETH contract
+    }
+
+    /* ----- Public Function ----- */
 
     constructor(address newPool) public {
         setPool(newPool);
