@@ -50,7 +50,6 @@ import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-
 /// @title TODO
 /// @notice TODO
 contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {

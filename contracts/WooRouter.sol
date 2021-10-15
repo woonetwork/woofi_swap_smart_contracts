@@ -46,7 +46,6 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-
 /// @title TODO
 /// @notice TODO
 contract WooRouter is Ownable, ReentrancyGuard {
@@ -154,19 +153,12 @@ contract WooRouter is Ownable, ReentrancyGuard {
                 require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
                 TransferHelper.safeTransferETH(to, realToAmount);
             } else {
-                realToAmount = wooPool.sellQuote(
-                    toToken, fromAmount, minToAmount, address(this), to, rebateTo);
+                realToAmount = wooPool.sellQuote(toToken, fromAmount, minToAmount, address(this), to, rebateTo);
             }
         } else if (toToken == quoteToken) {
             realToAmount = wooPool.sellBase(fromToken, fromAmount, minToAmount, address(this), to, rebateTo);
         } else {
-            uint256 quoteAmount = wooPool.sellBase(
-                fromToken,
-                fromAmount,
-                0,
-                address(this),
-                address(this),
-                rebateTo);
+            uint256 quoteAmount = wooPool.sellBase(fromToken, fromAmount, 0, address(this), address(this), rebateTo);
             TransferHelper.safeApprove(quoteToken, address(wooPool), quoteAmount);
             if (isToETH) {
                 realToAmount = wooPool.sellQuote(
@@ -181,13 +173,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
                 require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
                 TransferHelper.safeTransferETH(to, realToAmount);
             } else {
-                realToAmount = wooPool.sellQuote(
-                    toToken,
-                    quoteAmount,
-                    minToAmount,
-                    address(this),
-                    to,
-                    rebateTo);
+                realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
             }
         }
         emit WooRouterSwap(
@@ -321,9 +307,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
     }
 
     function _generalBalanceOf(address token, address who) private view returns (uint256) {
-        return token == ETH_PLACEHOLDER_ADDR
-            ? who.balance
-            : IERC20(token).balanceOf(who);
+        return token == ETH_PLACEHOLDER_ADDR ? who.balance : IERC20(token).balanceOf(who);
     }
 
     /// @dev Add target address into whitelist
