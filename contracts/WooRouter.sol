@@ -94,20 +94,18 @@ contract WooRouter is Ownable, ReentrancyGuard {
         assert(msg.sender == WETH_ADDRESS || isWhitelisted[msg.sender]);
     }
 
-    /* ----- Public Function ----- */
-
     constructor(address newPool) public {
         setPool(newPool);
     }
 
-    /// @dev Set wooPool from newPool
-    /// @param newPool Wooracle address
-    function setPool(address newPool) public nonReentrant onlyOwner {
-        require(newPool != address(0), 'WooRouter: pool_ADDR_ZERO');
-        wooPool = IWooPP(newPool);
-        quoteToken = wooPool.quoteToken();
-        require(quoteToken != address(0), 'WooRouter: quoteToken_ADDR_ZERO');
-        emit WooPoolChanged(newPool);
+    /* ----- External functions ----- */
+
+    /// @dev Add target address into whitelist
+    /// @param target address that approved by WooRouter
+    /// @param whitelisted approve to using WooRouter or not
+    function setWhitelisted(address target, bool whitelisted) external nonReentrant onlyOwner {
+        require(target != address(0), 'WooRouter: target_ADDR_ZERO');
+        isWhitelisted[target] = whitelisted;
     }
 
     /* ----- Swap functions ----- */
@@ -278,63 +276,6 @@ contract WooRouter is Ownable, ReentrancyGuard {
         emit WooRouterSwap(SwapType.DodoSwap, fromToken, toToken, fromAmount, swapBalance, msg.sender, to);
     }
 
-    function internalFallbackSwap(
-        address approveTarget,
-        address swapTarget,
-        address fromToken,
-        uint256 fromAmount,
-        bytes calldata data
-    ) private {
-        require(isWhitelisted[approveTarget], 'WooRouter: APPROVE_TARGET_NOT_ALLOWED');
-        require(isWhitelisted[swapTarget], 'WooRouter: SWAP_TARGET_NOT_ALLOWED');
-
-        if (fromToken != ETH_PLACEHOLDER_ADDR) {
-            TransferHelper.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
-            TransferHelper.safeApprove(fromToken, approveTarget, fromAmount);
-        } else {
-            require(fromAmount == msg.value, 'WooRouter: fromAmount_INVALID');
-        }
-
-        (bool success, ) = swapTarget.call{value: fromToken == ETH_PLACEHOLDER_ADDR ? fromAmount : 0}(data);
-        require(success, 'WooRouter: FALLBACK_SWAP_FAILED');
-    }
-
-    function _generalTransfer(
-        address token,
-        address payable to,
-        uint256 amount
-    ) private {
-        if (amount > 0) {
-            if (token == ETH_PLACEHOLDER_ADDR) {
-                TransferHelper.safeTransferETH(to, amount);
-            } else {
-                TransferHelper.safeTransfer(token, to, amount);
-            }
-        }
-    }
-
-    function _generalBalanceOf(address token, address who) private view returns (uint256) {
-        return token == ETH_PLACEHOLDER_ADDR ? who.balance : IERC20(token).balanceOf(who);
-    }
-
-    /// @dev Add target address into whitelist
-    /// @param target address that approved by WooRouter
-    /// @param whitelisted approve to using WooRouter or not
-    function setWhitelisted(address target, bool whitelisted) external nonReentrant onlyOwner {
-        require(target != address(0), 'WooRouter: target_ADDR_ZERO');
-        isWhitelisted[target] = whitelisted;
-    }
-
-    /* ----- Misc functions ----- */
-
-    /// @dev Get funds when stuck happen
-    /// @param token token address
-    /// @param amount amount of token need to get
-    function rescueFunds(address token, uint256 amount) external nonReentrant onlyOwner {
-        require(token != address(0), 'WooRouter: token_ADDR_ZERO');
-        TransferHelper.safeTransfer(token, msg.sender, amount);
-    }
-
     /* Query functions */
 
     /// @dev Query toToken amount
@@ -379,5 +320,68 @@ contract WooRouter is Ownable, ReentrancyGuard {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : baseToken;
         baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);
+    }
+
+    /* ----- Misc functions ----- */
+
+    /// @dev Get funds when stuck happen
+    /// @param token token address
+    /// @param amount amount of token need to get
+    function rescueFunds(address token, uint256 amount) external nonReentrant onlyOwner {
+        require(token != address(0), 'WooRouter: token_ADDR_ZERO');
+        TransferHelper.safeTransfer(token, msg.sender, amount);
+    }
+
+    /* ----- Public Function ----- */
+
+    /// @dev Set wooPool from newPool
+    /// @param newPool Wooracle address
+    function setPool(address newPool) public nonReentrant onlyOwner {
+        require(newPool != address(0), 'WooRouter: pool_ADDR_ZERO');
+        wooPool = IWooPP(newPool);
+        quoteToken = wooPool.quoteToken();
+        require(quoteToken != address(0), 'WooRouter: quoteToken_ADDR_ZERO');
+        emit WooPoolChanged(newPool);
+    }
+
+    /* ----- Private Function ----- */
+
+    function internalFallbackSwap(
+        address approveTarget,
+        address swapTarget,
+        address fromToken,
+        uint256 fromAmount,
+        bytes calldata data
+    ) private {
+        require(isWhitelisted[approveTarget], 'WooRouter: APPROVE_TARGET_NOT_ALLOWED');
+        require(isWhitelisted[swapTarget], 'WooRouter: SWAP_TARGET_NOT_ALLOWED');
+
+        if (fromToken != ETH_PLACEHOLDER_ADDR) {
+            TransferHelper.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
+            TransferHelper.safeApprove(fromToken, approveTarget, fromAmount);
+        } else {
+            require(fromAmount == msg.value, 'WooRouter: fromAmount_INVALID');
+        }
+
+        (bool success, ) = swapTarget.call{value: fromToken == ETH_PLACEHOLDER_ADDR ? fromAmount : 0}(data);
+        require(success, 'WooRouter: FALLBACK_SWAP_FAILED');
+    }
+
+    function _generalTransfer(
+        address token,
+        address payable to,
+        uint256 amount
+    ) private {
+        if (amount > 0) {
+            if (token == ETH_PLACEHOLDER_ADDR) {
+                TransferHelper.safeTransferETH(to, amount);
+            } else {
+                TransferHelper.safeTransfer(token, to, amount);
+            }
+        }
+    }
+
+    function _generalBalanceOf(address token, address who) private view returns (uint256) {
+        return token == ETH_PLACEHOLDER_ADDR ? who.balance : IERC20(token).balanceOf(who);
     }
 }
