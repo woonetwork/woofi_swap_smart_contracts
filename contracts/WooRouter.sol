@@ -335,11 +335,6 @@ contract WooRouter is Ownable, ReentrancyGuard {
         TransferHelper.safeTransfer(token, msg.sender, amount);
     }
 
-    /// @dev Make contract invalid forever
-    function destroy() external nonReentrant onlyOwner {
-        selfdestruct(msg.sender);
-    }
-
     /* Query functions */
 
     /// @dev Query toToken amount

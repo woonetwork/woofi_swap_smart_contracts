@@ -163,15 +163,6 @@ describe('WooRouter', () => {
       expect(await baseToken.balanceOf(user.address)).to.eq(ZERO)
     })
 
-    it('destroy', async () => {
-      await wooRouter.destroy()
-      expect(wooRouter.quoteToken()).to.be.revertedWith('')
-    })
-
-    it('Prevents non-owners from destroy', async () => {
-      expect(wooRouter.connect(user).destroy()).to.be.revertedWith('Ownable: caller is not the owner')
-    })
-
     it('Receive accuracy1', async () => {
       await expect(user.sendTransaction({
         to: wooRouter.address,
