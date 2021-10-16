@@ -164,19 +164,23 @@ describe('WooRouter', () => {
     })
 
     it('Receive accuracy1', async () => {
-      await expect(user.sendTransaction({
-        to: wooRouter.address,
-        gasPrice: 10,
-        value: 100000
-      })).to.be.reverted
+      await expect(
+        user.sendTransaction({
+          to: wooRouter.address,
+          gasPrice: 10,
+          value: 100000,
+        })
+      ).to.be.reverted
     })
 
     it('Receive accuracy2', async () => {
-      await expect(user.sendTransaction({
-        to: wooRouter.address,
-        gasPrice: 10,
-        value: 100000
-      })).to.be.reverted
+      await expect(
+        user.sendTransaction({
+          to: wooRouter.address,
+          gasPrice: 10,
+          value: 100000,
+        })
+      ).to.be.reverted
     })
 
     it('Prevents user directly send ETH', async () => {
@@ -190,25 +194,29 @@ describe('WooRouter', () => {
     })
 
     it('Receive accuracy', async () => {
-      await expect(user.sendTransaction({
-        to: wooRouter.address,
-        gasPrice: 10,
-        value: 100000
-      })).to.be.reverted
+      await expect(
+        user.sendTransaction({
+          to: wooRouter.address,
+          gasPrice: 10,
+          value: 100000,
+        })
+      ).to.be.reverted
 
       await wooRouter.setWhitelisted(user.address, true)
       await user.sendTransaction({
         to: wooRouter.address,
         gasPrice: 10,
-        value: 100000
+        value: 100000,
       })
 
       await wooRouter.setWhitelisted(user.address, false)
-      await expect(user.sendTransaction({
-        to: wooRouter.address,
-        gasPrice: 10,
-        value: 100000
-      })).to.be.reverted
+      await expect(
+        user.sendTransaction({
+          to: wooRouter.address,
+          gasPrice: 10,
+          value: 100000,
+        })
+      ).to.be.reverted
     })
   })
 
