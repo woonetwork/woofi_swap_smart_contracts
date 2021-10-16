@@ -47,11 +47,9 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-
 /// @title TODO
 /// @notice TODO
 contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
-
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -100,7 +98,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         uint256 minToAmount,
         address payable to,
         address rebateTo
-    ) external payable nonReentrant override returns (uint256 realToAmount) {
+    ) external payable override nonReentrant returns (uint256 realToAmount) {
         require(fromToken != address(0), 'WooRouter: fromToken_ADDR_ZERO');
         require(toToken != address(0), 'WooRouter: toToken_ADDR_ZERO');
         require(to != address(0), 'WooRouter: to_ADDR_ZERO');
@@ -180,7 +178,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         uint256 minQuoteAmount,
         address to,
         address rebateTo
-    ) external nonReentrant override returns (uint256 realQuoteAmount) {
+    ) external override nonReentrant returns (uint256 realQuoteAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         require(to != address(0), 'WooRouter: to_ADDR_ZERO');
         TransferHelper.safeTransferFrom(baseToken, msg.sender, address(this), baseAmount);
@@ -202,7 +200,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         uint256 minBaseAmount,
         address to,
         address rebateTo
-    ) external nonReentrant override returns (uint256 realBaseAmount) {
+    ) external override nonReentrant returns (uint256 realBaseAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         require(to != address(0), 'WooRouter: to_ADDR_ZERO');
         TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), quoteAmount);
@@ -227,7 +225,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         uint256 fromAmount,
         address payable to,
         bytes calldata data
-    ) external payable nonReentrant override {
+    ) external payable override nonReentrant {
         require(approveTarget != address(0), 'WooRouter: approveTarget_ADDR_ZERO');
         require(swapTarget != address(0), 'WooRouter: swapTarget_ADDR_ZERO');
         require(fromToken != address(0), 'WooRouter: fromToken_ADDR_ZERO');
@@ -279,10 +277,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
     /// @param baseToken TODO
     /// @param baseAmount baseToken amount that user want to send
     /// @return quoteAmount quoteToken amount that user will be receive
-    function querySellBase(
-        address baseToken,
-        uint256 baseAmount
-    ) external view override returns (uint256 quoteAmount) {
+    function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
         quoteAmount = wooPool.querySellBase(baseToken, baseAmount);
@@ -292,10 +287,12 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
     /// @param baseToken TODO
     /// @param quoteAmount quoteToken amount that user want to send
     /// @return baseAmount baseToken amount that user will be receive
-    function querySellQuote(
-        address baseToken,
-        uint256 quoteAmount
-    ) external view override returns (uint256 baseAmount) {
+    function querySellQuote(address baseToken, uint256 quoteAmount)
+        external
+        view
+        override
+        returns (uint256 baseAmount)
+    {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
         baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);

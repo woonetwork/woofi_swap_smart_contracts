@@ -113,17 +113,13 @@ describe('WooRouter', () => {
     })
 
     it('setPool revert1', async () => {
-      await expect(
-        wooRouter.setPool(ZERO_ADDR)
-      ).to.be.revertedWith('WooRouter: newPool_ADDR_ZERO')
+      await expect(wooRouter.setPool(ZERO_ADDR)).to.be.revertedWith('WooRouter: newPool_ADDR_ZERO')
     })
 
     it('setPool revert2', async () => {
       let newWooPP = await deployMockContract(owner, IWooPP.abi)
       await newWooPP.mock.quoteToken.returns(ZERO_ADDR)
-      await expect(
-        wooRouter.setPool(newWooPP.address)
-      ).to.be.revertedWith('WooRouter: quoteToken_ADDR_ZERO')
+      await expect(wooRouter.setPool(newWooPP.address)).to.be.revertedWith('WooRouter: quoteToken_ADDR_ZERO')
     })
 
     it('Emit WooPoolChanged when setPool', async () => {

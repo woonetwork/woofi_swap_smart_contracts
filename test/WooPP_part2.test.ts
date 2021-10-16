@@ -260,9 +260,7 @@ describe('WooPP Test Suite 2', () => {
 
       const baseAmount = ONE.mul(1)
 
-      await expect(
-        newWooPP.querySellBase(btcToken.address, baseAmount)
-      ).to.be.revertedWith('WooPP: INSUFF_QUOTE')
+      await expect(newWooPP.querySellBase(btcToken.address, baseAmount)).to.be.revertedWith('WooPP: INSUFF_QUOTE')
     })
 
     it('querySellQuote reverted with quoteAmount greater than balance', async () => {
@@ -280,9 +278,7 @@ describe('WooPP Test Suite 2', () => {
 
       const quoteAmount = ONE.mul(60000)
 
-      await expect(
-        newWooPP.querySellQuote(btcToken.address, quoteAmount)
-      ).to.be.revertedWith('WooPP: INSUFF_BASE')
+      await expect(newWooPP.querySellQuote(btcToken.address, quoteAmount)).to.be.revertedWith('WooPP: INSUFF_BASE')
     })
 
     it('sellBase reverted with zero addr', async () => {
