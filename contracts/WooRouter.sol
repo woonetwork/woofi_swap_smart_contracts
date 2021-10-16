@@ -90,7 +90,8 @@ contract WooRouter is Ownable, ReentrancyGuard {
     /* ----- Callback Function ----- */
 
     receive() external payable {
-        assert(msg.sender == WETH_ADDRESS); // only accept ETH via fallback from the WETH contract
+        // only accept ETH from WETH or whitelisted external swaps.
+        assert(msg.sender == WETH_ADDRESS || isWhitelisted[msg.sender]);
     }
 
     /* ----- Public Function ----- */

@@ -172,6 +172,22 @@ describe('WooRouter', () => {
       expect(wooRouter.connect(user).destroy()).to.be.revertedWith('Ownable: caller is not the owner')
     })
 
+    it('Receive accuracy1', async () => {
+      await expect(user.sendTransaction({
+        to: wooRouter.address,
+        gasPrice: 10,
+        value: 100000
+      })).to.be.reverted
+    })
+
+    it('Receive accuracy2', async () => {
+      await expect(user.sendTransaction({
+        to: wooRouter.address,
+        gasPrice: 10,
+        value: 100000
+      })).to.be.reverted
+    })
+
     it('Prevents user directly send ETH', async () => {
       await expect(
         user.sendTransaction({
@@ -180,6 +196,28 @@ describe('WooRouter', () => {
           value: 100000,
         })
       ).to.be.reverted
+    })
+
+    it('Receive accuracy', async () => {
+      await expect(user.sendTransaction({
+        to: wooRouter.address,
+        gasPrice: 10,
+        value: 100000
+      })).to.be.reverted
+
+      await wooRouter.setWhitelisted(user.address, true)
+      await user.sendTransaction({
+        to: wooRouter.address,
+        gasPrice: 10,
+        value: 100000
+      })
+
+      await wooRouter.setWhitelisted(user.address, false)
+      await expect(user.sendTransaction({
+        to: wooRouter.address,
+        gasPrice: 10,
+        value: 100000
+      })).to.be.reverted
     })
   })
 
