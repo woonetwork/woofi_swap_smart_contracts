@@ -37,6 +37,7 @@ import { ethers } from 'hardhat'
 import { deployContract, deployMockContract, MockProvider, solidity } from 'ethereum-waffle'
 import Wooracle from '../build/Wooracle.json'
 import WooPP from '../build/WooPP.json'
+import IWooPP from '../build/IWooPP.json'
 import WooRouter from '../build/WooRouter.json'
 import IERC20 from '../build/IERC20.json'
 import TestToken from '../build/TestToken.json'
@@ -49,6 +50,7 @@ const {
 } = ethers
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
+const WBNB_ADDR = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
 const ZERO = 0
 
 const ONE = BigNumber.from(10).pow(18)
@@ -62,16 +64,18 @@ describe('WooRouter', () => {
     let wooRouter: Contract
     let baseToken: Contract
     let quoteToken: Contract
+    let wooToken: Contract
 
     before('Deploy ERC20', async () => {
       baseToken = await deployContract(owner, TestToken, [])
       quoteToken = await deployContract(owner, TestToken, [])
+      wooToken = await deployContract(owner, TestToken, [])
     })
 
     beforeEach('Deploy WooRouter', async () => {
       wooracle = await deployContract(owner, Wooracle, [])
       wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
-      wooRouter = await deployContract(owner, WooRouter, [wooPP.address])
+      wooRouter = await deployContract(owner, WooRouter, [WBNB_ADDR, wooPP.address])
     })
 
     it('Init with correct owner', async () => {
@@ -83,12 +87,43 @@ describe('WooRouter', () => {
       expect(await wooRouter.wooPool()).to.eq(wooPP.address)
     })
 
+    it('ETH', async () => {
+      expect(await wooRouter.WETH()).to.eq(WBNB_ADDR)
+    })
+
+    it('quoteToken accuracy1', async () => {
+      expect(await wooRouter.quoteToken()).to.eq(await wooPP.quoteToken())
+    })
+
+    it('quoteToken accuracy2', async () => {
+      expect(await wooRouter.quoteToken()).to.eq(await wooPP.quoteToken())
+
+      let newWooPP = await deployMockContract(owner, IWooPP.abi)
+      await newWooPP.mock.quoteToken.returns(wooToken.address)
+      await wooRouter.setPool(newWooPP.address)
+      expect(await wooRouter.quoteToken()).to.eq(wooToken.address)
+    })
+
     it('setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
       let anotherWooPP = await deployContract(owner, WooPP, [anotherQuoteToken.address, wooracle.address, ZERO_ADDR])
       await wooRouter.setPool(anotherWooPP.address)
       expect(await wooRouter.quoteToken()).to.eq(anotherQuoteToken.address)
       expect(await wooRouter.wooPool()).to.eq(anotherWooPP.address)
+    })
+
+    it('setPool revert1', async () => {
+      await expect(
+        wooRouter.setPool(ZERO_ADDR)
+      ).to.be.revertedWith('WooRouter: newPool_ADDR_ZERO')
+    })
+
+    it('setPool revert2', async () => {
+      let newWooPP = await deployMockContract(owner, IWooPP.abi)
+      await newWooPP.mock.quoteToken.returns(ZERO_ADDR)
+      await expect(
+        wooRouter.setPool(newWooPP.address)
+      ).to.be.revertedWith('WooRouter: quoteToken_ADDR_ZERO')
     })
 
     it('Emit WooPoolChanged when setPool', async () => {
@@ -235,7 +270,7 @@ describe('WooRouter', () => {
     beforeEach('Deploy WooRouter', async () => {
       wooracle = await deployContract(owner, Wooracle, [])
       wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
-      wooRouter = await deployContract(owner, WooRouter, [wooPP.address])
+      wooRouter = await deployContract(owner, WooRouter, [WBNB_ADDR, wooPP.address])
     })
 
     it('sellBase', async () => {
@@ -263,7 +298,7 @@ describe('WooRouter', () => {
     beforeEach('Deploy WooRouter', async () => {
       wooracle = await deployContract(owner, Wooracle, [])
       wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
-      wooRouter = await deployContract(owner, WooRouter, [wooPP.address])
+      wooRouter = await deployContract(owner, WooRouter, [WBNB_ADDR, wooPP.address])
 
       await baseToken.mint(wooPP.address, ONE.mul(3))
       await quoteToken.mint(wooPP.address, ONE.mul(50000).mul(3))

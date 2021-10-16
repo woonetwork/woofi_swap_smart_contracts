@@ -37,6 +37,7 @@ pragma experimental ABIEncoderV2;
 
 import './interfaces/IWooPP.sol';
 import './interfaces/IWETH.sol';
+import './interfaces/IWooRouter.sol';
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Address.sol';
@@ -46,10 +47,10 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
+
 /// @title TODO
 /// @notice TODO
-contract WooRouter is Ownable, ReentrancyGuard {
-    /* ----- Type declarations ----- */
+contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
 
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -59,56 +60,30 @@ contract WooRouter is Ownable, ReentrancyGuard {
     // Erc20 placeholder address for native tokens (e.g. eth, bnb, matic, etc)
     address constant ETH_PLACEHOLDER_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    // Wrapper for native tokens (e.g. eth, bnb, matic, etc)
-    address constant WETH_ADDRESS = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
-
     /* ----- State variables ----- */
 
-    address public quoteToken;
+    // Wrapper for native tokens (e.g. eth, bnb, matic, etc)
+    // BSC WBNB: 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c
+    address public immutable override WETH;
+
+    address public override quoteToken;
     mapping(address => bool) public isWhitelisted;
     IWooPP public wooPool;
-
-    enum SwapType {
-        WooSwap,
-        DodoSwap
-    }
-
-    /* ----- Events ----- */
-
-    event WooRouterSwap(
-        SwapType swapType,
-        address fromToken,
-        address toToken,
-        uint256 fromAmount,
-        uint256 toAmount,
-        address from,
-        address to
-    );
-
-    event WooPoolChanged(address newPool);
 
     /* ----- Callback Function ----- */
 
     receive() external payable {
         // only accept ETH from WETH or whitelisted external swaps.
-        assert(msg.sender == WETH_ADDRESS || isWhitelisted[msg.sender]);
+        assert(msg.sender == WETH || isWhitelisted[msg.sender]);
     }
 
-    constructor(address newPool) public {
+    /* ----- External Function ----- */
+
+    constructor(address weth, address newPool) public {
+        require(weth != address(0), 'WooRouter: weth_ZERO_ADDR');
+        WETH = weth;
         setPool(newPool);
     }
-
-    /* ----- External functions ----- */
-
-    /// @dev Add target address into whitelist
-    /// @param target address that approved by WooRouter
-    /// @param whitelisted approve to using WooRouter or not
-    function setWhitelisted(address target, bool whitelisted) external nonReentrant onlyOwner {
-        require(target != address(0), 'WooRouter: target_ADDR_ZERO');
-        isWhitelisted[target] = whitelisted;
-    }
-
-    /* ----- Swap functions ----- */
 
     /// @dev TODO
     /// @param fromToken TODO
@@ -125,19 +100,19 @@ contract WooRouter is Ownable, ReentrancyGuard {
         uint256 minToAmount,
         address payable to,
         address rebateTo
-    ) external payable nonReentrant returns (uint256 realToAmount) {
+    ) external payable nonReentrant override returns (uint256 realToAmount) {
         require(fromToken != address(0), 'WooRouter: fromToken_ADDR_ZERO');
         require(toToken != address(0), 'WooRouter: toToken_ADDR_ZERO');
         require(to != address(0), 'WooRouter: to_ADDR_ZERO');
 
         bool isFromETH = fromToken == ETH_PLACEHOLDER_ADDR;
         bool isToETH = toToken == ETH_PLACEHOLDER_ADDR;
-        fromToken = isFromETH ? WETH_ADDRESS : fromToken;
-        toToken = isToETH ? WETH_ADDRESS : toToken;
+        fromToken = isFromETH ? WETH : fromToken;
+        toToken = isToETH ? WETH : toToken;
 
         if (isFromETH) {
             require(fromAmount == msg.value, 'WooRouter: fromAmount_INVALID');
-            IWETH(WETH_ADDRESS).deposit{value: msg.value}();
+            IWETH(WETH).deposit{value: msg.value}();
         } else {
             TransferHelper.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
         }
@@ -154,7 +129,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
                     address(this),
                     rebateTo
                 );
-                IWETH(WETH_ADDRESS).withdraw(realToAmount);
+                IWETH(WETH).withdraw(realToAmount);
                 require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
                 TransferHelper.safeTransferETH(to, realToAmount);
             } else {
@@ -174,7 +149,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
                     address(this),
                     rebateTo
                 );
-                IWETH(WETH_ADDRESS).withdraw(realToAmount);
+                IWETH(WETH).withdraw(realToAmount);
                 require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
                 TransferHelper.safeTransferETH(to, realToAmount);
             } else {
@@ -205,7 +180,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         uint256 minQuoteAmount,
         address to,
         address rebateTo
-    ) external nonReentrant returns (uint256 realQuoteAmount) {
+    ) external nonReentrant override returns (uint256 realQuoteAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         require(to != address(0), 'WooRouter: to_ADDR_ZERO');
         TransferHelper.safeTransferFrom(baseToken, msg.sender, address(this), baseAmount);
@@ -227,7 +202,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         uint256 minBaseAmount,
         address to,
         address rebateTo
-    ) external nonReentrant returns (uint256 realBaseAmount) {
+    ) external nonReentrant override returns (uint256 realBaseAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         require(to != address(0), 'WooRouter: to_ADDR_ZERO');
         TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), quoteAmount);
@@ -235,8 +210,6 @@ contract WooRouter is Ownable, ReentrancyGuard {
         realBaseAmount = wooPool.sellQuote(baseToken, quoteAmount, minBaseAmount, address(this), to, rebateTo);
         emit WooRouterSwap(SwapType.WooSwap, quoteToken, baseToken, quoteAmount, realBaseAmount, msg.sender, to);
     }
-
-    /* ----- Fallback swap function ----- */
 
     /// @dev swap by DODO
     /// @param approveTarget address that need to approve
@@ -254,7 +227,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         uint256 fromAmount,
         address payable to,
         bytes calldata data
-    ) external payable nonReentrant {
+    ) external payable nonReentrant override {
         require(approveTarget != address(0), 'WooRouter: approveTarget_ADDR_ZERO');
         require(swapTarget != address(0), 'WooRouter: swapTarget_ADDR_ZERO');
         require(fromToken != address(0), 'WooRouter: fromToken_ADDR_ZERO');
@@ -264,7 +237,7 @@ contract WooRouter is Ownable, ReentrancyGuard {
         require(isWhitelisted[swapTarget], 'WooRouter: SWAP_TARGET_NOT_ALLOWED');
 
         uint256 preBalance = _generalBalanceOf(toToken, address(this));
-        internalFallbackSwap(approveTarget, swapTarget, fromToken, fromAmount, data);
+        _internalFallbackSwap(approveTarget, swapTarget, fromToken, fromAmount, data);
         uint256 postBalance = _generalBalanceOf(toToken, address(this));
 
         require(preBalance <= postBalance, 'WooRouter: balance_ERROR');
@@ -287,11 +260,11 @@ contract WooRouter is Ownable, ReentrancyGuard {
         address fromToken,
         address toToken,
         uint256 fromAmount
-    ) external view returns (uint256 toAmount) {
+    ) external view override returns (uint256 toAmount) {
         require(fromToken != address(0), 'WooRouter: fromToken_ADDR_ZERO');
         require(toToken != address(0), 'WooRouter: toToken_ADDR_ZERO');
-        fromToken = (fromToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : fromToken;
-        toToken = (toToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : toToken;
+        fromToken = (fromToken == ETH_PLACEHOLDER_ADDR) ? WETH : fromToken;
+        toToken = (toToken == ETH_PLACEHOLDER_ADDR) ? WETH : toToken;
         if (fromToken == quoteToken) {
             toAmount = wooPool.querySellQuote(toToken, fromAmount);
         } else if (toToken == quoteToken) {
@@ -306,9 +279,12 @@ contract WooRouter is Ownable, ReentrancyGuard {
     /// @param baseToken TODO
     /// @param baseAmount baseToken amount that user want to send
     /// @return quoteAmount quoteToken amount that user will be receive
-    function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount) {
+    function querySellBase(
+        address baseToken,
+        uint256 baseAmount
+    ) external view override returns (uint256 quoteAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
-        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : baseToken;
+        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
         quoteAmount = wooPool.querySellBase(baseToken, baseAmount);
     }
 
@@ -316,13 +292,16 @@ contract WooRouter is Ownable, ReentrancyGuard {
     /// @param baseToken TODO
     /// @param quoteAmount quoteToken amount that user want to send
     /// @return baseAmount baseToken amount that user will be receive
-    function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount) {
+    function querySellQuote(
+        address baseToken,
+        uint256 quoteAmount
+    ) external view override returns (uint256 baseAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
-        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH_ADDRESS : baseToken;
+        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
         baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);
     }
 
-    /* ----- Misc functions ----- */
+    /* ----- Admin functions ----- */
 
     /// @dev Get funds when stuck happen
     /// @param token token address
@@ -332,21 +311,27 @@ contract WooRouter is Ownable, ReentrancyGuard {
         TransferHelper.safeTransfer(token, msg.sender, amount);
     }
 
-    /* ----- Public Function ----- */
-
     /// @dev Set wooPool from newPool
     /// @param newPool Wooracle address
     function setPool(address newPool) public nonReentrant onlyOwner {
-        require(newPool != address(0), 'WooRouter: pool_ADDR_ZERO');
+        require(newPool != address(0), 'WooRouter: newPool_ADDR_ZERO');
         wooPool = IWooPP(newPool);
         quoteToken = wooPool.quoteToken();
         require(quoteToken != address(0), 'WooRouter: quoteToken_ADDR_ZERO');
         emit WooPoolChanged(newPool);
     }
 
+    /// @dev Add target address into whitelist
+    /// @param target address that approved by WooRouter
+    /// @param whitelisted approve to using WooRouter or not
+    function setWhitelisted(address target, bool whitelisted) external nonReentrant onlyOwner {
+        require(target != address(0), 'WooRouter: target_ADDR_ZERO');
+        isWhitelisted[target] = whitelisted;
+    }
+
     /* ----- Private Function ----- */
 
-    function internalFallbackSwap(
+    function _internalFallbackSwap(
         address approveTarget,
         address swapTarget,
         address fromToken,

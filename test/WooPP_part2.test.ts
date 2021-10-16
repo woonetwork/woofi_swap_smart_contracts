@@ -245,9 +245,44 @@ describe('WooPP Test Suite 2', () => {
       await expect(wooPP.querySellBase(wooToken.address, quoteAmount)).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
     })
 
-    it('querySellQuote reverted with baseAmount greater than balance', async () => {
-      // TODO: (@qinchao)
-      // require(baseAmount <= IERC20(baseToken).balanceOf(address(this)));
+    it('querySellBase reverted with baseAmount greater than balance', async () => {
+      let newWooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, ZERO_ADDR])
+
+      const threshold = 0
+      const lpFeeRate = 0
+      const R = BigNumber.from(0)
+      await newWooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
+
+      let mintUsdtBalance = utils.parseEther('20000')
+      let mintBtcBalance = utils.parseEther('1')
+      await usdtToken.mint(newWooPP.address, mintUsdtBalance)
+      await btcToken.mint(newWooPP.address, mintBtcBalance)
+
+      const baseAmount = ONE.mul(1)
+
+      await expect(
+        newWooPP.querySellBase(btcToken.address, baseAmount)
+      ).to.be.revertedWith('WooPP: INSUFF_QUOTE')
+    })
+
+    it('querySellQuote reverted with quoteAmount greater than balance', async () => {
+      let newWooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, ZERO_ADDR])
+
+      const threshold = 0
+      const lpFeeRate = 0
+      const R = BigNumber.from(0)
+      await newWooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
+
+      let mintUsdtBalance = utils.parseEther('20000')
+      let mintBtcBalance = utils.parseEther('1')
+      await usdtToken.mint(newWooPP.address, mintUsdtBalance)
+      await btcToken.mint(newWooPP.address, mintBtcBalance)
+
+      const quoteAmount = ONE.mul(60000)
+
+      await expect(
+        newWooPP.querySellQuote(btcToken.address, quoteAmount)
+      ).to.be.revertedWith('WooPP: INSUFF_BASE')
     })
 
     it('sellBase reverted with zero addr', async () => {
