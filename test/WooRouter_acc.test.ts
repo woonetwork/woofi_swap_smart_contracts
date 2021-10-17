@@ -89,7 +89,7 @@ describe('WooRouter', () => {
       await wooracle.mock.getState
         .withArgs(wooToken.address)
         .returns(
-          ONE.mul(105).div(100),
+          ONE.mul(105).div(100), // 1.05
           BigNumber.from(10).pow(18).mul(1).div(10000),
           BigNumber.from(10).pow(9).mul(2),
           true
