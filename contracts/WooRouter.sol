@@ -83,6 +83,56 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         setPool(newPool);
     }
 
+    /// @dev Query toToken amount
+    /// @param fromToken TODO
+    /// @param toToken TODO
+    /// @param fromAmount fromToken amount that user want to send
+    /// @return toAmount toToken amount that user will be receive
+    function querySwap(
+        address fromToken,
+        address toToken,
+        uint256 fromAmount
+    ) external view override returns (uint256 toAmount) {
+        require(fromToken != address(0), 'WooRouter: fromToken_ADDR_ZERO');
+        require(toToken != address(0), 'WooRouter: toToken_ADDR_ZERO');
+        fromToken = (fromToken == ETH_PLACEHOLDER_ADDR) ? WETH : fromToken;
+        toToken = (toToken == ETH_PLACEHOLDER_ADDR) ? WETH : toToken;
+        if (fromToken == quoteToken) {
+            toAmount = wooPool.querySellQuote(toToken, fromAmount);
+        } else if (toToken == quoteToken) {
+            toAmount = wooPool.querySellBase(fromToken, fromAmount);
+        } else {
+            uint256 quoteAmount = wooPool.querySellBase(fromToken, fromAmount);
+            toAmount = wooPool.querySellQuote(toToken, quoteAmount);
+        }
+    }
+
+    /// @dev Query quoteAmount when selling baseToken
+    /// @param baseToken TODO
+    /// @param baseAmount baseToken amount that user want to send
+    /// @return quoteAmount quoteToken amount that user will be receive
+    function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
+        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
+        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
+        quoteAmount = wooPool.querySellBase(baseToken, baseAmount);
+    }
+
+    /// @dev Query baseAmount when selling quoteToken
+    /// @param baseToken TODO
+    /// @param quoteAmount quoteToken amount that user want to send
+    /// @return baseAmount baseToken amount that user will be receive
+    function querySellQuote(address baseToken, uint256 quoteAmount)
+        external
+        view
+        override
+        returns (uint256 baseAmount)
+    {
+        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
+        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
+        baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);
+    }
+
+
     /// @dev TODO
     /// @param fromToken TODO
     /// @param toToken TODO
@@ -114,7 +164,6 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         } else {
             TransferHelper.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
         }
-
         TransferHelper.safeApprove(fromToken, address(wooPool), fromAmount);
 
         if (fromToken == quoteToken) {
@@ -245,57 +294,6 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         }
 
         emit WooRouterSwap(SwapType.DodoSwap, fromToken, toToken, fromAmount, swapBalance, msg.sender, to);
-    }
-
-    /* Query functions */
-
-    /// @dev Query toToken amount
-    /// @param fromToken TODO
-    /// @param toToken TODO
-    /// @param fromAmount fromToken amount that user want to send
-    /// @return toAmount toToken amount that user will be receive
-    function querySwap(
-        address fromToken,
-        address toToken,
-        uint256 fromAmount
-    ) external view override returns (uint256 toAmount) {
-        require(fromToken != address(0), 'WooRouter: fromToken_ADDR_ZERO');
-        require(toToken != address(0), 'WooRouter: toToken_ADDR_ZERO');
-        fromToken = (fromToken == ETH_PLACEHOLDER_ADDR) ? WETH : fromToken;
-        toToken = (toToken == ETH_PLACEHOLDER_ADDR) ? WETH : toToken;
-        if (fromToken == quoteToken) {
-            toAmount = wooPool.querySellQuote(toToken, fromAmount);
-        } else if (toToken == quoteToken) {
-            toAmount = wooPool.querySellBase(fromToken, fromAmount);
-        } else {
-            uint256 quoteAmount = wooPool.querySellBase(fromToken, fromAmount);
-            toAmount = wooPool.querySellQuote(toToken, quoteAmount);
-        }
-    }
-
-    /// @dev Query quoteAmount when selling baseToken
-    /// @param baseToken TODO
-    /// @param baseAmount baseToken amount that user want to send
-    /// @return quoteAmount quoteToken amount that user will be receive
-    function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
-        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
-        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
-        quoteAmount = wooPool.querySellBase(baseToken, baseAmount);
-    }
-
-    /// @dev Query baseAmount when selling quoteToken
-    /// @param baseToken TODO
-    /// @param quoteAmount quoteToken amount that user want to send
-    /// @return baseAmount baseToken amount that user will be receive
-    function querySellQuote(address baseToken, uint256 quoteAmount)
-        external
-        view
-        override
-        returns (uint256 baseAmount)
-    {
-        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
-        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
-        baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);
     }
 
     /* ----- Admin functions ----- */

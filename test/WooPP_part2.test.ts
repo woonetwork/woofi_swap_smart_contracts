@@ -98,6 +98,7 @@ describe('WooPP Test Suite 2', () => {
       const lpFeeRate = 0
       const R = BigNumber.from(0)
       await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
+      await wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
 
       await usdtToken.mint(wooPP.address, WOOPP_USDT_BALANCE)
       await btcToken.mint(wooPP.address, WOOPP_BTC_BALANCE)

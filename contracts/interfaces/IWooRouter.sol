@@ -65,9 +65,15 @@ interface IWooRouter {
 
     function quoteToken() external pure returns (address);
 
-    function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
+    function querySellBase(
+        address baseToken,
+        uint256 baseAmount
+    ) external view returns (uint256 quoteAmount);
 
-    function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
+    function querySellQuote(
+        address baseToken,
+        uint256 quoteAmount
+    ) external view returns (uint256 baseAmount);
 
     function querySwap(
         address fromToken,
