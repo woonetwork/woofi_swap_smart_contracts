@@ -132,7 +132,6 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);
     }
 
-
     /// @dev TODO
     /// @param fromToken TODO
     /// @param toToken TODO

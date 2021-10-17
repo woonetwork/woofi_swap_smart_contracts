@@ -119,7 +119,7 @@ describe('WooRouter', () => {
       expect(amountNum).to.lessThan(benchmark)
       const slippage = (benchmark - amountNum) / benchmark
       expect(slippage).to.lessThan(0.0002)
-      console.log("Query selling 1 btc for usdt: ", amountNum, slippage)
+      console.log('Query selling 1 btc for usdt: ', amountNum, slippage)
     })
 
     it('querySwap accuracy1_2', async () => {
@@ -130,7 +130,7 @@ describe('WooRouter', () => {
       expect(amountNum).to.lessThan(benchmark)
       const slippage = (benchmark - amountNum) / benchmark
       expect(slippage).to.lessThan(0.0002 * 2)
-      console.log("Query selling 3 btc for usdt: ", amountNum, slippage)
+      console.log('Query selling 3 btc for usdt: ', amountNum, slippage)
     })
 
     it('querySwap accuracy1_3', async () => {
@@ -141,7 +141,7 @@ describe('WooRouter', () => {
       expect(amountNum).to.lessThan(benchmark)
       const slippage = (benchmark - amountNum) / benchmark
       expect(slippage).to.lessThan(0.0002 * 6)
-      console.log("Query selling 10 btc for usdt: ", amountNum, slippage)
+      console.log('Query selling 10 btc for usdt: ', amountNum, slippage)
     })
 
     it('querySwap accuracy2', async () => {
@@ -151,7 +151,7 @@ describe('WooRouter', () => {
       expect(amountNum).to.lessThan(benchmark)
       const slippage = (benchmark - amountNum) / benchmark
       expect(slippage).to.lessThan(0.0002)
-      console.log("Query selling 10000 usdt for btc: ", amountNum, slippage)
+      console.log('Query selling 10000 usdt for btc: ', amountNum, slippage)
     })
 
     it('querySwap accuracy3_1', async () => {
@@ -162,7 +162,7 @@ describe('WooRouter', () => {
       expect(amountNum).to.lessThan(benchmark)
       const slippage = (benchmark - amountNum) / benchmark
       expect(slippage).to.lessThan(0.0002)
-      console.log("Query selling 25000 woo for usdt: ", amountNum, slippage)
+      console.log('Query selling 25000 woo for usdt: ', amountNum, slippage)
     })
 
     it('querySwap accuracy3_2', async () => {
@@ -173,7 +173,7 @@ describe('WooRouter', () => {
       expect(amountNum).to.lessThan(benchmark)
       const slippage = (benchmark - amountNum) / benchmark
       expect(slippage).to.lessThan(0.0002 * 2.5)
-      console.log("Query selling 200000 woo for usdt: ", amountNum, slippage)
+      console.log('Query selling 200000 woo for usdt: ', amountNum, slippage)
     })
 
     it('querySwap accuracy3_3', async () => {
@@ -184,32 +184,31 @@ describe('WooRouter', () => {
       expect(amountNum).to.lessThan(benchmark)
       const slippage = (benchmark - amountNum) / benchmark
       expect(slippage).to.lessThan(0.0002 * 15)
-      console.log("Query selling 1230000 woo for usdt: ", amountNum, slippage)
+      console.log('Query selling 1230000 woo for usdt: ', amountNum, slippage)
     })
 
     it('querySwap 2-routes accuracy1', async () => {
       const amount = await wooRouter.querySwap(btcToken.address, wooToken.address, ONE)
       const amountNum = Number(utils.formatEther(amount))
-      const benchmark = 1 * BTC_PRICE / WOO_PRICE
+      const benchmark = (1 * BTC_PRICE) / WOO_PRICE
       expect(amountNum).to.lessThan(benchmark)
 
       const slippage = (benchmark - amountNum) / benchmark
       const slippageBenchmark = 0.0002 * 1.5
       expect(slippage).to.lessThan(slippageBenchmark)
-      console.log("Query selling 1 btc for woo: ", amountNum, slippage)
+      console.log('Query selling 1 btc for woo: ', amountNum, slippage)
     })
 
     it('querySwap 2-routes accuracy2', async () => {
       const amount = await wooRouter.querySwap(wooToken.address, btcToken.address, ONE.mul(30000))
       const amountNum = Number(utils.formatEther(amount))
-      const benchmark = 30000 * WOO_PRICE / BTC_PRICE
+      const benchmark = (30000 * WOO_PRICE) / BTC_PRICE
       expect(amountNum).to.lessThan(benchmark)
 
       const slippage = (benchmark - amountNum) / benchmark
       const slippageBenchmark = 0.0002 * 1.5
       expect(slippage).to.lessThan(slippageBenchmark)
-      console.log("Query selling 30000 woo for btc: ", amountNum, slippage)
+      console.log('Query selling 30000 woo for btc: ', amountNum, slippage)
     })
   })
-
 })

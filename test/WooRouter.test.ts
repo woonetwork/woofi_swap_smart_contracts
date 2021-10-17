@@ -88,9 +88,9 @@ describe('WooRouter', () => {
     })
 
     it('Ctor revert', async () => {
-      await expect(
-        wooRouter = await deployContract(owner, WooRouter, [ZERO_ADDR, wooPP.address])
-      ).to.be.revertedWith('WooRouter: weth_ZERO_ADDR')
+      await expect((wooRouter = await deployContract(owner, WooRouter, [ZERO_ADDR, wooPP.address]))).to.be.revertedWith(
+        'WooRouter: weth_ZERO_ADDR'
+      )
     })
 
     it('ETH', async () => {
