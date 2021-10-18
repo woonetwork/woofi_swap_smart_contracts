@@ -405,7 +405,7 @@ describe('WooPP Test Suite 2', () => {
         wooPP
           .connect(user1)
           .sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, user1.address, ZERO_ADDR)
-      ).to.be.revertedWith('WooPP: PRICE_EXCEEDS_LIMIT')
+      ).to.be.revertedWith('WooPP: baseAmount<minBaseAmount')
     })
 
     it('sellQuote emit WooSwap event', async () => {
