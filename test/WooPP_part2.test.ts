@@ -230,21 +230,6 @@ describe('WooPP Test Suite 2', () => {
       await expect(wooPP.querySellBase(testToken.address, baseAmount)).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
     })
 
-    it('querySellQuote reverted with zero addr', async () => {
-      const quoteAmount = ONE.mul(50000)
-
-      await expect(wooPP.querySellQuote(ZERO_ADDR, quoteAmount)).to.be.revertedWith('WooPP: baseToken_ZERO_ADDR')
-    })
-
-    it('querySellQuote reverted with token not exist', async () => {
-      let testToken = await deployContract(owner, TestToken, [])
-      const quoteAmount = ONE.mul(50000)
-
-      await expect(wooPP.querySellBase(testToken.address, quoteAmount)).to.be.revertedWith(
-        'WooPP: TOKEN_DOES_NOT_EXIST'
-      )
-    })
-
     it('querySellBase reverted with quoteAmount greater than balance', async () => {
       let newWooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, ZERO_ADDR])
 
@@ -261,6 +246,19 @@ describe('WooPP Test Suite 2', () => {
       const baseAmount = ONE.mul(1)
 
       await expect(newWooPP.querySellBase(btcToken.address, baseAmount)).to.be.revertedWith('WooPP: INSUFF_QUOTE')
+    })
+
+    it('querySellQuote reverted with zero addr', async () => {
+      const quoteAmount = ONE.mul(50000)
+
+      await expect(wooPP.querySellQuote(ZERO_ADDR, quoteAmount)).to.be.revertedWith('WooPP: baseToken_ZERO_ADDR')
+    })
+
+    it('querySellQuote reverted with token not exist', async () => {
+      let testToken = await deployContract(owner, TestToken, [])
+      const quoteAmount = ONE.mul(50000)
+
+      await expect(wooPP.querySellBase(testToken.address, quoteAmount)).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
     })
 
     it('querySellQuote reverted with baseAmount greater than balance', async () => {
