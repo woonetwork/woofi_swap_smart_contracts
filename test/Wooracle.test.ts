@@ -202,7 +202,9 @@ describe('Wooracle', () => {
       expect(await wooracle.isValid(bases[i])).to.eq(false)
     }
 
-    await expect(wooracle.postStateList(bases, newPrices, newSpreads, newCoeffs)).to.be.revertedWith('Wooracle: length_INVALID')
+    await expect(wooracle.postStateList(bases, newPrices, newSpreads, newCoeffs)).to.be.revertedWith(
+      'Wooracle: length_INVALID'
+    )
   })
 
   it('getPrice', async () => {

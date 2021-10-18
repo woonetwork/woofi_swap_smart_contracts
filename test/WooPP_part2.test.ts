@@ -240,7 +240,9 @@ describe('WooPP Test Suite 2', () => {
       let testToken = await deployContract(owner, TestToken, [])
       const quoteAmount = ONE.mul(50000)
 
-      await expect(wooPP.querySellBase(testToken.address, quoteAmount)).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
+      await expect(wooPP.querySellBase(testToken.address, quoteAmount)).to.be.revertedWith(
+        'WooPP: TOKEN_DOES_NOT_EXIST'
+      )
     })
 
     it('querySellBase reverted with quoteAmount greater than balance', async () => {
