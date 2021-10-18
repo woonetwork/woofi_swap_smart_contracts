@@ -84,11 +84,12 @@ describe('WooRouter', () => {
 
     it('Init state variables', async () => {
       expect(await wooRouter.quoteToken()).to.eq(quoteToken.address)
+      expect(await wooRouter.isWhitelisted(ZERO_ADDR)).to.eq(false)
       expect(await wooRouter.wooPool()).to.eq(wooPP.address)
     })
 
     it('Ctor revert', async () => {
-      await expect((wooRouter = await deployContract(owner, WooRouter, [ZERO_ADDR, wooPP.address]))).to.be.revertedWith(
+      await expect(deployContract(owner, WooRouter, [ZERO_ADDR, wooPP.address])).to.be.revertedWith(
         'WooRouter: weth_ZERO_ADDR'
       )
     })
@@ -140,7 +141,7 @@ describe('WooRouter', () => {
     it('Prevents non-owners from setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
       let anotherWooPP = await deployContract(owner, WooPP, [anotherQuoteToken.address, wooracle.address, ZERO_ADDR])
-      expect(wooRouter.connect(user).setPool(anotherWooPP.address)).to.be.revertedWith(
+      await expect(wooRouter.connect(user).setPool(anotherWooPP.address)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
     })
@@ -155,16 +156,16 @@ describe('WooRouter', () => {
 
     it('Prevents zero addr from setWhitelisted', async () => {
       expect(await wooRouter.isWhitelisted(ZERO_ADDR)).to.eq(false)
-      expect(wooRouter.setWhitelisted(ZERO_ADDR, true)).to.be.revertedWith('WooRouter: target_ADDR_ZERO')
-      expect(wooRouter.setWhitelisted(ZERO_ADDR, false)).to.be.revertedWith('WooRouter: target_ADDR_ZERO')
+      await expect(wooRouter.setWhitelisted(ZERO_ADDR, true)).to.be.revertedWith('WooRouter: target_ADDR_ZERO')
+      await expect(wooRouter.setWhitelisted(ZERO_ADDR, false)).to.be.revertedWith('WooRouter: target_ADDR_ZERO')
     })
 
     it('Prevents non-owners from setWhitelisted', async () => {
       expect(await wooRouter.isWhitelisted(user.address)).to.eq(false)
-      expect(wooRouter.connect(user).setWhitelisted(user.address, true)).to.be.revertedWith(
+      await expect(wooRouter.connect(user).setWhitelisted(user.address, true)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
-      expect(wooRouter.connect(user).setWhitelisted(user.address, false)).to.be.revertedWith(
+      await expect(wooRouter.connect(user).setWhitelisted(user.address, false)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
     })
@@ -183,7 +184,7 @@ describe('WooRouter', () => {
     })
 
     it('Prevents zero addr as token addr from rescueFunds', async () => {
-      expect(wooRouter.rescueFunds(ZERO_ADDR, ZERO)).to.be.revertedWith('WooRouter: token_ADDR_ZERO')
+      await expect(wooRouter.rescueFunds(ZERO_ADDR, ZERO)).to.be.revertedWith('WooRouter: token_ADDR_ZERO')
     })
 
     it('Prevents non-owners from rescueFunds', async () => {
@@ -194,7 +195,7 @@ describe('WooRouter', () => {
       await baseToken.mint(wooRouter.address, mintBalance)
       expect(await baseToken.balanceOf(wooRouter.address)).to.eq(mintBalance)
 
-      expect(wooRouter.connect(user).rescueFunds(baseToken.address, mintBalance)).to.be.revertedWith(
+      await expect(wooRouter.connect(user).rescueFunds(baseToken.address, mintBalance)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
       expect(await baseToken.balanceOf(user.address)).to.eq(ZERO)
@@ -275,13 +276,32 @@ describe('WooRouter', () => {
       wooRouter = await deployContract(owner, WooRouter, [WBNB_ADDR, wooPP.address])
     })
 
+    it('querySwap', async () => {
+      // TODO: (@qinchao)
+    })
+
+    it('querySellBase', async () => {
+      // TODO: (@qinchao)
+    })
+
+    it('querySellQuote', async () => {
+      // TODO: (@qinchao)
+    })
+
+    it('swap', async () => {
+      // TODO: (@qinchao)
+    })
+
     it('sellBase', async () => {
-      // TODO waiting for WooPP.test.ts swap code
-      //   expect(await baseToken.balanceOf(user.address)).to.eq(ZERO)
-      //   let mintBaseAmount = 10000
-      //   await baseToken.mint(wooPP.address, mintBaseAmount)
-      //   let minQuoteAmount = 0
-      //   await wooRouter.sellBase(baseToken.address, mintBaseAmount, minQuoteAmount, user.address, user.address)
+      // TODO: (@qinchao)
+    })
+
+    it('sellQuote', async () => {
+      // TODO: (@qinchao)
+    })
+
+    it('externalSwap', async () => {
+      // TODO: (@qinchao)
     })
   })
 
