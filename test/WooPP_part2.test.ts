@@ -151,9 +151,7 @@ describe('WooPP Test Suite 2', () => {
       const quoteAmount = await wooPP.querySellBase(btcToken.address, baseAmount)
 
       await btcToken.connect(user1).approve(wooPP.address, ONE.mul(100))
-      await wooPP
-        .connect(user1)
-        .sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
+      await wooPP.connect(user1).sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
 
       const usdtSize = await wooPP.poolSize(usdtToken.address)
       expect(preUsdtSize.sub(usdtSize)).to.eq(quoteAmount)
@@ -191,9 +189,7 @@ describe('WooPP Test Suite 2', () => {
       const baseAmount = await wooPP.querySellQuote(btcToken.address, quoteAmount)
 
       await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
-      await wooPP
-        .connect(user1)
-        .sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR)
+      await wooPP.connect(user1).sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR)
 
       const usdtSize = await wooPP.poolSize(usdtToken.address)
       expect(usdtSize.sub(preUsdtSize)).to.eq(quoteAmount)
@@ -308,9 +304,7 @@ describe('WooPP Test Suite 2', () => {
       await testToken.connect(user1).approve(wooPP.address, ONE.mul(100))
 
       await expect(
-        wooPP
-          .connect(user1)
-          .sellBase(testToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
+        wooPP.connect(user1).sellBase(testToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
       ).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
     })
 
@@ -323,9 +317,7 @@ describe('WooPP Test Suite 2', () => {
       await btcToken.connect(user1).approve(wooPP.address, ONE.mul(100))
 
       await expect(
-        wooPP
-          .connect(user1)
-          .sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
+        wooPP.connect(user1).sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
       ).to.be.revertedWith('WooPP: quoteAmount<minQuoteAmount')
     })
 
@@ -340,9 +332,7 @@ describe('WooPP Test Suite 2', () => {
       await btcToken.connect(user1).approve(wooPP.address, ONE.mul(100))
 
       await expect(
-        wooPP
-          .connect(user1)
-          .sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
+        wooPP.connect(user1).sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
       )
         .to.emit(wooPP, 'WooSwap')
         .withArgs(btcToken.address, usdtToken.address, baseAmount, quoteAmount, user1.address, user1.address)
@@ -361,9 +351,7 @@ describe('WooPP Test Suite 2', () => {
       ).to.be.revertedWith('WooPP: baseToken_ZERO_ADDR')
 
       await expect(
-        wooPP
-          .connect(user1)
-          .sellQuote(btcToken.address, quoteAmount, minBaseAmount, ZERO_ADDR, ZERO_ADDR)
+        wooPP.connect(user1).sellQuote(btcToken.address, quoteAmount, minBaseAmount, ZERO_ADDR, ZERO_ADDR)
       ).to.be.revertedWith('WooPP: to_ZERO_ADDR')
     })
 
@@ -377,9 +365,7 @@ describe('WooPP Test Suite 2', () => {
       await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
 
       await expect(
-        wooPP
-          .connect(user1)
-          .sellQuote(testToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR)
+        wooPP.connect(user1).sellQuote(testToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR)
       ).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
     })
 
@@ -392,9 +378,7 @@ describe('WooPP Test Suite 2', () => {
       await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
 
       await expect(
-        wooPP
-          .connect(user1)
-          .sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR)
+        wooPP.connect(user1).sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR)
       ).to.be.revertedWith('WooPP: baseAmount<minBaseAmount')
     })
 
@@ -409,9 +393,7 @@ describe('WooPP Test Suite 2', () => {
       await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
 
       await expect(
-        wooPP
-          .connect(user1)
-          .sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR)
+        wooPP.connect(user1).sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR)
       )
         .to.emit(wooPP, 'WooSwap')
         .withArgs(usdtToken.address, btcToken.address, quoteAmount, baseAmount, user1.address, user1.address)

@@ -124,13 +124,13 @@ describe('WooPP Test Suite 2', () => {
 
       // await wooPP.unpause()
 
-      await expect(
-        wooPP.sellBase(btcToken.address, ONE, ONE.mul(49900), owner.address, ZERO_ADDR)
-      ).to.be.revertedWith('Pausable: paused')
+      await expect(wooPP.sellBase(btcToken.address, ONE, ONE.mul(49900), owner.address, ZERO_ADDR)).to.be.revertedWith(
+        'Pausable: paused'
+      )
 
-      await expect(
-        wooPP.sellQuote(btcToken.address, ONE.mul(50500), ONE, owner.address, ZERO_ADDR)
-      ).to.be.revertedWith('Pausable: paused')
+      await expect(wooPP.sellQuote(btcToken.address, ONE.mul(50500), ONE, owner.address, ZERO_ADDR)).to.be.revertedWith(
+        'Pausable: paused'
+      )
     })
   })
 })

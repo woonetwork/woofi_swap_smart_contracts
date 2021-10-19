@@ -40,7 +40,6 @@ import '../interfaces/IWooPP.sol';
 /// @title TODO
 /// @notice TODO
 interface IWooRouter {
-
     /* ----- Type declarations ----- */
 
     enum SwapType {

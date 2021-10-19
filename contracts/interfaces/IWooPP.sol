@@ -44,14 +44,14 @@ interface IWooPP {
 
     /// @dev struct info to store the token info
     struct TokenInfo {
-        uint112 reserve;            // Token balance
-        uint112 threshold;          // Threshold for reserve update
-        uint32 lastResetTimestamp;  // Timestamp for last param update
-        uint64 lpFeeRate;           // Fee rate: e.g. 0.001 = 0.1%
-        uint64 R;                   // Rebalance coefficient [0, 1]
-        uint112 target;             // Targeted balance for pricing
+        uint112 reserve; // Token balance
+        uint112 threshold; // Threshold for reserve update
+        uint32 lastResetTimestamp; // Timestamp for last param update
+        uint64 lpFeeRate; // Fee rate: e.g. 0.001 = 0.1%
+        uint64 R; // Rebalance coefficient [0, 1]
+        uint112 target; // Targeted balance for pricing
         address chainlinkRefOracle; // chainlink oracle for price checking
-        uint96 refPriceFixCoeff;    //
+        uint96 refPriceFixCoeff; //
         bool isValid;
     }
 
