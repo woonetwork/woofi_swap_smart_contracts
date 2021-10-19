@@ -38,7 +38,6 @@ pragma experimental ABIEncoderV2;
 /// @title The oracle interface by Woo.Network.
 /// @notice update and posted the latest price info by Woo.
 interface IWooracle {
-
     /// @dev the quote token for Wooracle's pricing.
     /// @return the quote token
     function quoteToken() external view returns (address);

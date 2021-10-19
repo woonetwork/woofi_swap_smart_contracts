@@ -38,11 +38,9 @@ pragma experimental ABIEncoderV2;
 import './libraries/InitializableOwnable.sol';
 import './interfaces/IWooracle.sol';
 
-
 /// @title Wooracle implementation
 /// @notice Will be maintained and updated periodically by Woo.network in multichains.
 contract Wooracle is InitializableOwnable, IWooracle {
-
     /* ----- State variables ----- */
 
     mapping(address => uint256) public prices;
