@@ -537,7 +537,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         uint256 s;
         uint256 k;
         bool isFeasible;
-        (p, s, k, isFeasible) = IWooracle(wooracle).getState(baseToken);
+        (p, s, k, isFeasible) = IWooracle(wooracle).state(baseToken);
         require(isFeasible, 'WooPP: ORACLE_PRICE_NOT_FEASIBLE');
 
         _ensurePriceReliable(p, baseInfo, quoteInfo);
@@ -576,7 +576,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         uint256 s;
         uint256 k;
         bool isFeasible;
-        (p, s, k, isFeasible) = IWooracle(wooracle).getState(baseToken);
+        (p, s, k, isFeasible) = IWooracle(wooracle).state(baseToken);
         require(isFeasible, 'WooPP: ORACLE_PRICE_NOT_FEASIBLE');
 
         _ensurePriceReliable(p, baseInfo, quoteInfo);

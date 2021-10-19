@@ -75,7 +75,7 @@ describe('WooRouter', () => {
 
     wooracle = await deployMockContract(owner, IWooracle.abi)
     await wooracle.mock.timestamp.returns(BigNumber.from(1634180070))
-    await wooracle.mock.getState
+    await wooracle.mock.state
       .withArgs(btcToken.address)
       .returns(
         utils.parseEther(BTC_PRICE.toString()),
@@ -83,7 +83,7 @@ describe('WooRouter', () => {
         utils.parseEther('0.000000001'),
         true
       )
-    await wooracle.mock.getState
+    await wooracle.mock.state
       .withArgs(wooToken.address)
       .returns(utils.parseEther('1.05'), utils.parseEther('0.002'), utils.parseEther('0.00000005'), true)
   })

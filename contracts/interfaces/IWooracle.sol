@@ -35,22 +35,27 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
-/// @title TODO
-/// @notice TODO
+/// @title The oracle interface by Woo.Network.
+/// @notice update and posted the latest price info by Woo.
 interface IWooracle {
-    /// @dev Get baseToken price
-    /// @param base baseToken address
-    /// @return priceNow latest price of baseToken
-    /// @return feasible TODO
-    function getPrice(address base) external view returns (uint256 priceNow, bool feasible);
 
-    /// @dev TODO
+    /// @dev the quote token for Wooracle's pricing.
+    /// @return the quote token
+    function quoteToken() external view returns (address);
+
+    /// @dev the price for the given base token
     /// @param base baseToken address
-    /// @return priceNow latest price of baseToken
-    /// @return spreadNow TODO
-    /// @return coeffNow TODO
-    /// @return feasible TODO
-    function getState(address base)
+    /// @return priceNow the current price of base token
+    /// @return feasible whether the current price is feasible and valid
+    function price(address base) external view returns (uint256 priceNow, bool feasible);
+
+    /// @dev returns the state for the given base token.
+    /// @param base baseToken address
+    /// @return priceNow the current price of base token
+    /// @return spreadNow the current spread of base token
+    /// @return coeffNow the slippage coefficient of base token
+    /// @return feasible whether the current state is feasible and valid
+    function state(address base)
         external
         view
         returns (
@@ -60,7 +65,12 @@ interface IWooracle {
             bool feasible
         );
 
-    /// @dev TODO
-    /// return last updated timestamp
+    /// @dev returns the last updated timestamp
+    /// @return the last updated timestamp
     function timestamp() external view returns (uint256);
+
+    /// @dev returns whether the base token price is valid.
+    /// @param base baseToken address
+    /// @return whether the base token price is valid.
+    function isFeasible(address base) external view returns (bool);
 }

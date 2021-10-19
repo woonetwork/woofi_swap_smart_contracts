@@ -38,20 +38,22 @@ pragma experimental ABIEncoderV2;
 import './libraries/InitializableOwnable.sol';
 import './interfaces/IWooracle.sol';
 
-/// @title TODO
-/// @notice TODO
+
+/// @title Wooracle implementation
+/// @notice Will be maintained and updated periodically by Woo.network in multichains.
 contract Wooracle is InitializableOwnable, IWooracle {
+
     /* ----- State variables ----- */
 
-    mapping(address => uint256) public price;
-    mapping(address => uint256) public coeff;
-    mapping(address => uint256) public spread;
+    mapping(address => uint256) public prices;
+    mapping(address => uint256) public coeffs;
+    mapping(address => uint256) public spreads;
     mapping(address => bool) public isValid;
 
+    address public override quoteToken;
     uint256 public override timestamp;
 
     uint256 public staleDuration;
-    address public quoteAddr;
 
     constructor() public {
         initOwner(msg.sender);
@@ -60,34 +62,34 @@ contract Wooracle is InitializableOwnable, IWooracle {
 
     /* ----- External Functions ----- */
 
-    /// @dev Set quoteAddr from newQuoteAddr
-    /// @param newQuoteAddr token address
-    function setQuoteAddr(address newQuoteAddr) external onlyOwner {
-        quoteAddr = newQuoteAddr;
+    /// @dev Set the quote token address.
+    /// @param newQuoteToken token address
+    function setQuoteToken(address newQuoteToken) external onlyOwner {
+        quoteToken = newQuoteToken;
     }
 
-    /// @dev Set staleDuration from newStaleDuration
-    /// @param newStaleDuration TODO
+    /// @dev Set the staleDuration.
+    /// @param newStaleDuration the new stale duration
     function setStaleDuration(uint256 newStaleDuration) external onlyOwner {
         staleDuration = newStaleDuration;
     }
 
-    /// @dev Update baseToken price
-    /// @param base baseToken address
-    /// @param newPrice TODO
+    /// @dev Update the base token prices.
+    /// @param base the baseToken address
+    /// @param newPrice the new prices for the base token
     function postPrice(address base, uint256 newPrice) external onlyOwner {
         if (newPrice == uint256(0)) {
             isValid[base] = false;
         } else {
-            price[base] = newPrice;
+            prices[base] = newPrice;
             isValid[base] = true;
         }
         timestamp = block.timestamp;
     }
 
-    /// @dev Batch update baseTokens price
+    /// @dev batch update baseTokens prices
     /// @param bases list of baseToken address
-    /// @param newPrices TODO
+    /// @param newPrices the updated prices list
     function postPriceList(address[] calldata bases, uint256[] calldata newPrices) external onlyOwner {
         uint256 length = bases.length;
         require(length == newPrices.length, 'Wooracle: length_INVALID');
@@ -96,7 +98,7 @@ contract Wooracle is InitializableOwnable, IWooracle {
             if (newPrices[i] == uint256(0)) {
                 isValid[bases[i]] = false;
             } else {
-                price[bases[i]] = newPrices[i];
+                prices[bases[i]] = newPrices[i];
                 isValid[bases[i]] = true;
             }
         }
@@ -104,33 +106,33 @@ contract Wooracle is InitializableOwnable, IWooracle {
         timestamp = block.timestamp;
     }
 
-    /// @dev TODO
+    /// @dev update the spreads info.
     /// @param base baseToken address
-    /// @param newSpread TODO
+    /// @param newSpread the new spreads
     function postSpread(address base, uint256 newSpread) external onlyOwner {
-        spread[base] = newSpread;
+        spreads[base] = newSpread;
         timestamp = block.timestamp;
     }
 
-    /// @dev TODO
+    /// @dev batch update the spreads info.
     /// @param bases list of baseToken address
-    /// @param newSpreads TODO
+    /// @param newSpreads list of spreads info
     function postSpreadList(address[] calldata bases, uint256[] calldata newSpreads) external onlyOwner {
         uint256 length = bases.length;
         require(length == newSpreads.length, 'Wooracle: length_INVALID');
 
         for (uint256 i = 0; i < length; i++) {
-            spread[bases[i]] = newSpreads[i];
+            spreads[bases[i]] = newSpreads[i];
         }
 
         timestamp = block.timestamp;
     }
 
-    /// @dev TODO
+    /// @dev update the state of the given base token.
     /// @param base baseToken address
-    /// @param newPrice TODO
-    /// @param newSpread TODO
-    /// @param newCoeff TODO
+    /// @param newPrice the new prices
+    /// @param newSpread the new spreads
+    /// @param newCoeff the new slippage coefficent
     function postState(
         address base,
         uint256 newPrice,
@@ -141,11 +143,11 @@ contract Wooracle is InitializableOwnable, IWooracle {
         timestamp = block.timestamp;
     }
 
-    /// @dev TODO
+    /// @dev batch update the prices, spreads and slipagge coeffs info.
     /// @param bases list of baseToken address
-    /// @param newPrices TODO
-    /// @param newSpreads TODO
-    /// @param newCoeffs TODO
+    /// @param newPrices the prices list
+    /// @param newSpreads the spreads list
+    /// @param newCoeffs the slippage coefficent list
     function postStateList(
         address[] calldata bases,
         uint256[] calldata newPrices,
@@ -165,13 +167,13 @@ contract Wooracle is InitializableOwnable, IWooracle {
     }
 
     /// @inheritdoc IWooracle
-    function getPrice(address base) external view override returns (uint256 priceNow, bool feasible) {
-        priceNow = price[base];
+    function price(address base) external view override returns (uint256 priceNow, bool feasible) {
+        priceNow = prices[base];
         feasible = isFeasible(base);
     }
 
     /// @inheritdoc IWooracle
-    function getState(address base)
+    function state(address base)
         external
         view
         override
@@ -182,25 +184,14 @@ contract Wooracle is InitializableOwnable, IWooracle {
             bool feasible
         )
     {
-        priceNow = price[base];
-        spreadNow = spread[base];
-        coeffNow = coeff[base];
+        priceNow = prices[base];
+        spreadNow = spreads[base];
+        coeffNow = coeffs[base];
         feasible = isFeasible(base);
     }
 
-    /* ----- Public Functions ----- */
-
-    /// @dev TODO
-    /// @return TODO
-    function isStale() public view returns (bool) {
-        return block.timestamp > timestamp + staleDuration * 1 seconds;
-    }
-
-    /// @dev TODO
-    /// @param base baseToken address
-    /// @return TODO
-    function isFeasible(address base) public view returns (bool) {
-        return isValid[base] && !isStale();
+    function isFeasible(address base) public view override returns (bool) {
+        return isValid[base] && (block.timestamp <= timestamp + staleDuration * 1 seconds);
     }
 
     /* ----- Private Functions ----- */
@@ -214,9 +205,9 @@ contract Wooracle is InitializableOwnable, IWooracle {
         if (newPrice == uint256(0)) {
             isValid[base] = false;
         } else {
-            price[base] = newPrice;
-            spread[base] = newSpread;
-            coeff[base] = newCoeff;
+            prices[base] = newPrice;
+            spreads[base] = newSpread;
+            coeffs[base] = newCoeff;
             isValid[base] = true;
         }
     }

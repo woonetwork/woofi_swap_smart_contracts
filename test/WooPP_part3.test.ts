@@ -75,8 +75,8 @@ describe('WooPP Test Suite 2', () => {
 
       wooracle = await deployMockContract(owner, IWooracle.abi)
       await wooracle.mock.timestamp.returns(BigNumber.from(1634180070))
-      await wooracle.mock.getPrice.withArgs(btcToken.address).returns(ONE.mul(BTC_PRICE), true)
-      await wooracle.mock.getState
+      await wooracle.mock.price.withArgs(btcToken.address).returns(ONE.mul(BTC_PRICE), true)
+      await wooracle.mock.state
         .withArgs(btcToken.address)
         .returns(
           ONE.mul(BTC_PRICE),
