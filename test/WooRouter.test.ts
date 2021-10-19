@@ -41,7 +41,7 @@ import IWooPP from '../build/IWooPP.json'
 import WooRouter from '../build/WooRouter.json'
 import IERC20 from '../build/IERC20.json'
 import TestToken from '../build/TestToken.json'
-import IWooracle from "../build/IWooracle.json";
+import IWooracle from '../build/IWooracle.json'
 
 use(solidity)
 
@@ -50,7 +50,7 @@ const {
   constants: { MaxUint256 },
 } = ethers
 
-const ETH_PLACEHOLDER_ADDR = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+const ETH_PLACEHOLDER_ADDR = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE'
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 const WBNB_ADDR = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'
 const ZERO = 0
@@ -313,23 +313,27 @@ describe('WooRouter', () => {
 
     it('Prevents zero addr from querySwap', async () => {
       const btcNum = 1
-      await expect(wooRouter.querySwap(ZERO_ADDR, usdtToken.address, ONE.mul(btcNum)))
-        .to.be.revertedWith('WooRouter: fromToken_ADDR_ZERO')
+      await expect(wooRouter.querySwap(ZERO_ADDR, usdtToken.address, ONE.mul(btcNum))).to.be.revertedWith(
+        'WooRouter: fromToken_ADDR_ZERO'
+      )
 
-      await expect(wooRouter.querySwap(btcToken.address, ZERO_ADDR, ONE.mul(btcNum)))
-        .to.be.revertedWith('WooRouter: toToken_ADDR_ZERO')
+      await expect(wooRouter.querySwap(btcToken.address, ZERO_ADDR, ONE.mul(btcNum))).to.be.revertedWith(
+        'WooRouter: toToken_ADDR_ZERO'
+      )
     })
 
     it('Prevents zero addr from querySellBase', async () => {
       const btcNum = 1
-      await expect(wooRouter.querySellBase(ZERO_ADDR, ONE.mul(btcNum)))
-        .to.be.revertedWith('WooRouter: baseToken_ADDR_ZERO')
+      await expect(wooRouter.querySellBase(ZERO_ADDR, ONE.mul(btcNum))).to.be.revertedWith(
+        'WooRouter: baseToken_ADDR_ZERO'
+      )
     })
 
     it('Prevents zero addr from querySellQuote', async () => {
       const usdtNum = 50000
-      await expect(wooRouter.querySellQuote(ZERO_ADDR, ONE.mul(usdtNum)))
-        .to.be.revertedWith('WooRouter: baseToken_ADDR_ZERO')
+      await expect(wooRouter.querySellQuote(ZERO_ADDR, ONE.mul(usdtNum))).to.be.revertedWith(
+        'WooRouter: baseToken_ADDR_ZERO'
+      )
     })
 
     it('Prevents zero addr from swap', async () => {
@@ -340,16 +344,16 @@ describe('WooRouter', () => {
 
       await btcToken.connect(user).approve(wooRouter.address, fromAmount)
 
-      await expect(wooRouter.connect(user)
-        .swap(ZERO_ADDR, usdtToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR)
+      await expect(
+        wooRouter.connect(user).swap(ZERO_ADDR, usdtToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR)
       ).to.be.revertedWith('WooRouter: fromToken_ADDR_ZERO')
 
-      await expect(wooRouter.connect(user)
-        .swap(btcToken.address, ZERO_ADDR, fromAmount, minToAmount, user.address, ZERO_ADDR)
+      await expect(
+        wooRouter.connect(user).swap(btcToken.address, ZERO_ADDR, fromAmount, minToAmount, user.address, ZERO_ADDR)
       ).to.be.revertedWith('WooRouter: toToken_ADDR_ZERO')
 
-      await expect(wooRouter.connect(user)
-        .swap(btcToken.address, usdtToken.address, fromAmount, minToAmount, ZERO_ADDR, ZERO_ADDR)
+      await expect(
+        wooRouter.connect(user).swap(btcToken.address, usdtToken.address, fromAmount, minToAmount, ZERO_ADDR, ZERO_ADDR)
       ).to.be.revertedWith('WooRouter: to_ADDR_ZERO')
     })
 
@@ -357,8 +361,12 @@ describe('WooRouter', () => {
       const fromAmount = ONE.mul(1)
       const minToAmount = fromAmount.mul(BTC_PRICE).mul(999).div(1000)
 
-      await expect(wooRouter.connect(user)
-        .swap(ETH_PLACEHOLDER_ADDR, usdtToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR, {value: ONE.mul(5)})
+      await expect(
+        wooRouter
+          .connect(user)
+          .swap(ETH_PLACEHOLDER_ADDR, usdtToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR, {
+            value: ONE.mul(5),
+          })
       ).to.be.revertedWith('WooRouter: fromAmount_INVALID')
     })
 
@@ -370,8 +378,10 @@ describe('WooRouter', () => {
 
       await btcToken.connect(user).approve(wooRouter.address, fromAmount)
 
-      await expect(wooRouter.connect(user)
-        .swap(btcToken.address, usdtToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR)
+      await expect(
+        wooRouter
+          .connect(user)
+          .swap(btcToken.address, usdtToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR)
       ).to.emit(wooRouter, 'WooRouterSwap')
     })
 
@@ -383,12 +393,12 @@ describe('WooRouter', () => {
 
       await btcToken.connect(user).approve(wooRouter.address, fromAmount)
 
-      await expect(wooRouter.connect(user)
-        .sellBase(ZERO_ADDR, fromAmount, minToAmount, user.address, ZERO_ADDR)
+      await expect(
+        wooRouter.connect(user).sellBase(ZERO_ADDR, fromAmount, minToAmount, user.address, ZERO_ADDR)
       ).to.be.revertedWith('WooRouter: baseToken_ADDR_ZERO')
 
-      await expect(wooRouter.connect(user)
-        .sellBase(btcToken.address, fromAmount, minToAmount, ZERO_ADDR, ZERO_ADDR)
+      await expect(
+        wooRouter.connect(user).sellBase(btcToken.address, fromAmount, minToAmount, ZERO_ADDR, ZERO_ADDR)
       ).to.be.revertedWith('WooRouter: to_ADDR_ZERO')
     })
 
@@ -400,8 +410,8 @@ describe('WooRouter', () => {
 
       await btcToken.connect(user).approve(wooRouter.address, fromAmount)
 
-      await expect(wooRouter.connect(user)
-        .sellBase(btcToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR)
+      await expect(
+        wooRouter.connect(user).sellBase(btcToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR)
       ).to.emit(wooRouter, 'WooRouterSwap')
     })
 
@@ -413,12 +423,12 @@ describe('WooRouter', () => {
 
       await usdtToken.connect(user).approve(wooRouter.address, fromAmount)
 
-      await expect(wooRouter.connect(user)
-        .sellQuote(ZERO_ADDR, fromAmount, minToAmount, user.address, ZERO_ADDR)
+      await expect(
+        wooRouter.connect(user).sellQuote(ZERO_ADDR, fromAmount, minToAmount, user.address, ZERO_ADDR)
       ).to.be.revertedWith('WooRouter: baseToken_ADDR_ZERO')
 
-      await expect(wooRouter.connect(user)
-        .sellQuote(btcToken.address, fromAmount, minToAmount, ZERO_ADDR, ZERO_ADDR)
+      await expect(
+        wooRouter.connect(user).sellQuote(btcToken.address, fromAmount, minToAmount, ZERO_ADDR, ZERO_ADDR)
       ).to.be.revertedWith('WooRouter: to_ADDR_ZERO')
     })
 
@@ -430,8 +440,8 @@ describe('WooRouter', () => {
 
       await usdtToken.connect(user).approve(wooRouter.address, fromAmount)
 
-      await expect(wooRouter.connect(user)
-        .sellQuote(btcToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR)
+      await expect(
+        wooRouter.connect(user).sellQuote(btcToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR)
       ).to.emit(wooRouter, 'WooRouterSwap')
     })
   })
