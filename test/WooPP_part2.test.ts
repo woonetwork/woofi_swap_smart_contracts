@@ -481,7 +481,9 @@ describe('WooPP Test Suite 2', () => {
     })
 
     it('Prevents non-owners from withdraw', async () => {
-      await expect(wooPP.connect(user2).withdraw(btcToken.address, user2.address, ONE)).to.be.revertedWith('InitializableOwnable: NOT_OWNER')
+      await expect(wooPP.connect(user2).withdraw(btcToken.address, user2.address, ONE)).to.be.revertedWith(
+        'InitializableOwnable: NOT_OWNER'
+      )
     })
 
     it('withdraw emit Withdraw event', async () => {
@@ -498,7 +500,9 @@ describe('WooPP Test Suite 2', () => {
     })
 
     it('Prevents non-strategists from withdrawToOwner', async () => {
-      await expect(wooPP.connect(user2).withdrawToOwner(btcToken.address, ONE)).to.be.revertedWith('WooPP: NOT_STRATEGIST')
+      await expect(wooPP.connect(user2).withdrawToOwner(btcToken.address, ONE)).to.be.revertedWith(
+        'WooPP: NOT_STRATEGIST'
+      )
     })
 
     it('Prevents zero addr from withdrawToOwner', async () => {
@@ -557,7 +561,9 @@ describe('WooPP Test Suite 2', () => {
     it('Prevents non-strategists from setChainlinkRefOracle', async () => {
       let newWooracle = await deployMockContract(owner, IWooracle.abi)
 
-      await expect(wooPP.connect(user2).setChainlinkRefOracle(btcToken.address, newWooracle.address)).to.be.revertedWith('WooPP: NOT_STRATEGIST')
+      await expect(
+        wooPP.connect(user2).setChainlinkRefOracle(btcToken.address, newWooracle.address)
+      ).to.be.revertedWith('WooPP: NOT_STRATEGIST')
     })
 
     it('setRewardManager', async () => {
@@ -596,7 +602,9 @@ describe('WooPP Test Suite 2', () => {
       let lpFeeRate = 0
       let R = BigNumber.from(0)
 
-      await expect(wooPP.connect(user2).addBaseToken(wooToken.address, threshold, lpFeeRate, R, ZERO_ADDR)).to.be.revertedWith('WooPP: NOT_STRATEGIST')
+      await expect(
+        wooPP.connect(user2).addBaseToken(wooToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
+      ).to.be.revertedWith('WooPP: NOT_STRATEGIST')
     })
 
     it('addBaseToken reverted with zero addr', async () => {
@@ -741,7 +749,9 @@ describe('WooPP Test Suite 2', () => {
       let newLpFeeRate = ONE.div(2)
       let newR = ONE.div(2)
 
-      await expect(wooPP.connect(user2).tuneParameters(btcToken.address, newThreshold, newLpFeeRate, newR)).to.be.revertedWith('WooPP: NOT_STRATEGIST')
+      await expect(
+        wooPP.connect(user2).tuneParameters(btcToken.address, newThreshold, newLpFeeRate, newR)
+      ).to.be.revertedWith('WooPP: NOT_STRATEGIST')
     })
 
     it('tuneParameters reverted with zero addr', async () => {
