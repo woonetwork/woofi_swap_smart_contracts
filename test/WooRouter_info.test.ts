@@ -32,7 +32,7 @@
 */
 
 import { expect, use } from 'chai'
-import { Contract, utils, Wallet} from 'ethers'
+import { Contract, utils, Wallet } from 'ethers'
 import { ethers } from 'hardhat'
 import { deployContract, deployMockContract, MockProvider, solidity } from 'ethereum-waffle'
 import IWooracle from '../build/IWooracle.json'
@@ -85,12 +85,7 @@ describe('WooRouter', () => {
       )
     await wooracle.mock.getState
       .withArgs(wooToken.address)
-      .returns(
-        utils.parseEther('1.05'),
-        utils.parseEther('0.002'),
-        utils.parseEther('0.00000005'),
-        true
-      )
+      .returns(utils.parseEther('1.05'), utils.parseEther('0.002'), utils.parseEther('0.00000005'), true)
   })
 
   describe('Print slippage info', () => {
@@ -114,36 +109,31 @@ describe('WooRouter', () => {
 
     it('Print slippage', async () => {
       const btcNum = [0.1, 0.3, 1, 3, 10, 20, 50, 100, 200, 500]
-      await _querySellSwaps(
-        btcNum, btcToken, BTC_PRICE
-      )
+      await _querySellSwaps(btcNum, btcToken, BTC_PRICE)
       console.log('----------------------------------------------------------------------------')
       await _queryBuySwaps(
-        btcNum.map(x => x * BTC_PRICE), btcToken, BTC_PRICE
+        btcNum.map((x) => x * BTC_PRICE),
+        btcToken,
+        BTC_PRICE
       )
       console.log('----------------------------------------------------------------------------')
       const wooNum = [1000, 3000, 10000, 30000, 100000, 300000, 600000, 1000000, 3000000, 6000000]
-      await _querySellSwaps(
-        wooNum, wooToken, WOO_PRICE
-      )
+      await _querySellSwaps(wooNum, wooToken, WOO_PRICE)
       console.log('----------------------------------------------------------------------------')
       await _queryBuySwaps(
-        wooNum.map(x => x * WOO_PRICE), wooToken, WOO_PRICE
+        wooNum.map((x) => x * WOO_PRICE),
+        wooToken,
+        WOO_PRICE
       )
       console.log('----------------------------------------------------------------------------')
-      await _queryBtcWooSwaps(
-        btcNum, BTC_PRICE / WOO_PRICE
-      )
+      await _queryBtcWooSwaps(btcNum, BTC_PRICE / WOO_PRICE)
     })
 
     async function _querySellSwaps(tokenNums: Number[], token: Contract, price: number) {
-      const name = token == btcToken ? "btc" : "woo"
+      const name = token == btcToken ? 'btc' : 'woo'
       for (let i in tokenNums) {
         const num = tokenNums[i]
-        const amount = await wooRouter.querySwap(
-          token.address,
-          usdtToken.address,
-          utils.parseEther(num.toString()))
+        const amount = await wooRouter.querySwap(token.address, usdtToken.address, utils.parseEther(num.toString()))
         const amountNum = Number(utils.formatEther(amount))
         const benchmark = price * Number(num)
         const slippage = (benchmark - amountNum) / benchmark
@@ -152,13 +142,10 @@ describe('WooRouter', () => {
     }
 
     async function _queryBuySwaps(tokenNums: Number[], token: Contract, price: number) {
-      const name = token == btcToken ? "btc" : "woo"
+      const name = token == btcToken ? 'btc' : 'woo'
       for (let i in tokenNums) {
         const num = tokenNums[i]
-        const amount = await wooRouter.querySwap(
-          usdtToken.address,
-          token.address,
-          utils.parseEther(num.toString()))
+        const amount = await wooRouter.querySwap(usdtToken.address, token.address, utils.parseEther(num.toString()))
         const amountNum = Number(utils.formatEther(amount))
         const benchmark = Number(num) / price
         const slippage = (benchmark - amountNum) / benchmark
@@ -169,10 +156,7 @@ describe('WooRouter', () => {
     async function _queryBtcWooSwaps(tokenNums: Number[], price: number) {
       for (let i in tokenNums) {
         const num = tokenNums[i]
-        const amount = await wooRouter.querySwap(
-          btcToken.address,
-          wooToken.address,
-          utils.parseEther(num.toString()))
+        const amount = await wooRouter.querySwap(btcToken.address, wooToken.address, utils.parseEther(num.toString()))
         const amountNum = Number(utils.formatEther(amount))
         const benchmark = Number(num) * price
         const slippage = (benchmark - amountNum) / benchmark
@@ -180,5 +164,4 @@ describe('WooRouter', () => {
       }
     }
   })
-
 })

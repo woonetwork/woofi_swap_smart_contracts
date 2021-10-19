@@ -313,25 +313,12 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         address rebateTo
     ) private returns (uint256 realToAmount) {
         if (isToETH) {
-            realToAmount = wooPool.sellQuote(
-                toToken,
-                quoteAmount,
-                minToAmount,
-                address(this),
-                address(this),
-                rebateTo
-            );
+            realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), address(this), rebateTo);
             IWETH(WETH).withdraw(realToAmount);
             require(to != address(0), 'WooRouter: to_ZERO_ADDR');
             TransferHelper.safeTransferETH(to, realToAmount);
         } else {
-            realToAmount = wooPool.sellQuote(
-                toToken,
-                quoteAmount,
-                minToAmount,
-                address(this),
-                to,
-                rebateTo);
+            realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
         }
     }
 

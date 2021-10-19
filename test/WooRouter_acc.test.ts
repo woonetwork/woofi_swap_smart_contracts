@@ -85,12 +85,7 @@ describe('WooRouter', () => {
       )
     await wooracle.mock.getState
       .withArgs(wooToken.address)
-      .returns(
-        utils.parseEther('1.05'),
-        utils.parseEther('0.002'),
-        utils.parseEther('0.00000005'),
-        true
-      )
+      .returns(utils.parseEther('1.05'), utils.parseEther('0.002'), utils.parseEther('0.00000005'), true)
   })
 
   describe('Query Functions', () => {
@@ -173,7 +168,7 @@ describe('WooRouter', () => {
       const benchmark = wooNum * WOO_PRICE
       expect(amountNum).to.lessThan(benchmark)
       const slippage = (benchmark - amountNum) / benchmark
-      expect(slippage).to.lessThan(0.30)
+      expect(slippage).to.lessThan(0.3)
       console.log('Query selling 200000 woo for usdt: ', amountNum, slippage)
     })
 
@@ -240,15 +235,7 @@ describe('WooRouter', () => {
       const minToAmount = fromAmount.mul(BTC_PRICE).mul(999).div(1000)
       const price = BTC_PRICE
       const minSlippage = 0.0002
-      await _testSwap(
-        name,
-        btcToken,
-        usdtToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      await _testSwap(name, btcToken, usdtToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('swap btc -> usdt accuracy2', async () => {
@@ -259,15 +246,7 @@ describe('WooRouter', () => {
       const minToAmount = fromAmount.mul(BTC_PRICE).mul(99).div(100)
       const price = BTC_PRICE
       const minSlippage = 0.0065
-      await _testSwap(
-        name,
-        btcToken,
-        usdtToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      await _testSwap(name, btcToken, usdtToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('swap woo -> usdt accuracy1', async () => {
@@ -278,15 +257,7 @@ describe('WooRouter', () => {
       const minToAmount = fromAmount.mul(105).div(100).mul(95).div(100)
       const price = 1.05
       const minSlippage = 0.035
-      await _testSwap(
-        name,
-        wooToken,
-        usdtToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      await _testSwap(name, wooToken, usdtToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('Swap: woo -> usdt accuracy2', async () => {
@@ -297,15 +268,7 @@ describe('WooRouter', () => {
       const minToAmount = fromAmount.mul(105).div(100).mul(70).div(100)
       const price = 1.05
       const minSlippage = 0.3
-      await _testSwap(
-        name,
-        wooToken,
-        usdtToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      await _testSwap(name, wooToken, usdtToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('swap btc -> woo accuracy1', async () => {
@@ -316,16 +279,8 @@ describe('WooRouter', () => {
       const minToAmount = fromAmount.mul(BTC_PRICE).mul(100).div(105).mul(90).div(100)
       const price = BTC_PRICE / WOO_PRICE
       const minSlippage = 0.1
-      console.log("minToAmount", utils.formatEther(minToAmount))
-      await _testSwap(
-        name,
-        btcToken,
-        wooToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      console.log('minToAmount', utils.formatEther(minToAmount))
+      await _testSwap(name, btcToken, wooToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('Swap: btc -> woo accuracy2', async () => {
@@ -335,16 +290,8 @@ describe('WooRouter', () => {
       const fromAmount = ONE.mul(10)
       const minToAmount = fromAmount.mul(BTC_PRICE).mul(100).div(105).mul(30).div(100)
       const price = BTC_PRICE / WOO_PRICE
-      const minSlippage = 0.70
-      await _testSwap(
-        name,
-        btcToken,
-        wooToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      const minSlippage = 0.7
+      await _testSwap(name, btcToken, wooToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('swap usdt -> woo accuracy0', async () => {
@@ -355,15 +302,7 @@ describe('WooRouter', () => {
       const minToAmount = fromAmount.mul(100).div(105).mul(99).div(100)
       const price = 1.0 / WOO_PRICE
       const minSlippage = 0.01
-      await _testSwap(
-        name,
-        usdtToken,
-        wooToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      await _testSwap(name, usdtToken, wooToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('swap usdt -> woo accuracy1', async () => {
@@ -374,15 +313,7 @@ describe('WooRouter', () => {
       const minToAmount = fromAmount.mul(100).div(105).mul(96).div(100)
       const price = 1.0 / WOO_PRICE
       const minSlippage = 0.04
-      await _testSwap(
-        name,
-        usdtToken,
-        wooToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      await _testSwap(name, usdtToken, wooToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('swap usdt -> woo accuracy2', async () => {
@@ -392,16 +323,8 @@ describe('WooRouter', () => {
       const fromAmount = ONE.mul(BTC_PRICE)
       const minToAmount = fromAmount.mul(100).div(105).mul(90).div(100)
       const price = 1.0 / WOO_PRICE
-      const minSlippage = 0.10
-      await _testSwap(
-        name,
-        usdtToken,
-        wooToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      const minSlippage = 0.1
+      await _testSwap(name, usdtToken, wooToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('Swap: usdt -> woo accuracy3', async () => {
@@ -411,16 +334,8 @@ describe('WooRouter', () => {
       const fromAmount = ONE.mul(200000)
       const minToAmount = fromAmount.mul(100).div(105).mul(50).div(100)
       const price = 1.0 / WOO_PRICE
-      const minSlippage = 0.50
-      await _testSwap(
-        name,
-        usdtToken,
-        wooToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      const minSlippage = 0.5
+      await _testSwap(name, usdtToken, wooToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('swap usdt -> btc accuracy1', async () => {
@@ -431,15 +346,7 @@ describe('WooRouter', () => {
       const minToAmount = fromAmount.div(BTC_PRICE).mul(999).div(1000)
       const price = 1.0 / BTC_PRICE
       const minSlippage = 0.0003
-      await _testSwap(
-        name,
-        usdtToken,
-        btcToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      await _testSwap(name, usdtToken, btcToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     it('Swap: usdt -> btc accuracy2', async () => {
@@ -450,15 +357,7 @@ describe('WooRouter', () => {
       const minToAmount = fromAmount.div(BTC_PRICE).mul(99).div(100)
       const price = 1.0 / BTC_PRICE
       const minSlippage = 0.008
-      await _testSwap(
-        name,
-        usdtToken,
-        btcToken,
-        fromAmount,
-        minToAmount,
-        price,
-        minSlippage
-      )
+      await _testSwap(name, usdtToken, btcToken, fromAmount, minToAmount, price, minSlippage)
     })
 
     // ----- Private test methods ----- //
@@ -470,8 +369,8 @@ describe('WooRouter', () => {
       fromAmount: BigNumberish,
       minToAmount: BigNumberish,
       price: number,
-      minSlippage: number) {
-
+      minSlippage: number
+    ) {
       const preWooppToken0Amount = await wooPP.poolSize(token0.address)
       const preWooppToken1Amount = await wooPP.poolSize(token1.address)
       const preUserToken0Amount = await token0.balanceOf(user.address)
@@ -479,21 +378,13 @@ describe('WooRouter', () => {
 
       await token0.connect(user).approve(wooRouter.address, fromAmount)
 
-      const realToAmount = await wooRouter.connect(user).callStatic.swap(
-        token0.address,
-        token1.address,
-        fromAmount,
-        minToAmount,
-        user.address,
-        ZERO_ADDR)
+      const realToAmount = await wooRouter
+        .connect(user)
+        .callStatic.swap(token0.address, token1.address, fromAmount, minToAmount, user.address, ZERO_ADDR)
 
-      await wooRouter.connect(user).swap(
-        token0.address,
-        token1.address,
-        fromAmount,
-        minToAmount,
-        user.address,
-        ZERO_ADDR)
+      await wooRouter
+        .connect(user)
+        .swap(token0.address, token1.address, fromAmount, minToAmount, user.address, ZERO_ADDR)
 
       const toNum = Number(utils.formatEther(realToAmount))
       const fromNum = Number(utils.formatEther(fromAmount))
@@ -513,5 +404,4 @@ describe('WooRouter', () => {
       expect(curUserToken1Amount.sub(preUserToken1Amount)).to.eq(realToAmount)
     }
   })
-
 })
