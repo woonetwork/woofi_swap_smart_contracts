@@ -268,7 +268,6 @@ describe('WooRouter tests', () => {
     let btcToken: Contract
     let wooToken: Contract
     let usdtToken: Contract
-    let wbnbToken: Contract
 
     let wooPP: Contract
     let wooRouter: Contract
@@ -277,11 +276,10 @@ describe('WooRouter tests', () => {
       btcToken = await deployContract(owner, TestToken, [])
       wooToken = await deployContract(owner, TestToken, [])
       usdtToken = await deployContract(owner, TestToken, [])
-      wbnbToken = await deployContract(owner, TestToken, [])
 
       wooracle = await deployMockContract(owner, IWooracle.abi)
       await wooracle.mock.timestamp.returns(BigNumber.from(1634180070))
-      await wooracle.mock.getState
+      await wooracle.mock.state
         .withArgs(btcToken.address)
         .returns(
           utils.parseEther(BTC_PRICE.toString()),
@@ -289,26 +287,24 @@ describe('WooRouter tests', () => {
           utils.parseEther('0.000000001'),
           true
         )
-      await wooracle.mock.getState
+      await wooracle.mock.state
         .withArgs(wooToken.address)
         .returns(utils.parseEther('1.05'), utils.parseEther('0.002'), utils.parseEther('0.00000005'), true)
     })
 
     beforeEach('Deploy WooRouter', async () => {
       wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, ZERO_ADDR])
-      wooRouter = await deployContract(owner, WooRouter, [wbnbToken.address, wooPP.address])
+      wooRouter = await deployContract(owner, WooRouter, [WBNB_ADDR, wooPP.address])
 
       const threshold = 0
       const lpFeeRate = 0
       const R = BigNumber.from(0)
       await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
       await wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
-      await wooPP.addBaseToken(WBNB_ADDR, threshold, lpFeeRate, R, ZERO_ADDR)
 
       await btcToken.mint(wooPP.address, ONE.mul(10))
       await usdtToken.mint(wooPP.address, ONE.mul(5000000))
       await wooToken.mint(wooPP.address, ONE.mul(10000000))
-      await wbnbToken.mint(wooPP.address, ONE.mul(100000))
     })
 
     it('Prevents zero addr from querySwap', async () => {
