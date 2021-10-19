@@ -2,9 +2,7 @@
 pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
-
 interface AggregatorV3Interface {
-
     function decimals() external view returns (uint8);
 
     function description() external view returns (string memory);

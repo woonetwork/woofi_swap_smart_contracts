@@ -2,11 +2,9 @@
 pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
-
 /// @title Wrapped ETH.
 /// BSC: https://bscscan.com/address/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c#code
 interface IWETH {
-
     /// @dev Deposit ETH into WETH
     function deposit() external payable;
 

@@ -50,11 +50,9 @@ import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-
 /// @title Woo private pool for swaping.
 /// @notice the implementation class for interface IWooPP, mainly for query and swap tokens.
 contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
-
     /* ----- Type declarations ----- */
 
     using SafeMath for uint256;

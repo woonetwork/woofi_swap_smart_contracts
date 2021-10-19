@@ -47,7 +47,6 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-
 /// @title Woo Router implementation.
 /// @notice Router for stateless execution of swaps against Woo private pool.
 contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {

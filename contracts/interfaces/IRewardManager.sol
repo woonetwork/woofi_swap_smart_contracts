@@ -35,7 +35,6 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
-
 /// @title Reward manager interface for WooFi Swap.
 /// @notice this is for swap rebate or potential incentive program
 interface IRewardManager {
