@@ -206,7 +206,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         quoteAmount = quoteAmount.sub(lpFee);
         baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
 
-        require(baseAmount >= minBaseAmount, 'WooPP: PRICE_EXCEEDS_LIMIT');
+        require(baseAmount >= minBaseAmount, 'WooPP: baseAmount<minBaseAmount');
 
         TransferHelper.safeTransferFrom(quoteToken, from, address(this), quoteAmount.add(lpFee));
         TransferHelper.safeTransfer(baseToken, to, baseAmount);

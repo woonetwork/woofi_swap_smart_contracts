@@ -157,51 +157,30 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         fromToken = isFromETH ? WETH : fromToken;
         toToken = isToETH ? WETH : toToken;
 
+        // Step 1: transfer the source tokens to WooRouter
         if (isFromETH) {
             require(fromAmount == msg.value, 'WooRouter: fromAmount_INVALID');
             IWETH(WETH).deposit{value: msg.value}();
         } else {
             TransferHelper.safeTransferFrom(fromToken, msg.sender, address(this), fromAmount);
         }
-        TransferHelper.safeApprove(fromToken, address(wooPool), fromAmount);
 
+        // Step 2: swap and transfer
+        TransferHelper.safeApprove(fromToken, address(wooPool), fromAmount);
         if (fromToken == quoteToken) {
-            if (isToETH) {
-                realToAmount = wooPool.sellQuote(
-                    toToken,
-                    fromAmount,
-                    minToAmount,
-                    address(this),
-                    address(this),
-                    rebateTo
-                );
-                IWETH(WETH).withdraw(realToAmount);
-                require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
-                TransferHelper.safeTransferETH(to, realToAmount);
-            } else {
-                realToAmount = wooPool.sellQuote(toToken, fromAmount, minToAmount, address(this), to, rebateTo);
-            }
+            // case 1: quoteToken --> baseToken
+            realToAmount = _sellQuoteAndTransfer(isToETH, toToken, fromAmount, minToAmount, to, rebateTo);
         } else if (toToken == quoteToken) {
+            // case 2: fromToken --> quoteToken
             realToAmount = wooPool.sellBase(fromToken, fromAmount, minToAmount, address(this), to, rebateTo);
         } else {
+            // case 3: fromToken --> quoteToken --> toToken
             uint256 quoteAmount = wooPool.sellBase(fromToken, fromAmount, 0, address(this), address(this), rebateTo);
             TransferHelper.safeApprove(quoteToken, address(wooPool), quoteAmount);
-            if (isToETH) {
-                realToAmount = wooPool.sellQuote(
-                    toToken,
-                    quoteAmount,
-                    minToAmount,
-                    address(this),
-                    address(this),
-                    rebateTo
-                );
-                IWETH(WETH).withdraw(realToAmount);
-                require(to != address(0), 'WooRouter: INVALID_TO_ADDRESS');
-                TransferHelper.safeTransferETH(to, realToAmount);
-            } else {
-                realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
-            }
+            realToAmount = _sellQuoteAndTransfer(isToETH, toToken, quoteAmount, minToAmount, to, rebateTo);
         }
+
+        // Step 3: firing event
         emit WooRouterSwap(
             SwapType.WooSwap,
             isFromETH ? ETH_PLACEHOLDER_ADDR : fromToken,
@@ -324,6 +303,24 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
     }
 
     /* ----- Private Function ----- */
+
+    function _sellQuoteAndTransfer(
+        bool isToETH,
+        address toToken,
+        uint256 quoteAmount,
+        uint256 minToAmount,
+        address payable to,
+        address rebateTo
+    ) private returns (uint256 realToAmount) {
+        if (isToETH) {
+            realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), address(this), rebateTo);
+            IWETH(WETH).withdraw(realToAmount);
+            require(to != address(0), 'WooRouter: to_ZERO_ADDR');
+            TransferHelper.safeTransferETH(to, realToAmount);
+        } else {
+            realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
+        }
+    }
 
     function _internalFallbackSwap(
         address approveTarget,
