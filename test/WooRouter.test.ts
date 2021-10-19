@@ -55,7 +55,7 @@ const ZERO = 0
 
 const ONE = BigNumber.from(10).pow(18)
 
-describe('WooRouter', () => {
+describe('WooRouter tests', () => {
   const [owner, user, approveTarget, swapTarget] = new MockProvider().getWallets()
 
   describe('ctor, init & basic func', () => {

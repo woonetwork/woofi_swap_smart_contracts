@@ -50,9 +50,11 @@ import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-/// @title TODO
-/// @notice TODO
+
+/// @title Woo private pool for swaping.
+/// @notice the implementation class for interface IWooPP, mainly for query and swap tokens.
 contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
+
     /* ----- Type declarations ----- */
 
     using SafeMath for uint256;
@@ -182,7 +184,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     }
 
     /// @inheritdoc IWooPP
-    // TODO(qinchao): remove address 'from'
     function sellQuote(
         address baseToken,
         uint256 quoteAmount,
@@ -220,14 +221,14 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         emit WooSwap(quoteToken, baseToken, quoteAmount, baseAmount, from, to);
     }
 
-    /// @dev Set pairsInfo from newPairsInfo
-    /// @param newPairsInfo TODO
+    /// @dev Set the pairsInfo
+    /// @param newPairsInfo the pairs info to set
     function setPairsInfo(string calldata newPairsInfo) external nonReentrant onlyStrategist {
         pairsInfo = newPairsInfo;
     }
 
     /// @dev Get the pool's balance of token
-    /// @param token token that maintain for swapping
+    /// @param token the token pool to query
     function poolSize(address token) external view returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
@@ -241,8 +242,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     }
 
     /// @dev Set chainlinkRefOracle for token from newChainlinkRefOracle
-    /// @param token TODO
-    /// @param newChainlinkRefOracle TODO
+    /// @param token the associated token
+    /// @param newChainlinkRefOracle the corresponding chanilink ref oracle
     function setChainlinkRefOracle(address token, address newChainlinkRefOracle) external nonReentrant onlyStrategist {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');
         TokenInfo storage info = tokenInfo[token];
@@ -252,20 +253,20 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         emit ChainlinkRefOracleUpdated(token, newChainlinkRefOracle);
     }
 
-    /// @dev Set rewardManager from newRewardManager
-    /// @param newRewardManager TODO
+    /// @dev Set the rewardManager.
+    /// @param newRewardManager the reward manager
     function setRewardManager(address newRewardManager) external nonReentrant onlyStrategist {
         require(newRewardManager != address(0), 'WooPP: newRewardManager_ZERO_ADDR');
         rewardManager = newRewardManager;
         emit RewardManagerUpdated(newRewardManager);
     }
 
-    /// @dev TODO
-    /// @param baseToken TODO
-    /// @param threshold TODO
-    /// @param lpFeeRate TODO
-    /// @param R TODO
-    /// @param chainlinkRefOracle TODO
+    /// @dev Add the base token for swap
+    /// @param baseToken the base token
+    /// @param threshold the balance threshold info
+    /// @param lpFeeRate the swap fee rate
+    /// @param R the rebalance refactor
+    /// @param chainlinkRefOracle the referance chainlink oracle
     function addBaseToken(
         address baseToken,
         uint256 threshold,
@@ -296,8 +297,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         emit ChainlinkRefOracleUpdated(baseToken, chainlinkRefOracle);
     }
 
-    /// @dev TODO
-    /// @param baseToken TODO
+    /// @dev Remove the base token
+    /// @param baseToken the base token
     function removeBaseToken(address baseToken) external nonReentrant onlyStrategist {
         require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
         require(tokenInfo[baseToken].isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
@@ -306,11 +307,11 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         emit ChainlinkRefOracleUpdated(baseToken, address(0));
     }
 
-    /// @dev TODO
-    /// @param token TODO
-    /// @param newThreshold TODO
-    /// @param newLpFeeRate TODO
-    /// @param newR TODO
+    /// @dev Tune the token params
+    /// @param token the token to tune
+    /// @param newThreshold the new balance threshold info
+    /// @param newLpFeeRate the new swap fee rate
+    /// @param newR the new rebalance refactor
     function tuneParameters(
         address token,
         uint256 newThreshold,
@@ -346,19 +347,19 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         super._unpause();
     }
 
-    /// @dev TODO
-    /// @param strategist TODO
-    /// @param flag TODO
+    /// @dev Update the strategist info.
+    /// @param strategist the strategist to set
+    /// @param flag true or false
     function setStrategist(address strategist, bool flag) external nonReentrant onlyStrategist {
         require(strategist != address(0), 'WooPP: strategist_ZERO_ADDR');
         isStrategist[strategist] = flag;
         emit StrategistUpdated(strategist, flag);
     }
 
-    /// @dev TODO
-    /// @param token TODO
-    /// @param to TODO
-    /// @param amount TODO
+    /// @dev Withdraw the token.
+    /// @param token the token to withdraw
+    /// @param to the destination address
+    /// @param amount the amount to withdraw
     function withdraw(
         address token,
         address to,
@@ -370,9 +371,9 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         emit Withdraw(token, to, amount);
     }
 
-    /// @dev TODO
-    /// @param token TODO
-    /// @param amount TODO
+    /// @dev Withdraw the token to the OWNER address
+    /// @param token the token
+    /// @param amount the amount to address
     function withdrawToOwner(address token, uint256 amount) external nonReentrant onlyStrategist {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');
         TransferHelper.safeTransfer(token, _OWNER_, amount);
@@ -396,7 +397,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
             uint256 quoteRefPrice = uint256(rawQuoteRefPrice).mul(uint256(quoteInfo.refPriceFixCoeff));
             uint256 refPrice = baseRefPrice.divFloor(quoteRefPrice);
 
-            // TODO: make 1% as variable
+            // TODO (qinchao): make 1% as variable
             require(
                 refPrice.mulFloor(1e18 - 1e16) <= p && p <= refPrice.mulCeil(1e18 + 1e16),
                 'WooPP: PRICE_UNRELIABLE'

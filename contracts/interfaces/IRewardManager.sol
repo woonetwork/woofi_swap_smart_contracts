@@ -35,15 +35,16 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
-/// @title TODO
-/// @notice TODO
+
+/// @title Reward manager interface for WooFi Swap.
+/// @notice this is for swap rebate or potential incentive program
 interface IRewardManager {
-    /// @dev Set up the reward amount (in USD) for the specified user.
-    /// @param user TODO
-    /// @param amount TODO
+    /// @dev adds the pending reward for the given user.
+    /// @param user the user
+    /// @param amount the pending reward amount
     function addReward(address user, uint256 amount) external;
 
     /// @dev User claims the reward.
-    /// @param user TODO
+    /// @param user the user
     function claimReward(address user) external;
 }

@@ -3,7 +3,7 @@ pragma solidity =0.6.12;
 pragma experimental ABIEncoderV2;
 
 /**
- * @title Ownable
+ * @title Ownable initializable contract.
  *
  * @notice Ownership related functions
  */

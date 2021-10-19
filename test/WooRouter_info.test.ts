@@ -60,7 +60,7 @@ const WOO_PRICE = 1.05
 
 const ONE = BigNumber.from(10).pow(18)
 
-describe('WooRouter', () => {
+describe('WooRouter Info', () => {
   const [owner, user, approveTarget, swapTarget] = new MockProvider().getWallets()
 
   let wooracle: Contract
@@ -75,7 +75,7 @@ describe('WooRouter', () => {
 
     wooracle = await deployMockContract(owner, IWooracle.abi)
     await wooracle.mock.timestamp.returns(BigNumber.from(1634180070))
-    await wooracle.mock.getState
+    await wooracle.mock.state
       .withArgs(btcToken.address)
       .returns(
         utils.parseEther(BTC_PRICE.toString()),
@@ -83,7 +83,7 @@ describe('WooRouter', () => {
         utils.parseEther('0.000000001'),
         true
       )
-    await wooracle.mock.getState
+    await wooracle.mock.state
       .withArgs(wooToken.address)
       .returns(utils.parseEther('1.05'), utils.parseEther('0.002'), utils.parseEther('0.00000005'), true)
   })

@@ -37,8 +37,8 @@ pragma experimental ABIEncoderV2;
 
 import '../interfaces/IWooPP.sol';
 
-/// @title TODO
-/// @notice TODO
+/// @title Woo router interface
+/// @notice functions to interface with WooFi swap
 interface IWooRouter {
     /* ----- Type declarations ----- */
 

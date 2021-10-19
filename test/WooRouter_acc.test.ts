@@ -60,7 +60,7 @@ const WOO_PRICE = 1.05
 
 const ONE = BigNumber.from(10).pow(18)
 
-describe('WooRouter', () => {
+describe('WooRouter trading accuracy', () => {
   const [owner, user, approveTarget, swapTarget] = new MockProvider().getWallets()
 
   let wooracle: Contract

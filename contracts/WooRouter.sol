@@ -47,8 +47,9 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-/// @title TODO
-/// @notice TODO
+
+/// @title Woo Router implementation.
+/// @notice Router for stateless execution of swaps against Woo private pool.
 contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -84,11 +85,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         setPool(newPool);
     }
 
-    /// @dev Query toToken amount
-    /// @param fromToken TODO
-    /// @param toToken TODO
-    /// @param fromAmount fromToken amount that user want to send
-    /// @return toAmount toToken amount that user will be receive
+    /// @inheritdoc IWooRouter
     function querySwap(
         address fromToken,
         address toToken,
@@ -108,20 +105,14 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         }
     }
 
-    /// @dev Query quoteAmount when selling baseToken
-    /// @param baseToken TODO
-    /// @param baseAmount baseToken amount that user want to send
-    /// @return quoteAmount quoteToken amount that user will be receive
+    /// @inheritdoc IWooRouter
     function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
         quoteAmount = wooPool.querySellBase(baseToken, baseAmount);
     }
 
-    /// @dev Query baseAmount when selling quoteToken
-    /// @param baseToken TODO
-    /// @param quoteAmount quoteToken amount that user want to send
-    /// @return baseAmount baseToken amount that user will be receive
+    /// @inheritdoc IWooRouter
     function querySellQuote(address baseToken, uint256 quoteAmount)
         external
         view
@@ -133,14 +124,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);
     }
 
-    /// @dev TODO
-    /// @param fromToken TODO
-    /// @param toToken TODO
-    /// @param fromAmount TODO
-    /// @param minToAmount TODO
-    /// @param to TODO
-    /// @param rebateTo TODO
-    /// @return realToAmount TODO
+    /// @inheritdoc IWooRouter
     function swap(
         address fromToken,
         address toToken,
@@ -193,13 +177,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         );
     }
 
-    /// @dev TODO
-    /// @param baseToken TODO
-    /// @param baseAmount TODO
-    /// @param minQuoteAmount TODO
-    /// @param to TODO
-    /// @param rebateTo TODO
-    /// @return realQuoteAmount TODO
+    /// @inheritdoc IWooRouter
     function sellBase(
         address baseToken,
         uint256 baseAmount,
@@ -215,13 +193,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         emit WooRouterSwap(SwapType.WooSwap, baseToken, quoteToken, baseAmount, realQuoteAmount, msg.sender, to);
     }
 
-    /// @dev TODO
-    /// @param baseToken TODO
-    /// @param quoteAmount TODO
-    /// @param minBaseAmount TODO
-    /// @param to TODO
-    /// @param rebateTo TODO
-    /// @return realBaseAmount TODO
+    /// @inheritdoc IWooRouter
     function sellQuote(
         address baseToken,
         uint256 quoteAmount,
@@ -237,14 +209,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         emit WooRouterSwap(SwapType.WooSwap, quoteToken, baseToken, quoteAmount, realBaseAmount, msg.sender, to);
     }
 
-    /// @dev swap by DODO
-    /// @param approveTarget address that need to approve
-    /// @param swapTarget dodo proxy address
-    /// @param fromToken TODO
-    /// @param toToken TODO
-    /// @param fromAmount TODO
-    /// @param to TODO
-    /// @param data calldata which for swap by dodo
+    /// @inheritdoc IWooRouter
     function externalSwap(
         address approveTarget,
         address swapTarget,

@@ -35,24 +35,26 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
+
 /// @title Woo private pool for swap.
 /// @notice Use this contract to directly interfact with woo's synthetic proactive
 ///         marketing making pool.
 /// @author woo.network
 interface IWooPP {
+
     /* ----- Type declarations ----- */
 
     /// @dev struct info to store the token info
     struct TokenInfo {
-        uint112 reserve; // Token balance
-        uint112 threshold; // Threshold for reserve update
-        uint32 lastResetTimestamp; // Timestamp for last param update
-        uint64 lpFeeRate; // Fee rate: e.g. 0.001 = 0.1%
-        uint64 R; // Rebalance coefficient [0, 1]
-        uint112 target; // Targeted balance for pricing
+        uint112 reserve;            // Token balance
+        uint112 threshold;          // Threshold for reserve update
+        uint32 lastResetTimestamp;  // Timestamp for last param update
+        uint64 lpFeeRate;           // Fee rate: e.g. 0.001 = 0.1%
+        uint64 R;                   // Rebalance coefficient [0, 1]
+        uint112 target;             // Targeted balance for pricing
         address chainlinkRefOracle; // chainlink oracle for price checking
-        uint96 refPriceFixCoeff; //
-        bool isValid;
+        uint96 refPriceFixCoeff;    // chainlink price fix coeff
+        bool isValid;               // is this token info valid
     }
 
     /* ----- Events ----- */
@@ -75,12 +77,12 @@ interface IWooPP {
     /* ----- External Functions ----- */
 
     /// @dev Swap baseToken into quoteToken
-    /// @param baseToken TODO
+    /// @param baseToken the base token
     /// @param baseAmount amount of baseToken that user want to swap
     /// @param minQuoteAmount minimum amount of quoteToken that user accept to receive
     /// @param to quoteToken receiver address
-    /// @param rebateTo TODO
-    /// @return quoteAmount TODO
+    /// @param rebateTo the wallet address for rebate
+    /// @return quoteAmount the predicted amount of quote token
     function sellBase(
         address baseToken,
         uint256 baseAmount,
@@ -90,12 +92,12 @@ interface IWooPP {
     ) external returns (uint256 quoteAmount);
 
     /// @dev Swap quoteToken into baseToken
-    /// @param baseToken TODO
+    /// @param baseToken the base token
     /// @param quoteAmount amount of quoteToken that user want to swap
     /// @param minBaseAmount minimum amount of baseToken that user accept to receive
     /// @param to baseToken receiver address
-    /// @param rebateTo TODO
-    /// @return baseAmount TODO
+    /// @param rebateTo the wallet address for rebate
+    /// @return baseAmount the predicted amount of base token
     function sellQuote(
         address baseToken,
         uint256 quoteAmount,
@@ -104,19 +106,19 @@ interface IWooPP {
         address rebateTo
     ) external returns (uint256 baseAmount);
 
-    /// @dev TODO
-    /// @param baseToken TODO
-    /// @param baseAmount TODO
-    /// @return quoteAmount TODO
+    /// @dev Query the amount for selling the base token amount.
+    /// @param baseToken the base token to sell
+    /// @param baseAmount the amount to sell
+    /// @return quoteAmount the predicted quote amount
     function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
 
-    /// @dev TODO
-    /// @param baseToken TODO
-    /// @param quoteAmount TODO
-    /// @return baseAmount TODO
+    /// @dev Query the amount for selling the quote token.
+    /// @param baseToken the base token to receive (buy)
+    /// @param quoteAmount the amount to sell
+    /// @return baseAmount the predicted base token amount
     function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
 
-    /// @dev get quote token address
+    /// @dev get the quote token address
     /// @return address of quote token
     function quoteToken() external view returns (address);
 }
