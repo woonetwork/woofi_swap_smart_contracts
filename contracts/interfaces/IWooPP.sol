@@ -35,20 +35,23 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
-/// @title TODO
-/// @notice TODO
+/// @title Woo private pool for swap.
+/// @notice Use this contract to directly interfact with woo's synthetic proactive
+///         marketing making pool.
+/// @author woo.network
 interface IWooPP {
     /* ----- Type declarations ----- */
 
+    /// @dev struct info to store the token info
     struct TokenInfo {
-        uint112 reserve;
-        uint112 threshold;
-        uint32 lastResetTimestamp;
-        uint64 lpFeeRate;
-        uint64 R;
-        uint112 target;
-        address chainlinkRefOracle;
-        uint96 refPriceFixCoeff;
+        uint112 reserve;            // Token balance
+        uint112 threshold;          // Threshold for reserve update
+        uint32 lastResetTimestamp;  // Timestamp for last param update
+        uint64 lpFeeRate;           // Fee rate: e.g. 0.001 = 0.1%
+        uint64 R;                   // Rebalance coefficient [0, 1]
+        uint112 target;             // Targeted balance for pricing
+        address chainlinkRefOracle; // chainlink oracle for price checking
+        uint96 refPriceFixCoeff;    //
         bool isValid;
     }
 
@@ -75,7 +78,6 @@ interface IWooPP {
     /// @param baseToken TODO
     /// @param baseAmount amount of baseToken that user want to swap
     /// @param minQuoteAmount minimum amount of quoteToken that user accept to receive
-    /// @param from baseToken sender address
     /// @param to quoteToken receiver address
     /// @param rebateTo TODO
     /// @return quoteAmount TODO
@@ -83,7 +85,6 @@ interface IWooPP {
         address baseToken,
         uint256 baseAmount,
         uint256 minQuoteAmount,
-        address from,
         address to,
         address rebateTo
     ) external returns (uint256 quoteAmount);
@@ -92,7 +93,6 @@ interface IWooPP {
     /// @param baseToken TODO
     /// @param quoteAmount amount of quoteToken that user want to swap
     /// @param minBaseAmount minimum amount of baseToken that user accept to receive
-    /// @param from quoteToken sender address
     /// @param to baseToken receiver address
     /// @param rebateTo TODO
     /// @return baseAmount TODO
@@ -100,7 +100,6 @@ interface IWooPP {
         address baseToken,
         uint256 quoteAmount,
         uint256 minBaseAmount,
-        address from,
         address to,
         address rebateTo
     ) external returns (uint256 baseAmount);

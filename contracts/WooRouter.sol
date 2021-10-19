@@ -65,8 +65,9 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
     address public immutable override WETH;
 
     address public override quoteToken;
+    IWooPP public override wooPool;
+
     mapping(address => bool) public isWhitelisted;
-    IWooPP public wooPool;
 
     /* ----- Callback Function ----- */
 
@@ -172,10 +173,10 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
             realToAmount = _sellQuoteAndTransfer(isToETH, toToken, fromAmount, minToAmount, to, rebateTo);
         } else if (toToken == quoteToken) {
             // case 2: fromToken --> quoteToken
-            realToAmount = wooPool.sellBase(fromToken, fromAmount, minToAmount, address(this), to, rebateTo);
+            realToAmount = wooPool.sellBase(fromToken, fromAmount, minToAmount, to, rebateTo);
         } else {
             // case 3: fromToken --> quoteToken --> toToken
-            uint256 quoteAmount = wooPool.sellBase(fromToken, fromAmount, 0, address(this), address(this), rebateTo);
+            uint256 quoteAmount = wooPool.sellBase(fromToken, fromAmount, 0, address(this), rebateTo);
             TransferHelper.safeApprove(quoteToken, address(wooPool), quoteAmount);
             realToAmount = _sellQuoteAndTransfer(isToETH, toToken, quoteAmount, minToAmount, to, rebateTo);
         }
@@ -210,7 +211,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         require(to != address(0), 'WooRouter: to_ADDR_ZERO');
         TransferHelper.safeTransferFrom(baseToken, msg.sender, address(this), baseAmount);
         TransferHelper.safeApprove(baseToken, address(wooPool), baseAmount);
-        realQuoteAmount = wooPool.sellBase(baseToken, baseAmount, minQuoteAmount, address(this), to, rebateTo);
+        realQuoteAmount = wooPool.sellBase(baseToken, baseAmount, minQuoteAmount, to, rebateTo);
         emit WooRouterSwap(SwapType.WooSwap, baseToken, quoteToken, baseAmount, realQuoteAmount, msg.sender, to);
     }
 
@@ -232,7 +233,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         require(to != address(0), 'WooRouter: to_ADDR_ZERO');
         TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), quoteAmount);
         TransferHelper.safeApprove(quoteToken, address(wooPool), quoteAmount);
-        realBaseAmount = wooPool.sellQuote(baseToken, quoteAmount, minBaseAmount, address(this), to, rebateTo);
+        realBaseAmount = wooPool.sellQuote(baseToken, quoteAmount, minBaseAmount, to, rebateTo);
         emit WooRouterSwap(SwapType.WooSwap, quoteToken, baseToken, quoteAmount, realBaseAmount, msg.sender, to);
     }
 
@@ -313,12 +314,12 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         address rebateTo
     ) private returns (uint256 realToAmount) {
         if (isToETH) {
-            realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), address(this), rebateTo);
+            realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), rebateTo);
             IWETH(WETH).withdraw(realToAmount);
             require(to != address(0), 'WooRouter: to_ZERO_ADDR');
             TransferHelper.safeTransferETH(to, realToAmount);
         } else {
-            realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, address(this), to, rebateTo);
+            realToAmount = wooPool.sellQuote(toToken, quoteAmount, minToAmount, to, rebateTo);
         }
     }
 

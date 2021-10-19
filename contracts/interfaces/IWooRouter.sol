@@ -35,9 +35,12 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 */
 
+import '../interfaces/IWooPP.sol';
+
 /// @title TODO
 /// @notice TODO
 interface IWooRouter {
+
     /* ----- Type declarations ----- */
 
     enum SwapType {
@@ -64,6 +67,8 @@ interface IWooRouter {
     function WETH() external pure returns (address);
 
     function quoteToken() external pure returns (address);
+
+    function wooPool() external pure returns (IWooPP);
 
     function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
 

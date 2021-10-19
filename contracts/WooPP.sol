@@ -144,19 +144,17 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     }
 
     /// @inheritdoc IWooPP
-    // TODO(qinchao): remove address 'from'
     function sellBase(
         address baseToken,
         uint256 baseAmount,
         uint256 minQuoteAmount,
-        address from,
         address to,
         address rebateTo
     ) external override nonReentrant whenNotPaused returns (uint256 quoteAmount) {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
-        require(from != address(0), 'WooPP: from_ZERO_ADDR');
         require(to != address(0), 'WooPP: to_ZERO_ADDR');
 
+        address from = msg.sender;
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
@@ -189,14 +187,13 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         address baseToken,
         uint256 quoteAmount,
         uint256 minBaseAmount,
-        address from,
         address to,
         address rebateTo
     ) external override nonReentrant whenNotPaused returns (uint256 baseAmount) {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
-        require(from != address(0), 'WooPP: from_ZERO_ADDR');
         require(to != address(0), 'WooPP: to_ZERO_ADDR');
 
+        address from = msg.sender;
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
