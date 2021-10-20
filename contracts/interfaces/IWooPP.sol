@@ -50,8 +50,6 @@ interface IWooPP {
         uint64 lpFeeRate; // Fee rate: e.g. 0.001 = 0.1%
         uint64 R; // Rebalance coefficient [0, 1]
         uint112 target; // Targeted balance for pricing
-        address chainlinkRefOracle; // chainlink oracle for price checking
-        uint96 refPriceFixCoeff; // chainlink price fix coeff
         bool isValid; // is this token info valid
     }
 
@@ -60,7 +58,6 @@ interface IWooPP {
     event StrategistUpdated(address indexed strategist, bool flag);
     event RewardManagerUpdated(address indexed newRewardManager);
     event WooracleUpdated(address indexed newWooracle);
-    event ChainlinkRefOracleUpdated(address indexed token, address indexed newChainlinkRefOracle);
     event ParametersUpdated(address indexed baseToken, uint256 newThreshold, uint256 newLpFeeRate, uint256 newR);
     event Withdraw(address indexed token, address indexed to, uint256 amount);
     event WooSwap(

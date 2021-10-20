@@ -39,6 +39,7 @@ import { ethers } from 'hardhat'
 import WooPP from '../build/WooPP.json'
 import IERC20 from '../build/IERC20.json'
 import IWooracle from '../build/IWooracle.json'
+import IWooGuardian from '../build/IWooGuardian.json'
 import TestToken from '../build/TestToken.json'
 
 const {
@@ -61,39 +62,45 @@ const WOOPP_WOO_BALANCE = utils.parseEther('5000000') // 5 million woo
 describe('WooPP Test Suite 2', () => {
   const [owner, user1, user2] = new MockProvider().getWallets()
 
+  let wooracle: Contract
+  let usdtToken: Contract
+  let btcToken: Contract
+  let wooToken: Contract
+  let wooGuardian: Contract
+
+  before('deploy tokens & wooracle', async () => {
+    usdtToken = await deployContract(owner, TestToken, [])
+    btcToken = await deployContract(owner, TestToken, [])
+    wooToken = await deployContract(owner, TestToken, [])
+
+    wooracle = await deployMockContract(owner, IWooracle.abi)
+    await wooracle.mock.timestamp.returns(BigNumber.from(1634180070))
+    await wooracle.mock.price.withArgs(btcToken.address).returns(ONE.mul(BTC_PRICE), true)
+    await wooracle.mock.state
+      .withArgs(btcToken.address)
+      .returns(
+        ONE.mul(BTC_PRICE),
+        BigNumber.from(10).pow(18).mul(1).div(10000),
+        BigNumber.from(10).pow(9).mul(2),
+        true
+      )
+
+    wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
+    await wooGuardian.mock.checkSwapPrice.returns()
+    await wooGuardian.mock.checkSwapAmount.returns()
+  })
+
   describe('', () => {
     let wooPP: Contract
-    let wooracle: Contract
-    let usdtToken: Contract
-    let btcToken: Contract
-    let wooToken: Contract
-
-    before('deploy tokens & wooracle', async () => {
-      usdtToken = await deployContract(owner, TestToken, [])
-      btcToken = await deployContract(owner, TestToken, [])
-      wooToken = await deployContract(owner, TestToken, [])
-
-      wooracle = await deployMockContract(owner, IWooracle.abi)
-      await wooracle.mock.timestamp.returns(BigNumber.from(1634180070))
-      await wooracle.mock.price.withArgs(btcToken.address).returns(ONE.mul(BTC_PRICE), true)
-      await wooracle.mock.state
-        .withArgs(btcToken.address)
-        .returns(
-          ONE.mul(BTC_PRICE),
-          BigNumber.from(10).pow(18).mul(1).div(10000),
-          BigNumber.from(10).pow(9).mul(2),
-          true
-        )
-    })
 
     beforeEach('deploy WooPP & Tokens', async () => {
-      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, ZERO_ADDR])
+      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, wooGuardian.address])
 
       const threshold = 0
       // const lpFeeRate = BigNumber.from(10).pow(18).mul(1).div(1000)
       const lpFeeRate = 0
       const R = BigNumber.from(0)
-      await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
+      await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R)
 
       await usdtToken.mint(wooPP.address, WOOPP_USDT_BALANCE)
       await btcToken.mint(wooPP.address, WOOPP_BTC_BALANCE)

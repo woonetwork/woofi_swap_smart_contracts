@@ -40,6 +40,7 @@ import './libraries/DecimalMath.sol';
 import './interfaces/IWooracle.sol';
 import './interfaces/IWooPP.sol';
 import './interfaces/IRewardManager.sol';
+import './interfaces/IWooGuardian.sol';
 import './interfaces/AggregatorV3Interface.sol';
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -66,6 +67,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
 
     /// @inheritdoc IWooPP
     address public immutable override quoteToken;
+    IWooGuardian public immutable wooGuardian;
     address public wooracle;
     address public rewardManager;
     string public pairsInfo; // e.g. BNB/ETH/BTCB/WOO-USDT
@@ -80,21 +82,19 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     constructor(
         address newQuoteToken,
         address newWooracle,
-        address quoteChainlinkRefOracle
+        address newWooGuardian
     ) public {
         require(newQuoteToken != address(0), 'WooPP: INVALID_QUOTE');
         require(newWooracle != address(0), 'WooPP: newWooracle_ZERO_ADDR');
+        require(newWooGuardian != address(0), 'WooPP: newWooGuardian_ZERO_ADDR');
 
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
         wooracle = newWooracle;
+        wooGuardian = IWooGuardian(newWooGuardian);
 
         TokenInfo storage quoteInfo = tokenInfo[newQuoteToken];
         quoteInfo.isValid = true;
-        quoteInfo.chainlinkRefOracle = quoteChainlinkRefOracle;
-        quoteInfo.refPriceFixCoeff = _refPriceFixCoeff(newQuoteToken, quoteChainlinkRefOracle);
-
-        emit ChainlinkRefOracleUpdated(newQuoteToken, quoteChainlinkRefOracle);
     }
 
     /* ----- External Functions ----- */
@@ -239,18 +239,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         emit WooracleUpdated(newWooracle);
     }
 
-    /// @dev Set chainlinkRefOracle for token from newChainlinkRefOracle
-    /// @param token the associated token
-    /// @param newChainlinkRefOracle the corresponding chanilink ref oracle
-    function setChainlinkRefOracle(address token, address newChainlinkRefOracle) external nonReentrant onlyStrategist {
-        require(token != address(0), 'WooPP: token_ZERO_ADDR');
-        TokenInfo storage info = tokenInfo[token];
-        require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
-        info.chainlinkRefOracle = newChainlinkRefOracle;
-        info.refPriceFixCoeff = _refPriceFixCoeff(token, newChainlinkRefOracle);
-        emit ChainlinkRefOracleUpdated(token, newChainlinkRefOracle);
-    }
-
     /// @dev Set the rewardManager.
     /// @param newRewardManager the reward manager
     function setRewardManager(address newRewardManager) external nonReentrant onlyStrategist {
@@ -264,13 +252,11 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     /// @param threshold the balance threshold info
     /// @param lpFeeRate the swap fee rate
     /// @param R the rebalance refactor
-    /// @param chainlinkRefOracle the referance chainlink oracle
     function addBaseToken(
         address baseToken,
         uint256 threshold,
         uint256 lpFeeRate,
-        uint256 R,
-        address chainlinkRefOracle
+        uint256 R
     ) external nonReentrant onlyStrategist {
         require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
         require(baseToken != quoteToken, 'WooPP: BASE_TOKEN_INVALID');
@@ -286,13 +272,10 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         info.R = uint64(R);
         info.target = max(info.threshold, info.target);
         info.isValid = true;
-        info.chainlinkRefOracle = chainlinkRefOracle;
-        info.refPriceFixCoeff = _refPriceFixCoeff(baseToken, chainlinkRefOracle);
 
         tokenInfo[baseToken] = info;
 
         emit ParametersUpdated(baseToken, threshold, lpFeeRate, R);
-        emit ChainlinkRefOracleUpdated(baseToken, chainlinkRefOracle);
     }
 
     /// @dev Remove the base token
@@ -302,7 +285,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         require(tokenInfo[baseToken].isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         delete tokenInfo[baseToken];
         emit ParametersUpdated(baseToken, 0, 0, 0);
-        emit ChainlinkRefOracleUpdated(baseToken, address(0));
     }
 
     /// @dev Tune the token params
@@ -379,29 +361,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     }
 
     /* ----- Private Functions ----- */
-
-    function _ensurePriceReliable(
-        uint256 p,
-        TokenInfo memory baseInfo,
-        TokenInfo memory quoteInfo
-    ) private view {
-        // check Chainlink
-        if (baseInfo.chainlinkRefOracle != address(0) && quoteInfo.chainlinkRefOracle != address(0)) {
-            (, int256 rawBaseRefPrice, , , ) = AggregatorV3Interface(baseInfo.chainlinkRefOracle).latestRoundData();
-            require(rawBaseRefPrice >= 0, 'WooPP: INVALID_CHAINLINK_PRICE');
-            (, int256 rawQuoteRefPrice, , , ) = AggregatorV3Interface(quoteInfo.chainlinkRefOracle).latestRoundData();
-            require(rawQuoteRefPrice >= 0, 'WooPP: INVALID_CHAINLINK_QUOTE_PRICE');
-            uint256 baseRefPrice = uint256(rawBaseRefPrice).mul(uint256(baseInfo.refPriceFixCoeff));
-            uint256 quoteRefPrice = uint256(rawQuoteRefPrice).mul(uint256(quoteInfo.refPriceFixCoeff));
-            uint256 refPrice = baseRefPrice.divFloor(quoteRefPrice);
-
-            // TODO (qinchao): make 1% as variable
-            require(
-                refPrice.mulFloor(1e18 - 1e16) <= p && p <= refPrice.mulCeil(1e18 + 1e16),
-                'WooPP: PRICE_UNRELIABLE'
-            );
-        }
-    }
 
     function _autoUpdate(
         address baseToken,
@@ -539,7 +498,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         (p, s, k, isFeasible) = IWooracle(wooracle).state(baseToken);
         require(isFeasible, 'WooPP: ORACLE_PRICE_NOT_FEASIBLE');
 
-        _ensurePriceReliable(p, baseInfo, quoteInfo);
+        wooGuardian.checkSwapPrice(p, baseToken, quoteToken);
+
         p = p.mulFloor(DecimalMath.ONE.sub(DecimalMath.divCeil(s, DecimalMath.TWO)));
 
         uint256 baseBought;
@@ -578,7 +538,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         (p, s, k, isFeasible) = IWooracle(wooracle).state(baseToken);
         require(isFeasible, 'WooPP: ORACLE_PRICE_NOT_FEASIBLE');
 
-        _ensurePriceReliable(p, baseInfo, quoteInfo);
+        wooGuardian.checkSwapPrice(p, baseToken, quoteToken);
+
         p = p.mulCeil(DecimalMath.ONE.add(DecimalMath.divCeil(s, DecimalMath.TWO)));
 
         uint256 baseBought;
