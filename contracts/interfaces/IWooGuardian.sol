@@ -53,7 +53,6 @@ interface IWooGuardian {
         address fromToken,
         address toToken,
         uint256 fromAmount,
-        uint256 toAmount,
-        uint256 feeRate
+        uint256 toAmount
     ) external view;
 }

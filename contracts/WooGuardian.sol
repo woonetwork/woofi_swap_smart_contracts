@@ -86,8 +86,7 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
         address fromToken,
         address toToken,
         uint256 fromAmount,
-        uint256 toAmount,
-        uint256 feeRate
+        uint256 toAmount
     ) external view override {
         require(fromToken != address(0), 'WooGuardian: fromToken_ZERO_ADDR');
         require(toToken != address(0), 'WooGuardian: toToken_ZERO_ADDR');

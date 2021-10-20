@@ -166,6 +166,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
 
         require(quoteAmount >= minQuoteAmount, 'WooPP: quoteAmount<minQuoteAmount');
 
+        wooGuardian.checkSwapAmount(baseToken, quoteToken, baseAmount, quoteAmount.add(lpFee));
         TransferHelper.safeTransferFrom(baseToken, from, address(this), baseAmount);
         TransferHelper.safeTransfer(quoteToken, to, quoteAmount);
 
@@ -204,6 +205,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
 
         require(baseAmount >= minBaseAmount, 'WooPP: baseAmount<minBaseAmount');
 
+        wooGuardian.checkSwapAmount(quoteToken, baseToken, quoteAmount, baseAmount);
         TransferHelper.safeTransferFrom(quoteToken, from, address(this), quoteAmount.add(lpFee));
         TransferHelper.safeTransfer(baseToken, to, baseAmount);
 
@@ -216,7 +218,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         tokenInfo[baseToken] = baseInfo;
         tokenInfo[quoteToken] = quoteInfo;
 
-        emit WooSwap(quoteToken, baseToken, quoteAmount, baseAmount, from, to);
+        emit WooSwap(quoteToken, baseToken, quoteAmount.add(lpFee), baseAmount, from, to);
     }
 
     /// @dev Set the pairsInfo
