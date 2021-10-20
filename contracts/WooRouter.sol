@@ -320,8 +320,8 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
             require(fromAmount == msg.value, 'WooRouter: fromAmount_INVALID');
         }
 
-        (bool success, ) = swapTarget.call{value: fromToken == ETH_PLACEHOLDER_ADDR ? fromAmount : 0}(data);
-        require(success, 'WooRouter: FALLBACK_SWAP_FAILED');
+        // (bool success, ) = swapTarget.call{value: fromToken == ETH_PLACEHOLDER_ADDR ? fromAmount : 0}(data);
+        // require(success, 'WooRouter: FALLBACK_SWAP_FAILED');
     }
 
     function _generalTransfer(

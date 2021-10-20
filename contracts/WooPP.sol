@@ -271,9 +271,9 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         uint256 lpFeeRate,
         uint256 R,
         address chainlinkRefOracle
-    ) external nonReentrant onlyStrategist {
+    ) public nonReentrant onlyStrategist {
         require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
-        require(baseToken != quoteToken, 'WooPP: BASE_TOKEN_INVALID');
+        // require(baseToken != quoteToken, 'WooPP: BASE_TOKEN_INVALID');
         require(threshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
         require(lpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE_OUT_OF_RANGE');
         require(R <= 1e18, 'WooPP: R_OUT_OF_RANGE');
@@ -531,7 +531,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         uint256 baseAmount,
         TokenInfo memory baseInfo,
         TokenInfo memory quoteInfo
-    ) private view returns (uint256 quoteAmount) {
+    ) internal view returns (uint256 quoteAmount) {
         uint256 p;
         uint256 s;
         uint256 k;
@@ -570,7 +570,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         uint256 quoteAmount,
         TokenInfo memory baseInfo,
         TokenInfo memory quoteInfo
-    ) private view returns (uint256 baseAmount) {
+    ) internal view returns (uint256 baseAmount) {
         uint256 p;
         uint256 s;
         uint256 k;
