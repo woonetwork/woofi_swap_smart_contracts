@@ -78,12 +78,7 @@ describe('WooPP Test Suite 2', () => {
     await wooracle.mock.price.withArgs(btcToken.address).returns(ONE.mul(BTC_PRICE), true)
     await wooracle.mock.state
       .withArgs(btcToken.address)
-      .returns(
-        ONE.mul(BTC_PRICE),
-        BigNumber.from(10).pow(18).mul(1).div(10000),
-        BigNumber.from(10).pow(9).mul(2),
-        true
-      )
+      .returns(ONE.mul(BTC_PRICE), BigNumber.from(10).pow(18).mul(1).div(10000), BigNumber.from(10).pow(9).mul(2), true)
 
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()

@@ -93,9 +93,9 @@ describe('WooPP Test Suite 1', () => {
     })
 
     it('ctor failure2', async () => {
-      await expect(deployContract(owner, WooPP, [quoteToken.address, ZERO_ADDR, wooGuardian.address])).to.be.revertedWith(
-        'WooPP: newWooracle_ZERO_ADDR'
-      )
+      await expect(
+        deployContract(owner, WooPP, [quoteToken.address, ZERO_ADDR, wooGuardian.address])
+      ).to.be.revertedWith('WooPP: newWooracle_ZERO_ADDR')
     })
 
     it('init', async () => {
@@ -146,9 +146,7 @@ describe('WooPP Test Suite 1', () => {
     })
 
     it('addBaseToken revert2', async () => {
-      await expect(wooPP.addBaseToken(quoteToken.address, 1, 2, 3)).to.be.revertedWith(
-        'WooPP: BASE_TOKEN_INVALID'
-      )
+      await expect(wooPP.addBaseToken(quoteToken.address, 1, 2, 3)).to.be.revertedWith('WooPP: BASE_TOKEN_INVALID')
     })
 
     it('addBaseToken revert3', async () => {
@@ -173,9 +171,7 @@ describe('WooPP Test Suite 1', () => {
       await wooPP.addBaseToken(baseToken1.address, 1, 2, 3)
       const info = await wooPP.tokenInfo(baseToken1.address)
       expect(info.isValid).to.eq(true)
-      await expect(wooPP.addBaseToken(baseToken1.address, 1, 2, 3)).to.be.revertedWith(
-        'WooPP: TOKEN_ALREADY_EXISTS'
-      )
+      await expect(wooPP.addBaseToken(baseToken1.address, 1, 2, 3)).to.be.revertedWith('WooPP: TOKEN_ALREADY_EXISTS')
     })
 
     it('addBaseToken event1', async () => {

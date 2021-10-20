@@ -43,7 +43,6 @@ import './interfaces/AggregatorV3Interface.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 
-
 /// @title Woo guardian implementation.
 contract WooGuardian is IWooGuardian, InitializableOwnable {
     using SafeMath for uint256;
@@ -53,7 +52,7 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
 
     struct RefInfo {
         address chainlinkRefOracle; // chainlink oracle for price checking
-        uint96 refPriceFixCoeff;    // chainlink price fix coeff
+        uint96 refPriceFixCoeff; // chainlink price fix coeff
     }
 
     /* ----- State variables ----- */
@@ -87,13 +86,9 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
         uint256 fromAmount,
         uint256 toAmount,
         uint256 feeRate
-    ) external view override {
-    }
+    ) external view override {}
 
-    function setToken(
-        address token,
-        address chainlinkRefOracle
-    ) external onlyOwner {
+    function setToken(address token, address chainlinkRefOracle) external onlyOwner {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');
         RefInfo storage info = refInfo[token];
         info.chainlinkRefOracle = chainlinkRefOracle;
@@ -120,10 +115,7 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
         return uint96(refPriceFixCoeff);
     }
 
-    function _refPrice(
-        address fromToken,
-        address toToken
-    ) private view returns (uint256) {
+    function _refPrice(address fromToken, address toToken) private view returns (uint256) {
         RefInfo storage baseInfo = refInfo[fromToken];
         RefInfo storage quoteInfo = refInfo[toToken];
 

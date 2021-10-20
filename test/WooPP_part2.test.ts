@@ -79,12 +79,7 @@ describe('WooPP Test Suite 2', () => {
     await wooracle.mock.price.withArgs(btcToken.address).returns(ONE.mul(BTC_PRICE), true)
     await wooracle.mock.state
       .withArgs(btcToken.address)
-      .returns(
-        ONE.mul(BTC_PRICE),
-        BigNumber.from(10).pow(18).mul(1).div(10000),
-        BigNumber.from(10).pow(9).mul(2),
-        true
-      )
+      .returns(ONE.mul(BTC_PRICE), BigNumber.from(10).pow(18).mul(1).div(10000), BigNumber.from(10).pow(9).mul(2), true)
 
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
@@ -601,9 +596,9 @@ describe('WooPP Test Suite 2', () => {
       let lpFeeRate = 0
       let R = BigNumber.from(0)
 
-      await expect(
-        wooPP.connect(user2).addBaseToken(wooToken.address, threshold, lpFeeRate, R)
-      ).to.be.revertedWith('WooPP: NOT_STRATEGIST')
+      await expect(wooPP.connect(user2).addBaseToken(wooToken.address, threshold, lpFeeRate, R)).to.be.revertedWith(
+        'WooPP: NOT_STRATEGIST'
+      )
     })
 
     it('addBaseToken reverted with zero addr', async () => {
@@ -631,9 +626,9 @@ describe('WooPP Test Suite 2', () => {
       let R = BigNumber.from(0)
 
       let overRangeThreshold = BigNumber.from(2).pow(112)
-      await expect(
-        wooPP.addBaseToken(wooToken.address, overRangeThreshold, lpFeeRate, R)
-      ).to.be.revertedWith('WooPP: THRESHOLD_OUT_OF_RANGE')
+      await expect(wooPP.addBaseToken(wooToken.address, overRangeThreshold, lpFeeRate, R)).to.be.revertedWith(
+        'WooPP: THRESHOLD_OUT_OF_RANGE'
+      )
     })
 
     it('addBaseToken reverted with lp fee rate out of range', async () => {
@@ -641,9 +636,9 @@ describe('WooPP Test Suite 2', () => {
       let R = BigNumber.from(0)
 
       let overRangeLpFeeRate = ONE.mul(2)
-      await expect(
-        wooPP.addBaseToken(wooToken.address, threshold, overRangeLpFeeRate, R)
-      ).to.be.revertedWith('WooPP: LP_FEE_RATE_OUT_OF_RANGE')
+      await expect(wooPP.addBaseToken(wooToken.address, threshold, overRangeLpFeeRate, R)).to.be.revertedWith(
+        'WooPP: LP_FEE_RATE_OUT_OF_RANGE'
+      )
     })
 
     it('addBaseToken reverted with r out of range', async () => {
@@ -652,9 +647,9 @@ describe('WooPP Test Suite 2', () => {
       let R = BigNumber.from(0)
 
       let overRangeR = ONE.mul(2)
-      await expect(
-        wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, overRangeR)
-      ).to.be.revertedWith('WooPP: R_OUT_OF_RANGE')
+      await expect(wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, overRangeR)).to.be.revertedWith(
+        'WooPP: R_OUT_OF_RANGE'
+      )
     })
 
     it('addBaseToken reverted with token exist', async () => {
@@ -707,7 +702,6 @@ describe('WooPP Test Suite 2', () => {
         .to.emit(wooPP, 'ParametersUpdated')
         .withArgs(testEventToken0.address, 0, 0, 0)
     })
-
 
     it('tuneParameters', async () => {
       let newThreshold = ONE.div(2)
@@ -803,5 +797,4 @@ describe('WooPP Test Suite 2', () => {
       await expect(wooPP.connect(user2).unpause()).to.be.revertedWith('WooPP: NOT_STRATEGIST')
     })
   })
-
 })

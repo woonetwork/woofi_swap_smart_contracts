@@ -37,10 +37,8 @@ pragma experimental ABIEncoderV2;
 
 import '../interfaces/IWooPP.sol';
 
-
 /// @title Guardian interface to ensure the trading price and volume correct
 interface IWooGuardian {
-
     event ChainlinkRefOracleUpdated(address indexed token, address indexed chainlinkRefOracle);
 
     /* ----- Main check APIs ----- */
@@ -58,5 +56,4 @@ interface IWooGuardian {
         uint256 toAmount,
         uint256 feeRate
     ) external view;
-
 }

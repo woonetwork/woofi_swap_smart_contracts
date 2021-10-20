@@ -128,7 +128,11 @@ describe('WooRouter tests', () => {
 
     it('setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
-      let anotherWooPP = await deployContract(owner, WooPP, [anotherQuoteToken.address, wooracle.address, wooGuardian.address])
+      let anotherWooPP = await deployContract(owner, WooPP, [
+        anotherQuoteToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])
       await wooRouter.setPool(anotherWooPP.address)
       expect(await wooRouter.quoteToken()).to.eq(anotherQuoteToken.address)
       expect(await wooRouter.wooPool()).to.eq(anotherWooPP.address)
@@ -146,7 +150,11 @@ describe('WooRouter tests', () => {
 
     it('Emit WooPoolChanged when setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
-      let anotherWooPP = await deployContract(owner, WooPP, [anotherQuoteToken.address, wooracle.address, wooGuardian.address])
+      let anotherWooPP = await deployContract(owner, WooPP, [
+        anotherQuoteToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])
       await wooRouter.setPool(anotherWooPP.address)
       await expect(wooRouter.setPool(anotherWooPP.address))
         .to.emit(wooRouter, 'WooPoolChanged')
@@ -155,7 +163,11 @@ describe('WooRouter tests', () => {
 
     it('Prevents non-owners from setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
-      let anotherWooPP = await deployContract(owner, WooPP, [anotherQuoteToken.address, wooracle.address, wooGuardian.address])
+      let anotherWooPP = await deployContract(owner, WooPP, [
+        anotherQuoteToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])
       await expect(wooRouter.connect(user).setPool(anotherWooPP.address)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
