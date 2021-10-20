@@ -64,10 +64,11 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
     // BSC WBNB: 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c
     address public immutable override WETH;
 
-    address public override quoteToken;
     IWooPP public override wooPool;
 
     mapping(address => bool) public isWhitelisted;
+
+    address public quoteToken;
 
     /* ----- Callback Function ----- */
 
@@ -76,7 +77,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         assert(msg.sender == WETH || isWhitelisted[msg.sender]);
     }
 
-    /* ----- External Function ----- */
+    /* ----- Query & swap APIs ----- */
 
     constructor(address weth, address newPool) public {
         require(weth != address(0), 'WooRouter: weth_ZERO_ADDR');
@@ -102,25 +103,6 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
             uint256 quoteAmount = wooPool.querySellBase(fromToken, fromAmount);
             toAmount = wooPool.querySellQuote(toToken, quoteAmount);
         }
-    }
-
-    /// @inheritdoc IWooRouter
-    function querySellBase(address baseToken, uint256 baseAmount) external view override returns (uint256 quoteAmount) {
-        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
-        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
-        quoteAmount = wooPool.querySellBase(baseToken, baseAmount);
-    }
-
-    /// @inheritdoc IWooRouter
-    function querySellQuote(address baseToken, uint256 quoteAmount)
-        external
-        view
-        override
-        returns (uint256 baseAmount)
-    {
-        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
-        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
-        baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);
     }
 
     /// @inheritdoc IWooRouter
@@ -177,38 +159,6 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
     }
 
     /// @inheritdoc IWooRouter
-    function sellBase(
-        address baseToken,
-        uint256 baseAmount,
-        uint256 minQuoteAmount,
-        address to,
-        address rebateTo
-    ) external override nonReentrant returns (uint256 realQuoteAmount) {
-        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
-        require(to != address(0), 'WooRouter: to_ADDR_ZERO');
-        TransferHelper.safeTransferFrom(baseToken, msg.sender, address(this), baseAmount);
-        TransferHelper.safeApprove(baseToken, address(wooPool), baseAmount);
-        realQuoteAmount = wooPool.sellBase(baseToken, baseAmount, minQuoteAmount, to, rebateTo);
-        emit WooRouterSwap(SwapType.WooSwap, baseToken, quoteToken, baseAmount, realQuoteAmount, msg.sender, to);
-    }
-
-    /// @inheritdoc IWooRouter
-    function sellQuote(
-        address baseToken,
-        uint256 quoteAmount,
-        uint256 minBaseAmount,
-        address to,
-        address rebateTo
-    ) external override nonReentrant returns (uint256 realBaseAmount) {
-        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
-        require(to != address(0), 'WooRouter: to_ADDR_ZERO');
-        TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), quoteAmount);
-        TransferHelper.safeApprove(quoteToken, address(wooPool), quoteAmount);
-        realBaseAmount = wooPool.sellQuote(baseToken, quoteAmount, minBaseAmount, to, rebateTo);
-        emit WooRouterSwap(SwapType.WooSwap, quoteToken, baseToken, quoteAmount, realBaseAmount, msg.sender, to);
-    }
-
-    /// @inheritdoc IWooRouter
     function externalSwap(
         address approveTarget,
         address swapTarget,
@@ -239,11 +189,80 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         emit WooRouterSwap(SwapType.DodoSwap, fromToken, toToken, fromAmount, swapBalance, msg.sender, to);
     }
 
+    /* ----- External Functions ---- */
+
+    /// @dev query the swap price for baseToken -> quoteToken.
+    /// @param baseToken the base token to sell
+    /// @param baseAmount the amout of base token to sell
+    /// @return quoteAmount the amount of swapped quote token
+    function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount) {
+        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
+        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
+        quoteAmount = wooPool.querySellBase(baseToken, baseAmount);
+    }
+
+    /// @dev query the swap price for quoteToken -> baseToken.
+    /// @param baseToken the base token to swap
+    /// @param quoteAmount the amount of quote token to swap
+    /// @return baseAmount the amount of base token after swap
+    function querySellQuote(
+        address baseToken,
+        uint256 quoteAmount
+    ) external view returns (uint256 baseAmount) {
+        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
+        baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
+        baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);
+    }
+
+    /// @dev swap baseToken -> quoteToken
+    /// @param baseToken the base token
+    /// @param baseAmount the amount of base token to sell
+    /// @param minQuoteAmount the minimum quote amount to receive
+    /// @param to the destination address
+    /// @param rebateTo the rebate address
+    /// @return realQuoteAmount the exact received amount of quote token
+    function sellBase(
+        address baseToken,
+        uint256 baseAmount,
+        uint256 minQuoteAmount,
+        address to,
+        address rebateTo
+    ) external nonReentrant returns (uint256 realQuoteAmount) {
+        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
+        require(to != address(0), 'WooRouter: to_ADDR_ZERO');
+        TransferHelper.safeTransferFrom(baseToken, msg.sender, address(this), baseAmount);
+        TransferHelper.safeApprove(baseToken, address(wooPool), baseAmount);
+        realQuoteAmount = wooPool.sellBase(baseToken, baseAmount, minQuoteAmount, to, rebateTo);
+        emit WooRouterSwap(SwapType.WooSwap, baseToken, quoteToken, baseAmount, realQuoteAmount, msg.sender, to);
+    }
+
+    /// @dev swap quoteToken -> baseToken
+    /// @param baseToken the base token to receive
+    /// @param quoteAmount the amount of quote token to sell
+    /// @param minBaseAmount the minimum amount of base token for swap
+    /// @param to the destination address
+    /// @param rebateTo the address for the rebate
+    /// @return realBaseAmount the exact received amount of base token to receive
+    function sellQuote(
+        address baseToken,
+        uint256 quoteAmount,
+        uint256 minBaseAmount,
+        address to,
+        address rebateTo
+    ) external nonReentrant returns (uint256 realBaseAmount) {
+        require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
+        require(to != address(0), 'WooRouter: to_ADDR_ZERO');
+        TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), quoteAmount);
+        TransferHelper.safeApprove(quoteToken, address(wooPool), quoteAmount);
+        realBaseAmount = wooPool.sellQuote(baseToken, quoteAmount, minBaseAmount, to, rebateTo);
+        emit WooRouterSwap(SwapType.WooSwap, quoteToken, baseToken, quoteAmount, realBaseAmount, msg.sender, to);
+    }
+
     /* ----- Admin functions ----- */
 
-    /// @dev Get funds when stuck happen
+    /// @dev Rescue the specified funds when stuck happen
     /// @param token token address
-    /// @param amount amount of token need to get
+    /// @param amount amount of token to rescue
     function rescueFunds(address token, uint256 amount) external nonReentrant onlyOwner {
         require(token != address(0), 'WooRouter: token_ADDR_ZERO');
         TransferHelper.safeTransfer(token, msg.sender, amount);

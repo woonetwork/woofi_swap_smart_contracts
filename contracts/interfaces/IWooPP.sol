@@ -80,7 +80,7 @@ interface IWooPP {
     /// @param minQuoteAmount minimum amount of quoteToken that user accept to receive
     /// @param to quoteToken receiver address
     /// @param rebateTo the wallet address for rebate
-    /// @return quoteAmount the predicted amount of quote token
+    /// @return quoteAmount the swapped amount of quote token
     function sellBase(
         address baseToken,
         uint256 baseAmount,
@@ -95,7 +95,7 @@ interface IWooPP {
     /// @param minBaseAmount minimum amount of baseToken that user accept to receive
     /// @param to baseToken receiver address
     /// @param rebateTo the wallet address for rebate
-    /// @return baseAmount the predicted amount of base token
+    /// @return baseAmount the swapped amount of base token
     function sellQuote(
         address baseToken,
         uint256 quoteAmount,
@@ -107,13 +107,13 @@ interface IWooPP {
     /// @dev Query the amount for selling the base token amount.
     /// @param baseToken the base token to sell
     /// @param baseAmount the amount to sell
-    /// @return quoteAmount the predicted quote amount
+    /// @return quoteAmount the swapped quote amount
     function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
 
     /// @dev Query the amount for selling the quote token.
     /// @param baseToken the base token to receive (buy)
     /// @param quoteAmount the amount to sell
-    /// @return baseAmount the predicted base token amount
+    /// @return baseAmount the swapped base token amount
     function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
 
     /// @dev get the quote token address

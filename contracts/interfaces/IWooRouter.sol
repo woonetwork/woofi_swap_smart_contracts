@@ -61,24 +61,33 @@ interface IWooRouter {
 
     event WooPoolChanged(address newPool);
 
-    /* ----- External Functions ----- */
+    /* ----- Router properties ----- */
 
     function WETH() external pure returns (address);
 
-    function quoteToken() external pure returns (address);
-
     function wooPool() external pure returns (IWooPP);
 
-    function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
+    /* ----- Main query & swap APIs ----- */
 
-    function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
-
+    /// @dev query the amount to swap fromToken -> toToken
+    /// @param fromToken the from token
+    /// @param toToken the to token
+    /// @param fromAmount the amount of fromToken to swap
+    /// @return toAmount the predicted amount to receive
     function querySwap(
         address fromToken,
         address toToken,
         uint256 fromAmount
     ) external view returns (uint256 toAmount);
 
+    /// @dev swap fromToken -> toToken
+    /// @param fromToken the from token
+    /// @param toToken the to token
+    /// @param fromAmount the amount of fromToken to swap
+    /// @param minToAmount the amount of fromToken to swap
+    /// @param to the amount of fromToken to swap
+    /// @param rebateTo the amount of fromToken to swap
+    /// @return realToAmount the amount of toToken to receive
     function swap(
         address fromToken,
         address toToken,
@@ -88,22 +97,16 @@ interface IWooRouter {
         address rebateTo
     ) external payable returns (uint256 realToAmount);
 
-    function sellBase(
-        address baseToken,
-        uint256 baseAmount,
-        uint256 minQuoteAmount,
-        address to,
-        address rebateTo
-    ) external returns (uint256 realQuoteAmount);
+    /* ----- 3rd party DEX swap ----- */
 
-    function sellQuote(
-        address baseToken,
-        uint256 quoteAmount,
-        uint256 minBaseAmount,
-        address to,
-        address rebateTo
-    ) external returns (uint256 realBaseAmount);
-
+    /// @dev swap fromToken -> toToken via an external 3rd swap
+    /// @param approveTarget the contract address for token transfer approval
+    /// @param swapTarget the contract address for swap
+    /// @param fromToken the from token
+    /// @param toToken the to token
+    /// @param fromAmount the amount of fromToken to swap
+    /// @param to the destination address
+    /// @param data call data for external call
     function externalSwap(
         address approveTarget,
         address swapTarget,
