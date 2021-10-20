@@ -205,10 +205,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
     /// @param baseToken the base token to swap
     /// @param quoteAmount the amount of quote token to swap
     /// @return baseAmount the amount of base token after swap
-    function querySellQuote(
-        address baseToken,
-        uint256 quoteAmount
-    ) external view returns (uint256 baseAmount) {
+    function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount) {
         require(baseToken != address(0), 'WooRouter: baseToken_ADDR_ZERO');
         baseToken = (baseToken == ETH_PLACEHOLDER_ADDR) ? WETH : baseToken;
         baseAmount = wooPool.querySellQuote(baseToken, quoteAmount);
