@@ -6,15 +6,7 @@ contract WooPPVirtual is WooPP {
         address newQuoteToken,
         address newPriceOracle,
         address quoteChainlinkRefOracle
-    )
-        WooPP(
-            newQuoteToken,
-            newPriceOracle,
-            quoteChainlinkRefOracle
-        )
-        public
-    {
-    }
+    ) public WooPP(newQuoteToken, newPriceOracle, quoteChainlinkRefOracle) {}
 
     mapping(address => uint256) public virtualBalance;
     mapping(address => uint256) public initialBalance;
@@ -44,10 +36,7 @@ contract WooPPVirtual is WooPP {
         quoteInfo.reserve = uint112(quoteReserve);
     }
 
-    function virtualSellBase(
-        address baseToken,
-        uint256 baseAmount
-    ) public {
+    function virtualSellBase(address baseToken, uint256 baseAmount) public {
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
@@ -58,10 +47,7 @@ contract WooPPVirtual is WooPP {
         virtualTransferOut(quoteToken, realQuoteAmount);
     }
 
-    function virtualSellQuote(
-        address baseToken,
-        uint256 quoteAmount
-    ) public {
+    function virtualSellQuote(address baseToken, uint256 quoteAmount) public {
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
@@ -81,14 +67,11 @@ contract WooPPEchidnaTest is WooPPVirtual {
     address constant usdt = address(0x00a329C0648769a73AFac7f9381E08FB43dbeA73);
     address constant btc = address(0x00a329c0648769A73afac7F9381E08Fb43DBeA74);
     address constant eth = address(0x00A329C0648769a73AFAC7f9381e08FB43DBEA75);
-    constructor ()
+
+    constructor()
+        public
         // uint256 owner = 0x00a329C0648769a73afAC7F9381e08fb43DBEA70;
-       WooPPVirtual(
-           usdt,
-           0x00a329C0648769a73afAC7F9381e08fb43DBEA70,
-           address(0)
-       )
-       public
+        WooPPVirtual(usdt, 0x00a329C0648769a73afAC7F9381e08fb43DBEA70, address(0))
     {
         Wooracle _wooracle = new Wooracle();
         _wooracle.setQuoteAddr(usdt);
@@ -117,12 +100,12 @@ contract WooPPEchidnaTest is WooPPVirtual {
     }
 
     function echidna_balance() public returns (bool) {
-        bool bad = (virtualBalance[usdt] <= initialBalance[usdt])
-            && (virtualBalance[btc] <= initialBalance[btc])
-            && (virtualBalance[eth] <= initialBalance[eth])
-            && ((virtualBalance[usdt] < initialBalance[usdt])
-                || (virtualBalance[btc] < initialBalance[btc])
-                || (virtualBalance[eth] < initialBalance[eth]));
+        bool bad = (virtualBalance[usdt] <= initialBalance[usdt]) &&
+            (virtualBalance[btc] <= initialBalance[btc]) &&
+            (virtualBalance[eth] <= initialBalance[eth]) &&
+            ((virtualBalance[usdt] < initialBalance[usdt]) ||
+                (virtualBalance[btc] < initialBalance[btc]) ||
+                (virtualBalance[eth] < initialBalance[eth]));
         return !bad;
     }
 }

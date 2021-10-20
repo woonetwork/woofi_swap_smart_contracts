@@ -1,7 +1,9 @@
 filterBlacklist: false
-filterFunctions: [
-  "WooPPEchidnaTest.virtualSellBase(address,uint256)",
-  "WooPPEchidnaTest.virtualSellQuote(address,uint256)",
-  "WooPPEchidnaTest.smartSellBase(address)",
-  "WooPPEchidnaTest.smartSellQuote(address)"]
+filterFunctions:
+  [
+    'WooPPEchidnaTest.virtualSellBase(address,uint256)',
+    'WooPPEchidnaTest.virtualSellQuote(address,uint256)',
+    'WooPPEchidnaTest.smartSellBase(address)',
+    'WooPPEchidnaTest.smartSellQuote(address)',
+  ]
 coverage: false
