@@ -58,6 +58,7 @@ interface IWooPP {
     event StrategistUpdated(address indexed strategist, bool flag);
     event RewardManagerUpdated(address indexed newRewardManager);
     event WooracleUpdated(address indexed newWooracle);
+    event WooGuardianUpdated(address indexed newWooGuardian);
     event ParametersUpdated(address indexed baseToken, uint256 newThreshold, uint256 newLpFeeRate, uint256 newR);
     event Withdraw(address indexed token, address indexed to, uint256 amount);
     event WooSwap(

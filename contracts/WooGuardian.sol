@@ -58,9 +58,12 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
     /* ----- State variables ----- */
 
     mapping(address => RefInfo) public refInfo;
+    uint256 public priceBound;
 
-    constructor() public {
+    constructor(uint256 newPriceBound) public {
         initOwner(msg.sender);
+        require(priceBound <= 1e18, "WooGuardian: priceBound out of range");
+        priceBound = newPriceBound;
     }
 
     function checkSwapPrice(
@@ -73,9 +76,8 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
 
         uint256 refPrice = _refPrice(fromToken, toToken);
 
-        // TODO (qingshi): make 1% as variable
         require(
-            refPrice.mulFloor(1e18 - 1e16) <= price && price <= refPrice.mulCeil(1e18 + 1e16),
+            refPrice.mulFloor(1e18 - priceBound) <= price && price <= refPrice.mulCeil(1e18 + priceBound),
             'WooGuardian: PRICE_UNRELIABLE'
         );
     }
@@ -86,7 +88,18 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
         uint256 fromAmount,
         uint256 toAmount,
         uint256 feeRate
-    ) external view override {}
+    ) external view override {
+        require(fromToken != address(0), 'WooGuardian: fromToken_ZERO_ADDR');
+        require(toToken != address(0), 'WooGuardian: toToken_ZERO_ADDR');
+
+        uint256 refPrice = _refPrice(fromToken, toToken);
+        uint256 refToAmount = fromAmount.mulFloor(refPrice);
+        require(
+            refToAmount.mulFloor(1e18 - priceBound) <= toAmount
+                    && toAmount <= refToAmount.mulCeil(1e18 + priceBound),
+            'WooGuardian: TO_AMOUNT_UNRELIABLE'
+        );
+    }
 
     function setToken(address token, address chainlinkRefOracle) external onlyOwner {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');

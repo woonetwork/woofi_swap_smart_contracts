@@ -67,8 +67,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
 
     /// @inheritdoc IWooPP
     address public immutable override quoteToken;
-    IWooGuardian public immutable wooGuardian;
     address public wooracle;
+    IWooGuardian public wooGuardian;
     address public rewardManager;
     string public pairsInfo; // e.g. BNB/ETH/BTCB/WOO-USDT
 
@@ -237,6 +237,14 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         require(newWooracle != address(0), 'WooPP: newWooracle_ZERO_ADDR');
         wooracle = newWooracle;
         emit WooracleUpdated(newWooracle);
+    }
+
+    /// @dev Set wooGuardian from newWooGuardian
+    /// @param newWooGuardian WooGuardian address
+    function setWooGuardian(address newWooGuardian) external nonReentrant onlyStrategist {
+        require(newWooGuardian != address(0), 'WooPP: newWooGuardian_ZERO_ADDR');
+        wooGuardian = IWooGuardian(newWooGuardian);
+        emit WooGuardianUpdated(newWooGuardian);
     }
 
     /// @dev Set the rewardManager.
