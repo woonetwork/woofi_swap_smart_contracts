@@ -169,10 +169,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
 
         uint256 balanceBefore = IERC20(quoteToken).balanceOf(to);
         TransferHelper.safeTransfer(quoteToken, to, quoteAmount);
-        require(
-            IERC20(quoteToken).balanceOf(to).sub(balanceBefore) >= minQuoteAmount,
-            'WooPP: INSUFF_OUTPUT_AMOUNT'
-        );
+        require(IERC20(quoteToken).balanceOf(to).sub(balanceBefore) >= minQuoteAmount, 'WooPP: INSUFF_OUTPUT_AMOUNT');
 
         if (rewardManager != address(0)) {
             IRewardManager(rewardManager).addReward(rebateTo, lpFee);
@@ -212,10 +209,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         uint256 balanceBefore = IERC20(baseToken).balanceOf(to);
 
         TransferHelper.safeTransfer(baseToken, to, baseAmount);
-        require(
-            IERC20(baseToken).balanceOf(to).sub(balanceBefore) >= minBaseAmount,
-            'WooPP: INSUFF_OUTPUT_AMOUNT'
-        );
+        require(IERC20(baseToken).balanceOf(to).sub(balanceBefore) >= minBaseAmount, 'WooPP: INSUFF_OUTPUT_AMOUNT');
 
         if (rewardManager != address(0)) {
             IRewardManager(rewardManager).addReward(rebateTo, lpFee);
