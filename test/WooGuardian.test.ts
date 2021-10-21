@@ -32,7 +32,7 @@
 */
 
 import { expect, use } from 'chai'
-import { Contract } from 'ethers'
+import { Contract, utils } from 'ethers'
 import { deployContract, deployMockContract, MockProvider, solidity } from 'ethereum-waffle'
 import { ethers } from 'hardhat'
 
@@ -60,499 +60,294 @@ const OVERFLOW_UINT112 = BigNumber.from(10).pow(32).mul(52)
 const OVERFLOW_UINT64 = BigNumber.from(10).pow(18).mul(19)
 const POW_18 = BigNumber.from(10).pow(18)
 
-describe('WooPP Test Suite 1', () => {
+const DEFAULT_BOUND = utils.parseEther('0.01') // 1%
+
+// Chainlink BSC: https://data.chain.link/bsc/mainnet/crypto-usd
+// BTC: https://data.chain.link/bsc/mainnet/crypto-usd/btc-usd
+// Woo: https://data.chain.link/bsc/mainnet/crypto-usd/woo-usd
+// USDT: https://data.chain.link/bsc/mainnet/crypto-usd/usdt-usd
+
+describe('WooGuardian Test Suite 1', () => {
   const [owner, user1, user2, wooracle] = new MockProvider().getWallets()
 
-  let quoteChainLinkRefOracle: Contract
-  let base1ChainLinkRefOracle: Contract
-  let base2ChainLinkRefOracle: Contract
+  let usdtToken: Contract
+  let btcToken: Contract
+  let wooToken: Contract
 
-  before('deploy ERC20', async () => {
-    quoteChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
-    base1ChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
-    base2ChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
+  let usdtChainLinkRefOracle: Contract
+  let btcChainLinkRefOracle: Contract
+  let wooChainLinkRefOracle: Contract
+
+  before('deploy ERC20 & Prepare chainlink oracles', async () => {
+    usdtToken = await deployContract(owner, TestToken, [])
+    btcToken = await deployContract(owner, TestToken, [])
+    wooToken = await deployContract(owner, TestToken, [])
+
+    usdtChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
+    await usdtChainLinkRefOracle.mock.decimals.returns(8)
+    await usdtChainLinkRefOracle.mock.latestRoundData.returns(
+      BigNumber.from('36893488147419103431'),
+      BigNumber.from('100000974'), // 1.00 usdt
+      BigNumber.from('1634749403'),
+      BigNumber.from('1634749403'),
+      BigNumber.from('36893488147419103431')
+    )
+
+    btcChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
+    await btcChainLinkRefOracle.mock.decimals.returns(8)
+    await btcChainLinkRefOracle.mock.latestRoundData.returns(
+      BigNumber.from('36893488147419150348'),
+      BigNumber.from('6512226000000'), // 65122 usdt
+      BigNumber.from('1634801897'),
+      BigNumber.from('1634801897'),
+      BigNumber.from('36893488147419150348')
+    )
+
+    wooChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
+    await wooChainLinkRefOracle.mock.decimals.returns(8)
+    await wooChainLinkRefOracle.mock.latestRoundData.returns(
+      BigNumber.from('36893488147419122884'),
+      BigNumber.from('129952890'), // 1.29 usdt
+      BigNumber.from('1634799201'),
+      BigNumber.from('1634799201'),
+      BigNumber.from('36893488147419122884')
+    )
   })
 
-  describe('#ctor, init & info', () => {
+  describe('', () => {
     let wooGuardian: Contract
 
-    beforeEach('deploy WooPP', async () => {
-      wooGuardian = await deployContract(owner, WooGuardian, [quoteChainLinkRefOracle.address])
+    before('deploy WooPP', async () => {
+      wooGuardian = await deployContract(owner, WooGuardian, [DEFAULT_BOUND])
+      await wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
+      await wooGuardian.setToken(btcToken.address, btcChainLinkRefOracle.address)
+      await wooGuardian.setToken(wooToken.address, wooChainLinkRefOracle.address)
     })
 
-    it('ctor', async () => {
-      expect(await wooPP._OWNER_()).to.eq(owner.address)
+    it('ctor accuracy1', async () => {
+      expect(await wooGuardian._OWNER_()).to.eq(owner.address)
     })
 
-    it('ctor failure1', async () => {
-      await expect(deployContract(owner, WooPP, [ZERO_ADDR, wooracle.address, wooGuardian.address])).to.be.revertedWith(
-        'WooPP: INVALID_QUOTE'
+    it('ctor accuracy2', async () => {
+      expect(await wooGuardian.priceBound()).to.eq(DEFAULT_BOUND)
+    })
+
+    it('checkSwapPrice btc/usdt accuracy1', async () => {
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('65122'),
+        btcToken.address,
+        usdtToken.address)
+
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('65000'),
+        btcToken.address,
+        usdtToken.address)
+
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('64700'),
+        btcToken.address,
+        usdtToken.address)
+
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('65300'),
+        btcToken.address,
+        usdtToken.address)
+
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('65500'),
+        btcToken.address,
+        usdtToken.address)
+    })
+
+    // 99% btc_price = 64,470.78
+    it('checkSwapPrice btc/usdt < -0.1% revert', async () => {
+      await expect(wooGuardian.checkSwapPrice(
+        utils.parseEther('64470'),
+        btcToken.address,
+        usdtToken.address)
+      ).to.be.revertedWith(
+        'WooGuardian: PRICE_UNRELIABLE'
+      )
+
+      await expect(wooGuardian.checkSwapPrice(
+        utils.parseEther('64400'),
+        btcToken.address,
+        usdtToken.address)
+      ).to.be.revertedWith(
+        'WooGuardian: PRICE_UNRELIABLE'
       )
     })
 
-    it('ctor failure2', async () => {
-      await expect(
-        deployContract(owner, WooPP, [quoteToken.address, ZERO_ADDR, wooGuardian.address])
-      ).to.be.revertedWith('WooPP: newWooracle_ZERO_ADDR')
+    // 101% btc_price = 65,773.22
+    it('checkSwapPrice btc/usdt > 0.1% revert', async () => {
+      await expect(wooGuardian.checkSwapPrice(
+        utils.parseEther('65774'),
+        btcToken.address,
+        usdtToken.address)
+      ).to.be.revertedWith(
+        'WooGuardian: PRICE_UNRELIABLE'
+      )
+
+      await expect(wooGuardian.checkSwapPrice(
+        utils.parseEther('65800'),
+        btcToken.address,
+        usdtToken.address)
+      ).to.be.revertedWith(
+        'WooGuardian: PRICE_UNRELIABLE'
+      )
     })
 
-    it('init', async () => {
-      expect(await wooPP.quoteToken()).to.eq(quoteToken.address)
-      expect(await wooPP.wooracle()).to.eq(wooracle.address)
+    it('checkSwapPrice woo/usdt accuracy1', async () => {
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('1.2995'),
+        wooToken.address,
+        usdtToken.address)
+
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('1.30'),
+        wooToken.address,
+        usdtToken.address)
+
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('1.305'),
+        wooToken.address,
+        usdtToken.address)
+
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('1.31'),
+        wooToken.address,
+        usdtToken.address)
+
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('1.29'),
+        wooToken.address,
+        usdtToken.address)
+
+      await wooGuardian.checkSwapPrice(
+        utils.parseEther('1.295'),
+        wooToken.address,
+        usdtToken.address)
     })
 
-    it('tokenInfo', async () => {
-      const quoteInfo = await wooPP.tokenInfo(quoteToken.address)
-      expect(quoteInfo.isValid).to.eq(true)
-      expect(quoteInfo.reserve).to.eq(0)
-      expect(quoteInfo.threshold).to.eq(0)
-      expect(quoteInfo.lastResetTimestamp).to.eq(0)
-      expect(quoteInfo.lpFeeRate).to.eq(0)
-      expect(quoteInfo.R).to.eq(0)
-      expect(quoteInfo.target).to.eq(0)
+    // 99% woo_price = 1.286505
+    it('checkSwapPrice woo/usdt < -0.1% revert', async () => {
+      await expect(wooGuardian.checkSwapPrice(
+        utils.parseEther('1.2865'),
+        wooToken.address,
+        usdtToken.address)
+      ).to.be.revertedWith(
+        'WooGuardian: PRICE_UNRELIABLE'
+      )
     })
 
-    it('pairsInfo', async () => {
-      expect(await wooPP.pairsInfo()).to.eq('')
-      const pair = 'BNB/ETH/BTCB/WOO-USDT'
-      await wooPP.setPairsInfo(pair)
-      expect(await wooPP.pairsInfo()).to.eq(pair)
+    // 101% woo_price = 1.312524
+    it('checkSwapPrice woo/usdt > 0.1% revert', async () => {
+      await expect(wooGuardian.checkSwapPrice(
+        utils.parseEther('1.31253'),
+        wooToken.address,
+        usdtToken.address)
+      ).to.be.revertedWith(
+        'WooGuardian: PRICE_UNRELIABLE'
+      )
+    })
+
+    // ------ checkSwapAmount ------ //
+
+    it('checkSwapAmount btc/usdt accuracy1', async () => {
+      let fromAmount = 1.0
+      let price = 65122
+      let toAmount
+
+      toAmount = fromAmount * price * 0.995
+      await wooGuardian.checkSwapAmount(
+        btcToken.address,
+        usdtToken.address,
+        utils.parseEther(fromAmount.toString()),
+        utils.parseEther(toAmount.toString()))
+
+      toAmount = fromAmount * price * 0.991
+      await wooGuardian.checkSwapAmount(
+        btcToken.address,
+        usdtToken.address,
+        utils.parseEther(fromAmount.toString()),
+        utils.parseEther(toAmount.toString()))
+
+      toAmount = fromAmount * price * 1.0099
+      await wooGuardian.checkSwapAmount(
+        btcToken.address,
+        usdtToken.address,
+        utils.parseEther(fromAmount.toString()),
+        utils.parseEther(toAmount.toString()))
+
+      toAmount = fromAmount * price * 1.0095
+      await wooGuardian.checkSwapAmount(
+        btcToken.address,
+        usdtToken.address,
+        utils.parseEther(fromAmount.toString()),
+        utils.parseEther(toAmount.toString()))
+    })
+
+    // 99% btc_price = 64,470.78
+    it('checkSwapAmount btc/usdt < -0.1% revert', async () => {
+      let fromAmount = 1.0
+      let price = 65122
+      let toAmount
+
+      toAmount = fromAmount * price * 0.899
+      await expect(wooGuardian.checkSwapAmount(
+        btcToken.address,
+        usdtToken.address,
+        utils.parseEther(fromAmount.toString()),
+        utils.parseEther(toAmount.toString())
+      )).to.be.revertedWith(
+        'WooGuardian: TO_AMOUNT_UNRELIABLE'
+      )
+
+      toAmount = fromAmount * price * 0.895
+      await expect(wooGuardian.checkSwapAmount(
+        btcToken.address,
+        usdtToken.address,
+        utils.parseEther(fromAmount.toString()),
+        utils.parseEther(toAmount.toString())
+      )).to.be.revertedWith(
+        'WooGuardian: TO_AMOUNT_UNRELIABLE'
+      )
+    })
+
+    // 101% btc_price = 65,773.22
+    it('checkSwapAmount btc/usdt > 0.1% revert', async () => {
+      let fromAmount = 1.0
+      let price = 65122
+      let toAmount
+
+      toAmount = fromAmount * price * 1.011
+      await expect(wooGuardian.checkSwapAmount(
+        btcToken.address,
+        usdtToken.address,
+        utils.parseEther(fromAmount.toString()),
+        utils.parseEther(toAmount.toString())
+      )).to.be.revertedWith(
+        'WooGuardian: TO_AMOUNT_UNRELIABLE'
+      )
+
+      toAmount = fromAmount * price * 1.015
+      await expect(wooGuardian.checkSwapAmount(
+        btcToken.address,
+        usdtToken.address,
+        utils.parseEther(fromAmount.toString()),
+        utils.parseEther(toAmount.toString())
+      )).to.be.revertedWith(
+        'WooGuardian: TO_AMOUNT_UNRELIABLE'
+      )
     })
   })
 
-  describe('add and remove base token', () => {
-    let wooPP: Contract
-
-    beforeEach('deploy WooPP', async () => {
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, wooGuardian.address])
-    })
-
-    it('addBaseToken', async () => {
-      await wooPP.addBaseToken(baseToken1.address, 1, 2, 3)
-      const info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.isValid).to.eq(true)
-      expect(info.reserve).to.eq(0)
-      expect(info.threshold).to.eq(1)
-      expect(info.lpFeeRate).to.eq(2)
-      expect(info.R).to.eq(3)
-      expect(info.target).to.eq(1)
-      expect(info.lastResetTimestamp).to.eq(0)
-    })
-
-    it('addBaseToken revert1', async () => {
-      await expect(wooPP.addBaseToken(ZERO_ADDR, 1, 2, 3)).to.be.revertedWith('WooPP: BASE_TOKEN_ZERO_ADDR')
-    })
-
-    it('addBaseToken revert2', async () => {
-      await expect(wooPP.addBaseToken(quoteToken.address, 1, 2, 3)).to.be.revertedWith('WooPP: BASE_TOKEN_INVALID')
-    })
-
-    it('addBaseToken revert3', async () => {
-      await expect(wooPP.addBaseToken(baseToken1.address, OVERFLOW_UINT112, 2, 3)).to.be.revertedWith(
-        'WooPP: THRESHOLD_OUT_OF_RANGE'
-      )
-    })
-
-    it('addBaseToken revert4', async () => {
-      await expect(wooPP.addBaseToken(baseToken1.address, 1, OVERFLOW_UINT112, 3)).to.be.revertedWith(
-        'WooPP: LP_FEE_RATE_OUT_OF_RANGE'
-      )
-    })
-
-    it('addBaseToken revert5', async () => {
-      await expect(wooPP.addBaseToken(baseToken1.address, 1, 2, OVERFLOW_UINT112)).to.be.revertedWith(
-        'WooPP: R_OUT_OF_RANGE'
-      )
-    })
-
-    it('addBaseToken revert6', async () => {
-      await wooPP.addBaseToken(baseToken1.address, 1, 2, 3)
-      const info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.isValid).to.eq(true)
-      await expect(wooPP.addBaseToken(baseToken1.address, 1, 2, 3)).to.be.revertedWith('WooPP: TOKEN_ALREADY_EXISTS')
-    })
-
-    it('addBaseToken event1', async () => {
-      await expect(wooPP.addBaseToken(baseToken1.address, 1, 2, 3))
-        .to.emit(wooPP, 'ParametersUpdated')
-        .withArgs(baseToken1.address, 1, 2, 3)
-    })
-
-    it('removeBaseToken', async () => {
-      await wooPP.addBaseToken(baseToken1.address, 1, 2, 3)
-      let info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.isValid).to.eq(true)
-      expect(info.reserve).to.eq(0)
-      expect(info.threshold).to.eq(1)
-      expect(info.lpFeeRate).to.eq(2)
-      expect(info.R).to.eq(3)
-      expect(info.target).to.eq(1)
-      expect(info.lastResetTimestamp).to.eq(0)
-
-      await wooPP.removeBaseToken(baseToken1.address)
-
-      info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.isValid).to.eq(false)
-      expect(info.reserve).to.eq(0)
-      expect(info.threshold).to.eq(0)
-      expect(info.lpFeeRate).to.eq(0)
-      expect(info.R).to.eq(0)
-      expect(info.target).to.eq(0)
-      expect(info.lastResetTimestamp).to.eq(0)
-    })
-
-    it('removeBaseToken revert1', async () => {
-      await expect(wooPP.removeBaseToken(ZERO_ADDR)).to.be.revertedWith('WooPP: BASE_TOKEN_ZERO_ADDR')
-    })
-
-    it('removeBaseToken revert2', async () => {
-      await expect(wooPP.removeBaseToken(baseToken1.address)).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
-    })
-
-    it('removeBaseToken event1', async () => {
-      await wooPP.addBaseToken(baseToken1.address, 1, 2, 3)
-      let info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.isValid).to.eq(true)
-
-      await expect(wooPP.removeBaseToken(baseToken1.address))
-        .to.emit(wooPP, 'ParametersUpdated')
-        .withArgs(baseToken1.address, 0, 0, 0)
-    })
+  describe('reverts test', () => {
   })
 
-  describe('params tuning', () => {
-    let wooPP: Contract
-
-    beforeEach('deploy WooPP', async () => {
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, wooGuardian.address])
-    })
-
-    it('tuneParameters accuracy1', async () => {
-      await wooPP.addBaseToken(baseToken1.address, 1, 2, 3)
-      let info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.isValid).to.eq(true)
-      expect(info.reserve).to.eq(0)
-      expect(info.threshold).to.eq(1)
-      expect(info.lpFeeRate).to.eq(2)
-      expect(info.R).to.eq(3)
-      expect(info.target).to.eq(1)
-      expect(info.lastResetTimestamp).to.eq(0)
-
-      await wooPP.tuneParameters(baseToken1.address, 11, 22, 33)
-
-      info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.threshold).to.eq(11)
-      expect(info.lpFeeRate).to.eq(22)
-      expect(info.R).to.eq(33)
-      expect(info.target).to.eq(11)
-    })
-
-    it('tuneParameters accuracy2', async () => {
-      await wooPP.addBaseToken(baseToken1.address, 111, 222, 333)
-      let info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.isValid).to.eq(true)
-      expect(info.reserve).to.eq(0)
-      expect(info.threshold).to.eq(111)
-      expect(info.lpFeeRate).to.eq(222)
-      expect(info.R).to.eq(333)
-      expect(info.target).to.eq(111)
-      expect(info.lastResetTimestamp).to.eq(0)
-
-      await wooPP.tuneParameters(baseToken1.address, 11, 22, 33)
-
-      info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.threshold).to.eq(11)
-      expect(info.lpFeeRate).to.eq(22)
-      expect(info.R).to.eq(33)
-      expect(info.target).to.eq(111)
-    })
-
-    it('tuneParameters accuracy3', async () => {
-      await wooPP.addBaseToken(baseToken1.address, 111, 222, 333)
-      let info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.isValid).to.eq(true)
-      expect(info.reserve).to.eq(0)
-      expect(info.threshold).to.eq(111)
-      expect(info.lpFeeRate).to.eq(222)
-      expect(info.R).to.eq(333)
-      expect(info.target).to.eq(111)
-      expect(info.lastResetTimestamp).to.eq(0)
-
-      await wooPP.tuneParameters(baseToken1.address, 11, POW_18, POW_18)
-
-      info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.threshold).to.eq(11)
-      expect(info.lpFeeRate).to.eq(POW_18)
-      expect(info.R).to.eq(POW_18)
-      expect(info.target).to.eq(111)
-    })
-
-    it('tuneParameters revert1', async () => {
-      await expect(wooPP.tuneParameters(ZERO_ADDR, 11, 22, 33)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
-    })
-
-    it('tuneParameters revert2', async () => {
-      await expect(wooPP.tuneParameters(baseToken1.address, OVERFLOW_UINT112, 22, 33)).to.be.revertedWith(
-        'WooPP: THRESHOLD_OUT_OF_RANGE'
-      )
-    })
-
-    it('tuneParameters revert3_1', async () => {
-      await expect(wooPP.tuneParameters(baseToken1.address, 11, OVERFLOW_UINT64, 33)).to.be.revertedWith(
-        'WooPP: LP_FEE_RATE>1'
-      )
-    })
-
-    it('tuneParameters revert3_2', async () => {
-      const lpFeeRate = POW_18.add(1)
-      await expect(wooPP.tuneParameters(baseToken1.address, 11, lpFeeRate, 33)).to.be.revertedWith(
-        'WooPP: LP_FEE_RATE>1'
-      )
-    })
-
-    it('tuneParameters revert4_1', async () => {
-      await expect(wooPP.tuneParameters(baseToken1.address, 11, 22, OVERFLOW_UINT64)).to.be.revertedWith('WooPP: R>1')
-    })
-
-    it('tuneParameters revert4_2', async () => {
-      const R = POW_18.add(1)
-      await expect(wooPP.tuneParameters(baseToken1.address, 11, 22, R)).to.be.revertedWith('WooPP: R>1')
-    })
-
-    it('tuneParameters revert5', async () => {
-      await expect(wooPP.tuneParameters(baseToken1.address, 11, 22, 33)).to.be.revertedWith(
-        'WooPP: TOKEN_DOES_NOT_EXIST'
-      )
-    })
-
-    it('tuneParameters event1', async () => {
-      await wooPP.addBaseToken(baseToken1.address, 1, 2, 3)
-      let info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.isValid).to.eq(true)
-
-      await expect(wooPP.tuneParameters(baseToken1.address, 11, 22, 33))
-        .to.emit(wooPP, 'ParametersUpdated')
-        .withArgs(baseToken1.address, 11, 22, 33)
-    })
-
-    it('tuneParameters event1', async () => {
-      await wooPP.addBaseToken(baseToken1.address, 1, 2, 3)
-      let info = await wooPP.tokenInfo(baseToken1.address)
-      expect(info.isValid).to.eq(true)
-
-      await expect(wooPP.tuneParameters(baseToken1.address, 11, 22, 33))
-        .to.emit(wooPP, 'ParametersUpdated')
-        .withArgs(baseToken1.address, 11, 22, 33)
-    })
+  describe('events test', () => {
   })
 
-  describe('admin & strategist', () => {
-    let wooPP: Contract
-    let quoteToken: Contract
-    let baseToken1: Contract
-    let baseToken2: Contract
-
-    before('deploy ERC20', async () => {
-      quoteToken = await deployMockContract(owner, IERC20.abi)
-      baseToken1 = await deployMockContract(owner, IERC20.abi)
-      baseToken2 = await deployMockContract(owner, IERC20.abi)
-    })
-
-    beforeEach('deploy WooPP', async () => {
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, wooGuardian.address])
-    })
-
-    it('isStrategist accuracy1', async () => {
-      let isStrategist = await wooPP.isStrategist(baseToken1.address)
-      expect(isStrategist).to.eq(false)
-    })
-
-    it('setStrategist accuracy1', async () => {
-      let isStrategist = await wooPP.isStrategist(baseToken2.address)
-      expect(isStrategist).to.eq(false)
-
-      await wooPP.setStrategist(baseToken2.address, true)
-      isStrategist = await wooPP.isStrategist(baseToken2.address)
-      expect(isStrategist).to.eq(true)
-    })
-
-    it('setStrategist accuracy2', async () => {
-      let isStrategist = await wooPP.isStrategist(baseToken2.address)
-      expect(isStrategist).to.eq(false)
-
-      await wooPP.setStrategist(baseToken2.address, true)
-      isStrategist = await wooPP.isStrategist(baseToken2.address)
-      expect(isStrategist).to.eq(true)
-
-      await wooPP.setStrategist(baseToken2.address, false)
-      isStrategist = await wooPP.isStrategist(baseToken2.address)
-      expect(isStrategist).to.eq(false)
-    })
-
-    it('setStrategist revert1', async () => {
-      await expect(wooPP.setStrategist(ZERO_ADDR, true)).to.be.revertedWith('WooPP: strategist_ZERO_ADDR')
-    })
-
-    it('setStrategist event1', async () => {
-      await expect(wooPP.setStrategist(baseToken1.address, true))
-        .to.emit(wooPP, 'StrategistUpdated')
-        .withArgs(baseToken1.address, true)
-    })
+  describe('onlyOwner test', () => {
   })
-
-  describe('withdraw', () => {
-    let wooPP: Contract
-    let quoteToken: Contract
-    let baseToken1: Contract
-    let wooOracle1: Contract
-
-    before('deploy ERC20', async () => {
-      wooOracle1 = await deployMockContract(owner, IWooracle.abi)
-    })
-
-    beforeEach('deploy WooPP', async () => {
-      quoteToken = await deployContract(owner, TestToken, [])
-      baseToken1 = await deployContract(owner, TestToken, [])
-
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooOracle1.address, wooGuardian.address])
-
-      await quoteToken.mint(wooPP.address, 30000)
-      await baseToken1.mint(wooPP.address, 10000)
-
-      await baseToken1.mint(owner.address, 100)
-    })
-
-    it('withdraw accuracy1', async () => {
-      expect(await baseToken1.balanceOf(user1.address)).to.eq(0)
-      expect(await baseToken1.balanceOf(wooPP.address)).to.eq(10000)
-
-      await wooPP.withdraw(baseToken1.address, user1.address, 2000)
-
-      // await expect(() => wooPP.withdraw(baseToken1.address, user1.address, 2000))
-      //     .to.changeTokenBalances(baseToken1, [wooPP, user1], [-2000, 2000]);
-
-      expect(await baseToken1.balanceOf(user1.address)).to.eq(2000)
-      expect(await baseToken1.balanceOf(wooPP.address)).to.eq(8000)
-    })
-
-    it('withdraw revert1', async () => {
-      await expect(wooPP.withdraw(ZERO_ADDR, user1.address, 100)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
-    })
-
-    it('withdraw revert2', async () => {
-      await expect(wooPP.withdraw(baseToken1.address, ZERO_ADDR, 100)).to.be.revertedWith('WooPP: to_ZERO_ADDR')
-    })
-
-    it('withdraw event1', async () => {
-      await expect(wooPP.withdraw(baseToken1.address, user1.address, 111))
-        .to.emit(wooPP, 'Withdraw')
-        .withArgs(baseToken1.address, user1.address, 111)
-    })
-
-    it('withdrawToOwner accuracy1', async () => {
-      expect(await baseToken1.balanceOf(owner.address)).to.eq(100)
-      expect(await baseToken1.balanceOf(wooPP.address)).to.eq(10000)
-
-      await wooPP.withdrawToOwner(baseToken1.address, 200)
-
-      // await expect(() => wooPP.withdraw(baseToken1.address, user1.address, 2000))
-      //     .to.changeTokenBalances(baseToken1, [wooPP, user1], [-2000, 2000]);
-
-      expect(await baseToken1.balanceOf(owner.address)).to.eq(100 + 200)
-      expect(await baseToken1.balanceOf(wooPP.address)).to.eq(10000 - 200)
-    })
-
-    it('withdrawToOwner revert1', async () => {
-      await expect(wooPP.withdrawToOwner(ZERO_ADDR, 100)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
-    })
-
-    it('withdrawToOwner event1', async () => {
-      await expect(wooPP.withdrawToOwner(baseToken1.address, 123))
-        .to.emit(wooPP, 'Withdraw')
-        .withArgs(baseToken1.address, owner.address, 123)
-    })
-  })
-
-  describe('reward manager and oracles', () => {
-    let wooPP: Contract
-    let quoteToken: Contract
-    let baseToken1: Contract
-    let wooOracle1: Contract
-    let wooOracle2: Contract
-    let rewardManager: Contract
-    let chainlinkOracle: Contract
-
-    before('deploy ERC20', async () => {
-      wooOracle1 = await deployMockContract(owner, IWooracle.abi)
-      wooOracle2 = await deployMockContract(owner, IWooracle.abi)
-      rewardManager = await deployMockContract(owner, IRewardManager.abi)
-
-      chainlinkOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
-      await chainlinkOracle.mock.decimals.returns(18)
-    })
-
-    beforeEach('deploy WooPP', async () => {
-      quoteToken = await deployContract(owner, TestToken, [])
-      baseToken1 = await deployContract(owner, TestToken, [])
-
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooOracle1.address, wooGuardian.address])
-
-      await quoteToken.mint(wooPP.address, 30000)
-      await baseToken1.mint(wooPP.address, 10000)
-
-      await baseToken1.mint(owner.address, 100)
-    })
-
-    it('pooSize accuracy', async () => {
-      expect(await wooPP.poolSize(quoteToken.address)).to.eq(30000)
-      expect(await wooPP.poolSize(baseToken1.address)).to.eq(10000)
-      await wooPP.withdrawToOwner(baseToken1.address, 1234)
-      expect(await wooPP.poolSize(baseToken1.address)).to.eq(10000 - 1234)
-    })
-
-    it('wooracle accuracy', async () => {
-      expect(await wooPP.wooracle()).to.eq(wooOracle1.address)
-    })
-
-    it('setWooracle accuracy', async () => {
-      expect(await wooPP.wooracle()).to.eq(wooOracle1.address)
-      await wooPP.setWooracle(wooOracle2.address)
-      expect(await wooPP.wooracle()).to.eq(wooOracle2.address)
-    })
-
-    it('setWooracle revert1', async () => {
-      await expect(wooPP.setWooracle(ZERO_ADDR)).to.be.revertedWith('WooPP: newWooracle_ZERO_ADDR')
-    })
-
-    it('setWooracle event1', async () => {
-      await expect(wooPP.setWooracle(wooOracle2.address)).to.emit(wooPP, 'WooracleUpdated').withArgs(wooOracle2.address)
-    })
-
-    // --------------------------------------------
-
-    it('rewardManager accuracy', async () => {
-      expect(await wooPP.rewardManager()).to.eq(ZERO_ADDR)
-    })
-
-    it('setRewardManager accuracy', async () => {
-      expect(await wooPP.rewardManager()).to.eq(ZERO_ADDR)
-      await wooPP.setRewardManager(rewardManager.address)
-      expect(await wooPP.rewardManager()).to.eq(rewardManager.address)
-    })
-
-    it('setRewardManager revert1', async () => {
-      await expect(wooPP.setRewardManager(ZERO_ADDR)).to.be.revertedWith('WooPP: newRewardManager_ZERO_ADDR')
-    })
-
-    it('setRewardManager event1', async () => {
-      await expect(wooPP.setRewardManager(rewardManager.address))
-        .to.emit(wooPP, 'RewardManagerUpdated')
-        .withArgs(rewardManager.address)
-    })
-  })
-
-  // TODO: (@qinchao)
-  // 1. only owner and strategist, access control unit tests
-  // 2. sell, buy quote and base tokens
-  // 3. query amount of quote and base tokens
 })
