@@ -383,7 +383,7 @@ describe('WooRouter tests', () => {
         wooRouter
           .connect(user)
           .swap(ETH_PLACEHOLDER_ADDR, usdtToken.address, fromAmount, minToAmount, user.address, ZERO_ADDR, {
-            value: ONE.mul(5),
+            value: ONE.mul(9).div(10),
           })
       ).to.be.revertedWith('WooRouter: fromAmount_INVALID')
     })
