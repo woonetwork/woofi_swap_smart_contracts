@@ -52,7 +52,7 @@ use(solidity)
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 const BTC_PRICE = 65122
-const WOO_PRICE = 1.30
+const WOO_PRICE = 1.3
 
 const ONE = BigNumber.from(10).pow(18)
 
@@ -262,6 +262,5 @@ describe('WooPP Test Suite 3', () => {
         wooPP.connect(user1).sellBase(usdtToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
       ).to.be.revertedWith('WooPP: baseToken==quoteToken')
     })
-
   })
 })
