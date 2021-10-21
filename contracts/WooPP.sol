@@ -278,7 +278,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         uint256 R
     ) external nonReentrant onlyStrategist {
         require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
-        require(baseToken != quoteToken, 'WooPP: BASE_TOKEN_INVALID');
+        require(baseToken != quoteToken, 'WooPP: baseToken==quoteToken');
         require(threshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
         require(lpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE_OUT_OF_RANGE');
         require(R <= 1e18, 'WooPP: R_OUT_OF_RANGE');

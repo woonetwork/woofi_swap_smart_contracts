@@ -6,6 +6,11 @@ import '@nomiclabs/hardhat-solhint'
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
 
+import { resolve } from "path";
+import { config as dotenvConfig } from "dotenv";
+
+dotenvConfig({ path: resolve(__dirname, "./.env") });
+
 const chainIds = {
   ganache: 1337,
   goerli: 5,
@@ -16,8 +21,7 @@ const chainIds = {
   ropsten: 3,
 }
 
-// const MNEMONIC = process.env.MNEMONIC || "";
-const MNEMONIC = ''
+const MNEMONIC = process.env.MNEMONIC || 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks.'
 
 export default {
   defaultNetwork: 'hardhat',
@@ -65,7 +69,10 @@ export default {
     outDir: 'typechain',
     target: 'ethers-v5',
   },
+  etherscan: {
+    apiKey: process.env.SCAN_API
+  },
   mocha: {
     timeout: 10000,
-  },
+  }
 }
