@@ -160,14 +160,16 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
         _autoUpdate(baseToken, baseInfo, quoteInfo);
 
+        TransferHelper.safeTransferFrom(baseToken, from, address(this), baseAmount);
+
         quoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
         uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
         quoteAmount = quoteAmount.sub(lpFee);
-
         require(quoteAmount >= minQuoteAmount, 'WooPP: quoteAmount<minQuoteAmount');
 
-        TransferHelper.safeTransferFrom(baseToken, from, address(this), baseAmount);
+        uint256 balanceBefore = IERC20(quoteToken).balanceOf(to);
         TransferHelper.safeTransfer(quoteToken, to, quoteAmount);
+        require(IERC20(quoteToken).balanceOf(to).sub(balanceBefore) >= minQuoteAmount, 'WooPP: INSUFF_OUTPUT_AMOUNT');
 
         if (rewardManager != address(0)) {
             IRewardManager(rewardManager).addReward(rebateTo, lpFee);
@@ -198,14 +200,15 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
         _autoUpdate(baseToken, baseInfo, quoteInfo);
 
-        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
-        quoteAmount = quoteAmount.sub(lpFee);
-        baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
+        TransferHelper.safeTransferFrom(quoteToken, from, address(this), quoteAmount);
 
+        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
+        baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount.sub(lpFee), baseInfo, quoteInfo);
         require(baseAmount >= minBaseAmount, 'WooPP: baseAmount<minBaseAmount');
 
-        TransferHelper.safeTransferFrom(quoteToken, from, address(this), quoteAmount.add(lpFee));
+        uint256 balanceBefore = IERC20(baseToken).balanceOf(to);
         TransferHelper.safeTransfer(baseToken, to, baseAmount);
+        require(IERC20(baseToken).balanceOf(to).sub(balanceBefore) >= minBaseAmount, 'WooPP: INSUFF_OUTPUT_AMOUNT');
 
         if (rewardManager != address(0)) {
             IRewardManager(rewardManager).addReward(rebateTo, lpFee);
