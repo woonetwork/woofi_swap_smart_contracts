@@ -133,122 +133,65 @@ describe('WooGuardian Test Suite 1', () => {
     })
 
     it('checkSwapPrice btc/usdt accuracy1', async () => {
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('65122'),
-        btcToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('65122'), btcToken.address, usdtToken.address)
 
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('65000'),
-        btcToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('65000'), btcToken.address, usdtToken.address)
 
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('64700'),
-        btcToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('64700'), btcToken.address, usdtToken.address)
 
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('65300'),
-        btcToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('65300'), btcToken.address, usdtToken.address)
 
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('65500'),
-        btcToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('65500'), btcToken.address, usdtToken.address)
     })
 
     // 99% btc_price = 64,470.78
     it('checkSwapPrice btc/usdt < -0.1% revert', async () => {
-      await expect(wooGuardian.checkSwapPrice(
-        utils.parseEther('64470'),
-        btcToken.address,
-        usdtToken.address)
-      ).to.be.revertedWith(
-        'WooGuardian: PRICE_UNRELIABLE'
-      )
+      await expect(
+        wooGuardian.checkSwapPrice(utils.parseEther('64470'), btcToken.address, usdtToken.address)
+      ).to.be.revertedWith('WooGuardian: PRICE_UNRELIABLE')
 
-      await expect(wooGuardian.checkSwapPrice(
-        utils.parseEther('64400'),
-        btcToken.address,
-        usdtToken.address)
-      ).to.be.revertedWith(
-        'WooGuardian: PRICE_UNRELIABLE'
-      )
+      await expect(
+        wooGuardian.checkSwapPrice(utils.parseEther('64400'), btcToken.address, usdtToken.address)
+      ).to.be.revertedWith('WooGuardian: PRICE_UNRELIABLE')
     })
 
     // 101% btc_price = 65,773.22
     it('checkSwapPrice btc/usdt > 0.1% revert', async () => {
-      await expect(wooGuardian.checkSwapPrice(
-        utils.parseEther('65774'),
-        btcToken.address,
-        usdtToken.address)
-      ).to.be.revertedWith(
-        'WooGuardian: PRICE_UNRELIABLE'
-      )
+      await expect(
+        wooGuardian.checkSwapPrice(utils.parseEther('65774'), btcToken.address, usdtToken.address)
+      ).to.be.revertedWith('WooGuardian: PRICE_UNRELIABLE')
 
-      await expect(wooGuardian.checkSwapPrice(
-        utils.parseEther('65800'),
-        btcToken.address,
-        usdtToken.address)
-      ).to.be.revertedWith(
-        'WooGuardian: PRICE_UNRELIABLE'
-      )
+      await expect(
+        wooGuardian.checkSwapPrice(utils.parseEther('65800'), btcToken.address, usdtToken.address)
+      ).to.be.revertedWith('WooGuardian: PRICE_UNRELIABLE')
     })
 
     it('checkSwapPrice woo/usdt accuracy1', async () => {
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('1.2995'),
-        wooToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('1.2995'), wooToken.address, usdtToken.address)
 
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('1.30'),
-        wooToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('1.30'), wooToken.address, usdtToken.address)
 
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('1.305'),
-        wooToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('1.305'), wooToken.address, usdtToken.address)
 
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('1.31'),
-        wooToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('1.31'), wooToken.address, usdtToken.address)
 
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('1.29'),
-        wooToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('1.29'), wooToken.address, usdtToken.address)
 
-      await wooGuardian.checkSwapPrice(
-        utils.parseEther('1.295'),
-        wooToken.address,
-        usdtToken.address)
+      await wooGuardian.checkSwapPrice(utils.parseEther('1.295'), wooToken.address, usdtToken.address)
     })
 
     // 99% woo_price = 1.286505
     it('checkSwapPrice woo/usdt < -0.1% revert', async () => {
-      await expect(wooGuardian.checkSwapPrice(
-        utils.parseEther('1.2865'),
-        wooToken.address,
-        usdtToken.address)
-      ).to.be.revertedWith(
-        'WooGuardian: PRICE_UNRELIABLE'
-      )
+      await expect(
+        wooGuardian.checkSwapPrice(utils.parseEther('1.2865'), wooToken.address, usdtToken.address)
+      ).to.be.revertedWith('WooGuardian: PRICE_UNRELIABLE')
     })
 
     // 101% woo_price = 1.312524
     it('checkSwapPrice woo/usdt > 0.1% revert', async () => {
-      await expect(wooGuardian.checkSwapPrice(
-        utils.parseEther('1.31253'),
-        wooToken.address,
-        usdtToken.address)
-      ).to.be.revertedWith(
-        'WooGuardian: PRICE_UNRELIABLE'
-      )
+      await expect(
+        wooGuardian.checkSwapPrice(utils.parseEther('1.31253'), wooToken.address, usdtToken.address)
+      ).to.be.revertedWith('WooGuardian: PRICE_UNRELIABLE')
     })
 
     // ------ checkSwapAmount ------ //
@@ -263,28 +206,32 @@ describe('WooGuardian Test Suite 1', () => {
         btcToken.address,
         usdtToken.address,
         utils.parseEther(fromAmount.toString()),
-        utils.parseEther(toAmount.toString()))
+        utils.parseEther(toAmount.toString())
+      )
 
       toAmount = fromAmount * price * 0.991
       await wooGuardian.checkSwapAmount(
         btcToken.address,
         usdtToken.address,
         utils.parseEther(fromAmount.toString()),
-        utils.parseEther(toAmount.toString()))
+        utils.parseEther(toAmount.toString())
+      )
 
       toAmount = fromAmount * price * 1.0099
       await wooGuardian.checkSwapAmount(
         btcToken.address,
         usdtToken.address,
         utils.parseEther(fromAmount.toString()),
-        utils.parseEther(toAmount.toString()))
+        utils.parseEther(toAmount.toString())
+      )
 
       toAmount = fromAmount * price * 1.0095
       await wooGuardian.checkSwapAmount(
         btcToken.address,
         usdtToken.address,
         utils.parseEther(fromAmount.toString()),
-        utils.parseEther(toAmount.toString()))
+        utils.parseEther(toAmount.toString())
+      )
     })
 
     // 99% btc_price = 64,470.78
@@ -294,24 +241,24 @@ describe('WooGuardian Test Suite 1', () => {
       let toAmount
 
       toAmount = fromAmount * price * 0.899
-      await expect(wooGuardian.checkSwapAmount(
-        btcToken.address,
-        usdtToken.address,
-        utils.parseEther(fromAmount.toString()),
-        utils.parseEther(toAmount.toString())
-      )).to.be.revertedWith(
-        'WooGuardian: TO_AMOUNT_UNRELIABLE'
-      )
+      await expect(
+        wooGuardian.checkSwapAmount(
+          btcToken.address,
+          usdtToken.address,
+          utils.parseEther(fromAmount.toString()),
+          utils.parseEther(toAmount.toString())
+        )
+      ).to.be.revertedWith('WooGuardian: TO_AMOUNT_UNRELIABLE')
 
       toAmount = fromAmount * price * 0.895
-      await expect(wooGuardian.checkSwapAmount(
-        btcToken.address,
-        usdtToken.address,
-        utils.parseEther(fromAmount.toString()),
-        utils.parseEther(toAmount.toString())
-      )).to.be.revertedWith(
-        'WooGuardian: TO_AMOUNT_UNRELIABLE'
-      )
+      await expect(
+        wooGuardian.checkSwapAmount(
+          btcToken.address,
+          usdtToken.address,
+          utils.parseEther(fromAmount.toString()),
+          utils.parseEther(toAmount.toString())
+        )
+      ).to.be.revertedWith('WooGuardian: TO_AMOUNT_UNRELIABLE')
     })
 
     // 101% btc_price = 65,773.22
@@ -321,33 +268,30 @@ describe('WooGuardian Test Suite 1', () => {
       let toAmount
 
       toAmount = fromAmount * price * 1.011
-      await expect(wooGuardian.checkSwapAmount(
-        btcToken.address,
-        usdtToken.address,
-        utils.parseEther(fromAmount.toString()),
-        utils.parseEther(toAmount.toString())
-      )).to.be.revertedWith(
-        'WooGuardian: TO_AMOUNT_UNRELIABLE'
-      )
+      await expect(
+        wooGuardian.checkSwapAmount(
+          btcToken.address,
+          usdtToken.address,
+          utils.parseEther(fromAmount.toString()),
+          utils.parseEther(toAmount.toString())
+        )
+      ).to.be.revertedWith('WooGuardian: TO_AMOUNT_UNRELIABLE')
 
       toAmount = fromAmount * price * 1.015
-      await expect(wooGuardian.checkSwapAmount(
-        btcToken.address,
-        usdtToken.address,
-        utils.parseEther(fromAmount.toString()),
-        utils.parseEther(toAmount.toString())
-      )).to.be.revertedWith(
-        'WooGuardian: TO_AMOUNT_UNRELIABLE'
-      )
+      await expect(
+        wooGuardian.checkSwapAmount(
+          btcToken.address,
+          usdtToken.address,
+          utils.parseEther(fromAmount.toString()),
+          utils.parseEther(toAmount.toString())
+        )
+      ).to.be.revertedWith('WooGuardian: TO_AMOUNT_UNRELIABLE')
     })
   })
 
-  describe('reverts test', () => {
-  })
+  describe('reverts test', () => {})
 
-  describe('events test', () => {
-  })
+  describe('events test', () => {})
 
-  describe('onlyOwner test', () => {
-  })
+  describe('onlyOwner test', () => {})
 })
