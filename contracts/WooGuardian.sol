@@ -114,7 +114,7 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
 
         // About decimals:
         // For a sell base trade, we have quoteSize = baseSize * price
-        // For calculation convenience, the decimals of price is 18-(base.decimals+quote.decimals)
+        // For calculation convenience, the decimals of price is 18-base.decimals+quote.decimals
         // If we have price = basePrice / quotePrice, then decimals of tokenPrice should be 36-token.decimals()
         // We use chainlink oracle price as token reference price, which decimals is chainlinkPrice.decimals()
         // We should multiply it by 10e(36-(token.decimals+chainlinkPrice.decimals)), which is refPriceFixCoeff
