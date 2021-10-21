@@ -207,7 +207,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         require(baseAmount >= minBaseAmount, 'WooPP: baseAmount<minBaseAmount');
 
         uint256 balanceBefore = IERC20(baseToken).balanceOf(to);
-
         TransferHelper.safeTransfer(baseToken, to, baseAmount);
         require(IERC20(baseToken).balanceOf(to).sub(balanceBefore) >= minBaseAmount, 'WooPP: INSUFF_OUTPUT_AMOUNT');
 
