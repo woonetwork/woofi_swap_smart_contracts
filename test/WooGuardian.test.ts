@@ -61,7 +61,7 @@ const OVERFLOW_UINT64 = BigNumber.from(10).pow(18).mul(19)
 const POW_18 = BigNumber.from(10).pow(18)
 
 describe('WooPP Test Suite 1', () => {
-  const [owner, user1, user2, wooracle, ] = new MockProvider().getWallets()
+  const [owner, user1, user2, wooracle] = new MockProvider().getWallets()
 
   let quoteChainLinkRefOracle: Contract
   let base1ChainLinkRefOracle: Contract
@@ -77,7 +77,7 @@ describe('WooPP Test Suite 1', () => {
     let wooGuardian: Contract
 
     beforeEach('deploy WooPP', async () => {
-        wooGuardian = await deployContract(owner, WooGuardian, [quoteChainLinkRefOracle.address])
+      wooGuardian = await deployContract(owner, WooGuardian, [quoteChainLinkRefOracle.address])
     })
 
     it('ctor', async () => {
