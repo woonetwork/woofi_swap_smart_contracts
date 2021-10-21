@@ -42,6 +42,7 @@ import WooRouter from '../build/WooRouter.json'
 import IERC20 from '../build/IERC20.json'
 import TestToken from '../build/TestToken.json'
 import IWooracle from '../build/IWooracle.json'
+import IWooGuardian from '../build/IWooGuardian.json'
 
 use(solidity)
 
@@ -63,23 +64,32 @@ const ONE = BigNumber.from(10).pow(18)
 describe('WooRouter tests', () => {
   const [owner, user, approveTarget, swapTarget] = new MockProvider().getWallets()
 
+  let baseToken: Contract
+  let quoteToken: Contract
+  let wooToken: Contract
+  let wooGuardian: Contract
+  let wooracle: Contract
+
+  before('Deploy ERC20', async () => {
+    baseToken = await deployContract(owner, TestToken, [])
+    quoteToken = await deployContract(owner, TestToken, [])
+    wooToken = await deployContract(owner, TestToken, [])
+
+    wooracle = await deployMockContract(owner, IWooracle.abi)
+
+    wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
+    await wooGuardian.mock.checkSwapPrice.returns()
+    await wooGuardian.mock.checkSwapAmount.returns()
+  })
+
   describe('ctor, init & basic func', () => {
     let wooracle: Contract
     let wooPP: Contract
     let wooRouter: Contract
-    let baseToken: Contract
-    let quoteToken: Contract
-    let wooToken: Contract
-
-    before('Deploy ERC20', async () => {
-      baseToken = await deployContract(owner, TestToken, [])
-      quoteToken = await deployContract(owner, TestToken, [])
-      wooToken = await deployContract(owner, TestToken, [])
-    })
 
     beforeEach('Deploy WooRouter', async () => {
       wooracle = await deployContract(owner, Wooracle, [])
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
+      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, wooGuardian.address])
       wooRouter = await deployContract(owner, WooRouter, [WBNB_ADDR, wooPP.address])
     })
 
@@ -118,7 +128,11 @@ describe('WooRouter tests', () => {
 
     it('setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
-      let anotherWooPP = await deployContract(owner, WooPP, [anotherQuoteToken.address, wooracle.address, ZERO_ADDR])
+      let anotherWooPP = await deployContract(owner, WooPP, [
+        anotherQuoteToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])
       await wooRouter.setPool(anotherWooPP.address)
       expect(await wooRouter.quoteToken()).to.eq(anotherQuoteToken.address)
       expect(await wooRouter.wooPool()).to.eq(anotherWooPP.address)
@@ -136,7 +150,11 @@ describe('WooRouter tests', () => {
 
     it('Emit WooPoolChanged when setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
-      let anotherWooPP = await deployContract(owner, WooPP, [anotherQuoteToken.address, wooracle.address, ZERO_ADDR])
+      let anotherWooPP = await deployContract(owner, WooPP, [
+        anotherQuoteToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])
       await wooRouter.setPool(anotherWooPP.address)
       await expect(wooRouter.setPool(anotherWooPP.address))
         .to.emit(wooRouter, 'WooPoolChanged')
@@ -145,7 +163,11 @@ describe('WooRouter tests', () => {
 
     it('Prevents non-owners from setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
-      let anotherWooPP = await deployContract(owner, WooPP, [anotherQuoteToken.address, wooracle.address, ZERO_ADDR])
+      let anotherWooPP = await deployContract(owner, WooPP, [
+        anotherQuoteToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])
       await expect(wooRouter.connect(user).setPool(anotherWooPP.address)).to.be.revertedWith(
         'Ownable: caller is not the owner'
       )
@@ -293,14 +315,14 @@ describe('WooRouter tests', () => {
     })
 
     beforeEach('Deploy WooRouter', async () => {
-      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, ZERO_ADDR])
+      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, wooGuardian.address])
       wooRouter = await deployContract(owner, WooRouter, [WBNB_ADDR, wooPP.address])
 
       const threshold = 0
       const lpFeeRate = 0
       const R = BigNumber.from(0)
-      await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
-      await wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, R, ZERO_ADDR)
+      await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R)
+      await wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, R)
 
       await btcToken.mint(wooPP.address, ONE.mul(10))
       await usdtToken.mint(wooPP.address, ONE.mul(5000000))
@@ -443,20 +465,11 @@ describe('WooRouter tests', () => {
   })
 
   describe('WooPP Paused', () => {
-    let wooracle: Contract
     let wooPP: Contract
     let wooRouter: Contract
-    let baseToken: Contract
-    let quoteToken: Contract
-
-    before('Deploy ERC20', async () => {
-      baseToken = await deployContract(owner, TestToken, [])
-      quoteToken = await deployContract(owner, TestToken, [])
-    })
 
     beforeEach('Deploy WooRouter', async () => {
-      wooracle = await deployContract(owner, Wooracle, [])
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, ZERO_ADDR])
+      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, wooGuardian.address])
       wooRouter = await deployContract(owner, WooRouter, [WBNB_ADDR, wooPP.address])
 
       await baseToken.mint(wooPP.address, ONE.mul(3))
