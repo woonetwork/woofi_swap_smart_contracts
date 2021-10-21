@@ -84,9 +84,6 @@ describe('WooPP Test Suite 2', () => {
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
     await wooGuardian.mock.checkSwapAmount.returns()
-
-    // await usdtToken.mint(owner.address, ONE.mul(100000));
-    // await btcToken.mint(owner.address, ONE.mul(1));
   })
 
   describe('swap func', () => {
@@ -147,7 +144,7 @@ describe('WooPP Test Suite 2', () => {
       const baseAmount = ONE.mul(1)
       const minQuoteAmount = ONE.mul(BTC_PRICE).mul(999).div(1000)
 
-      const preUsdtSize = await wooPP.poolSize(usdtToken.address)
+      const preWooppUsdtSize = await wooPP.poolSize(usdtToken.address)
       const preBtcSize = await wooPP.poolSize(btcToken.address)
 
       const quoteAmount = await wooPP.querySellBase(btcToken.address, baseAmount)
@@ -155,11 +152,11 @@ describe('WooPP Test Suite 2', () => {
       await btcToken.connect(user1).approve(wooPP.address, ONE.mul(100))
       await wooPP.connect(user1).sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
 
-      const usdtSize = await wooPP.poolSize(usdtToken.address)
-      expect(preUsdtSize.sub(usdtSize)).to.eq(quoteAmount)
+      const wppUsdtSize = await wooPP.poolSize(usdtToken.address)
+      expect(preWooppUsdtSize.sub(wppUsdtSize)).to.eq(quoteAmount)
 
       const userUsdt = await usdtToken.balanceOf(user1.address)
-      expect(preUsdtSize.sub(usdtSize)).to.eq(userUsdt.sub(preUserUsdt))
+      expect(preWooppUsdtSize.sub(wppUsdtSize)).to.eq(userUsdt.sub(preUserUsdt))
 
       const btcSize = await wooPP.poolSize(btcToken.address)
       expect(btcSize.sub(preBtcSize)).to.eq(baseAmount)
@@ -173,7 +170,7 @@ describe('WooPP Test Suite 2', () => {
       console.log('owner usdt: ', utils.formatEther(await usdtToken.balanceOf(owner.address)))
       console.log('owner btc: ', utils.formatEther(await btcToken.balanceOf(owner.address)))
 
-      console.log('wooPP usdt: ', utils.formatEther(preUsdtSize), utils.formatEther(usdtSize))
+      console.log('wooPP usdt: ', utils.formatEther(preWooppUsdtSize), utils.formatEther(wppUsdtSize))
       console.log('wooPP btc: ', utils.formatEther(preBtcSize), utils.formatEther(btcSize))
     })
 
@@ -795,6 +792,39 @@ describe('WooPP Test Suite 2', () => {
 
     it('Prevents non-strategists from unpause', async () => {
       await expect(wooPP.connect(user2).unpause()).to.be.revertedWith('WooPP: NOT_STRATEGIST')
+    })
+
+    it('paused accuracy1', async () => {
+      expect(await wooPP.paused()).to.eq(false)
+      await wooPP.pause()
+      expect(await wooPP.paused()).to.eq(true)
+    })
+
+    it('paused accuracy2', async () => {
+      expect(await wooPP.paused()).to.eq(false)
+      await wooPP.pause()
+      expect(await wooPP.paused()).to.eq(true)
+      await wooPP.unpause()
+      expect(await wooPP.paused()).to.eq(false)
+    })
+
+    it('paused revert1', async () => {
+      await wooPP.pause()
+      expect(await wooPP.paused()).to.eq(true)
+
+      await expect(wooPP.querySellBase(btcToken.address, ONE)).to.be.revertedWith('Pausable: paused')
+
+      await expect(wooPP.querySellQuote(btcToken.address, ONE.mul(50000))).to.be.revertedWith('Pausable: paused')
+
+      // await wooPP.unpause()
+
+      await expect(wooPP.sellBase(btcToken.address, ONE, ONE.mul(49900), owner.address, ZERO_ADDR)).to.be.revertedWith(
+        'Pausable: paused'
+      )
+
+      await expect(wooPP.sellQuote(btcToken.address, ONE.mul(50500), ONE, owner.address, ZERO_ADDR)).to.be.revertedWith(
+        'Pausable: paused'
+      )
     })
   })
 })
