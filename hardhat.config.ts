@@ -6,10 +6,10 @@ import '@nomiclabs/hardhat-solhint'
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
 
-import { resolve } from "path";
-import { config as dotenvConfig } from "dotenv";
+import { resolve } from 'path'
+import { config as dotenvConfig } from 'dotenv'
 
-dotenvConfig({ path: resolve(__dirname, "./.env") });
+dotenvConfig({ path: resolve(__dirname, './.env') })
 
 const chainIds = {
   ganache: 1337,
@@ -70,9 +70,9 @@ export default {
     target: 'ethers-v5',
   },
   etherscan: {
-    apiKey: process.env.SCAN_API
+    apiKey: process.env.SCAN_API,
   },
   mocha: {
     timeout: 10000,
-  }
+  },
 }

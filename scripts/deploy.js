@@ -13,7 +13,7 @@ async function main() {
   // manually to make sure everything is compiled
   // await hre.run('compile');
   // await hre.run('build-test');
-  const usdt = "0x...."
+  const usdt = '0x....'
 
   // We get the contract to deploy
   const Wooracle = await hre.ethers.getContractFactory('Wooracle')
@@ -26,7 +26,6 @@ async function main() {
 
   const WooGuardian = await hre.ethers.getContractFactory('WooGuardian')
   const wooGuardian = await WooGuardian.deploy()
-
 }
 
 // We recommend this pattern to be able to use async/await everywhere
