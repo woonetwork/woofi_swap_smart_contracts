@@ -191,29 +191,6 @@ contract RewardManager is InitializableOwnable, IRewardManager {
         emit PriceOracleUpdated(newPriceOracle);
     }
 
-    function setChainlinkRefOracle(address newRewardChainlinkRefOracle, address newQuoteChainlinkRefOracle)
-        external
-        onlyApproved
-    {
-        rewardChainlinkRefOracle = newRewardChainlinkRefOracle;
-        quoteChainlinkRefOracle = newQuoteChainlinkRefOracle;
-        if (rewardChainlinkRefOracle != address(0) && quoteChainlinkRefOracle != address(0)) {
-            uint256 rewardDecimalsToFix = uint256(ERC20(rewardToken).decimals()).add(
-                uint256(AggregatorV3Interface(rewardChainlinkRefOracle).decimals())
-            );
-            uint256 rewardRefPriceFixCoeff = 10**(uint256(36).sub(rewardDecimalsToFix));
-            require(rewardRefPriceFixCoeff < type(uint96).max, 'RewardManager: PriceFixCoeff_OVERFLOW');
-            uint256 quoteDecimalsToFix = uint256(quoteDecimals).add(
-                uint256(AggregatorV3Interface(quoteChainlinkRefOracle).decimals())
-            );
-            uint256 quoteRefPriceFixCoeff = 10**(uint256(36).sub(quoteDecimalsToFix));
-            require(quoteRefPriceFixCoeff < type(uint96).max, 'RewardManager: PriceFixCoeff_OVERFLOW');
-            refPriceFixCoeff = rewardRefPriceFixCoeff.divFloor(quoteRefPriceFixCoeff);
-        }
-
-        emit ChainlinkRefOracleUpdated(newRewardChainlinkRefOracle, newQuoteChainlinkRefOracle);
-    }
-
     function isPriceReliable(uint256 price) internal view returns (bool) {
         if (rewardChainlinkRefOracle == address(0) || quoteChainlinkRefOracle == address(0)) {
             // NOTE: price checking disabled

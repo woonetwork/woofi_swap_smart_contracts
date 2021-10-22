@@ -542,10 +542,6 @@ describe('WooPP Test Suite 1', () => {
       expect(await wooPP.rewardManager()).to.eq(rewardManager.address)
     })
 
-    it('setRewardManager revert1', async () => {
-      await expect(wooPP.setRewardManager(ZERO_ADDR)).to.be.revertedWith('WooPP: newRewardManager_ZERO_ADDR')
-    })
-
     it('setRewardManager event1', async () => {
       await expect(wooPP.setRewardManager(rewardManager.address))
         .to.emit(wooPP, 'RewardManagerUpdated')
@@ -553,8 +549,4 @@ describe('WooPP Test Suite 1', () => {
     })
   })
 
-  // TODO: (@qinchao)
-  // 1. only owner and strategist, access control unit tests
-  // 2. sell, buy quote and base tokens
-  // 3. query amount of quote and base tokens
 })

@@ -548,15 +548,6 @@ describe('WooPP Test Suite 2', () => {
         .withArgs(newWooracle.address)
     })
 
-    it('setChainlinkRefOracle', async () => {
-      // TODO: (@qinchao)
-      // test point:
-      // 1.succeed function process
-      // 2.require(token != address(0), 'WooPP: token_ZERO_ADDR');
-      // 3.require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
-      // 4.emit ChainlinkRefOracleUpdated(token, newChainlinkRefOracle);
-    })
-
     it('setRewardManager', async () => {
       await wooPP.connect(user1).setRewardManager(user2.address)
       expect(await wooPP.rewardManager()).to.be.equal(user2.address)
@@ -564,12 +555,6 @@ describe('WooPP Test Suite 2', () => {
 
     it('Prevents non-strategists from setRewardManager', async () => {
       await expect(wooPP.connect(user2).setRewardManager(user2.address)).to.be.revertedWith('WooPP: NOT_STRATEGIST')
-    })
-
-    it('setRewardManager reverted with zero addr', async () => {
-      await expect(wooPP.connect(user1).setRewardManager(ZERO_ADDR)).to.be.revertedWith(
-        'WooPP: newRewardManager_ZERO_ADDR'
-      )
     })
 
     it('setRewardManager emit RewardManagerUpdated event', async () => {
@@ -614,7 +599,7 @@ describe('WooPP Test Suite 2', () => {
       let R = BigNumber.from(0)
 
       await expect(wooPP.addBaseToken(usdtToken.address, threshold, lpFeeRate, R)).to.be.revertedWith(
-        'WooPP: BASE_TOKEN_INVALID'
+        'WooPP: baseToken==quoteToken'
       )
     })
 

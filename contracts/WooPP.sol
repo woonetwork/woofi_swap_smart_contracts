@@ -261,7 +261,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     /// @dev Set the rewardManager.
     /// @param newRewardManager the reward manager
     function setRewardManager(address newRewardManager) external nonReentrant onlyStrategist {
-        require(newRewardManager != address(0), 'WooPP: newRewardManager_ZERO_ADDR');
         rewardManager = newRewardManager;
         emit RewardManagerUpdated(newRewardManager);
     }
@@ -282,9 +281,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         require(threshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
         require(lpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE_OUT_OF_RANGE');
         require(R <= 1e18, 'WooPP: R_OUT_OF_RANGE');
-
-        // TODO (qinchao)
-        // require(wooGuardian.refInfo[chainlinkRefOracle] != address(0), 'WooPP: baseToken_RefOracle_INVALID');
 
         TokenInfo memory info = tokenInfo[baseToken];
         require(!info.isValid, 'WooPP: TOKEN_ALREADY_EXISTS');
