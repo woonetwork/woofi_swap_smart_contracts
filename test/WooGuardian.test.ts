@@ -114,10 +114,10 @@ describe('WooGuardian Test Suite 1', () => {
     )
   })
 
-  describe('', () => {
+  describe('check func acc and revert test', () => {
     let wooGuardian: Contract
 
-    before('deploy WooPP', async () => {
+    before('deploy WooGuardian', async () => {
       wooGuardian = await deployContract(owner, WooGuardian, [DEFAULT_BOUND])
       await wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
       await wooGuardian.setToken(btcToken.address, btcChainLinkRefOracle.address)
@@ -289,9 +289,94 @@ describe('WooGuardian Test Suite 1', () => {
     })
   })
 
-  describe('reverts test', () => {})
+  describe('reverts test', () => {
+    let wooGuardian: Contract
 
-  describe('events test', () => {})
+    before('deploy WooGuardian', async () => {
+      wooGuardian = await deployContract(owner, WooGuardian, [DEFAULT_BOUND])
+      await wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
+      await wooGuardian.setToken(btcToken.address, btcChainLinkRefOracle.address)
+      await wooGuardian.setToken(wooToken.address, wooChainLinkRefOracle.address)
+    })
 
-  describe('onlyOwner test', () => {})
+    it('Prevents zero addr from checkSwapPrice', async () => {
+      await expect(
+        wooGuardian.checkSwapPrice(utils.parseEther('64470'), ZERO_ADDR, usdtToken.address)
+      ).to.be.revertedWith('WooGuardian: fromToken_ZERO_ADDR')
+
+      await expect(
+        wooGuardian.checkSwapPrice(utils.parseEther('64470'), btcToken.address, ZERO_ADDR)
+      ).to.be.revertedWith('WooGuardian: toToken_ZERO_ADDR')
+    })
+
+    it('Prevents zero addr from checkSwapAmount', async () => {
+      let fromAmount = 1.0
+      let price = 65122
+      let toAmount
+      toAmount = fromAmount * price * 0.899
+
+      await expect(
+        wooGuardian.checkSwapAmount(
+          ZERO_ADDR,
+          usdtToken.address,
+          utils.parseEther(fromAmount.toString()),
+          utils.parseEther(toAmount.toString())
+        )
+      ).to.be.revertedWith('WooGuardian: fromToken_ZERO_ADDR')
+
+      await expect(
+        wooGuardian.checkSwapAmount(
+          btcToken.address,
+          ZERO_ADDR,
+          utils.parseEther(fromAmount.toString()),
+          utils.parseEther(toAmount.toString())
+        )
+      ).to.be.revertedWith('WooGuardian: toToken_ZERO_ADDR')
+    })
+
+    it('Prevents zero addr from setToken', async () => {
+      await expect(
+        wooGuardian.setToken(ZERO_ADDR, usdtChainLinkRefOracle.address)
+      ).to.be.revertedWith('WooGuardian: token_ZERO_ADDR')
+    })
+  })
+
+  describe('events test', () => {
+    let wooGuardian: Contract
+
+    before('deploy WooGuardian', async () => {
+      wooGuardian = await deployContract(owner, WooGuardian, [DEFAULT_BOUND])
+      await wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
+      await wooGuardian.setToken(btcToken.address, btcChainLinkRefOracle.address)
+      await wooGuardian.setToken(wooToken.address, wooChainLinkRefOracle.address)
+    })
+
+    it('setToken emit ChainlinkRefOracleUpdated', async () => {
+      await expect(
+        wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
+      ).to.emit(wooGuardian, 'ChainlinkRefOracleUpdated').withArgs(
+        usdtToken.address,
+        usdtChainLinkRefOracle.address
+      )
+    })
+  })
+
+  describe('onlyOwner test', () => {
+    let wooGuardian: Contract
+
+    before('deploy WooGuardian', async () => {
+      wooGuardian = await deployContract(owner, WooGuardian, [DEFAULT_BOUND])
+      await wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
+      await wooGuardian.setToken(btcToken.address, btcChainLinkRefOracle.address)
+      await wooGuardian.setToken(wooToken.address, wooChainLinkRefOracle.address)
+    })
+
+    it('Prevents non-owners from setToken', async () => {
+      expect(await wooGuardian._OWNER_()).to.eq(owner.address)
+
+      await expect(
+        wooGuardian.connect(user1).setToken(usdtToken.address, usdtChainLinkRefOracle.address)
+      ).to.be.revertedWith('InitializableOwnable: NOT_OWNER')
+    })
+  })
 })

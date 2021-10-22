@@ -100,7 +100,7 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
     }
 
     function setToken(address token, address chainlinkRefOracle) external onlyOwner {
-        require(token != address(0), 'WooPP: token_ZERO_ADDR');
+        require(token != address(0), 'WooGuardian: token_ZERO_ADDR');
         RefInfo storage info = refInfo[token];
         info.chainlinkRefOracle = chainlinkRefOracle;
         info.refPriceFixCoeff = _refPriceFixCoeff(token, chainlinkRefOracle);
