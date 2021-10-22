@@ -548,5 +548,4 @@ describe('WooPP Test Suite 1', () => {
         .withArgs(rewardManager.address)
     })
   })
-
 })
