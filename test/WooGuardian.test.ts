@@ -114,7 +114,7 @@ describe('WooGuardian Test Suite 1', () => {
     )
   })
 
-  describe('check func acc and revert test', () => {
+  describe('check func accuracies and reverts test', () => {
     let wooGuardian: Contract
 
     before('deploy WooGuardian', async () => {
@@ -130,6 +130,21 @@ describe('WooGuardian Test Suite 1', () => {
 
     it('ctor accuracy2', async () => {
       expect(await wooGuardian.priceBound()).to.eq(DEFAULT_BOUND)
+
+      let testToken = await deployContract(owner, TestToken, [])
+      let refInfo = await wooGuardian.refInfo(testToken.address)
+      expect(refInfo.chainlinkRefOracle).to.eq(ZERO_ADDR)
+      expect(refInfo.refPriceFixCoeff).to.eq(0)
+    })
+
+    it('setToken accuracy', async () => {
+      let testToken = await deployContract(owner, TestToken, [])
+      let testChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
+      await testChainLinkRefOracle.mock.decimals.returns(8)
+      await wooGuardian.setToken(testToken.address, testChainLinkRefOracle.address)
+
+      let refInfo = await wooGuardian.refInfo(testToken.address)
+      expect(refInfo.chainlinkRefOracle).to.be.eq(testChainLinkRefOracle.address)
     })
 
     it('checkSwapPrice btc/usdt accuracy1', async () => {
@@ -299,6 +314,20 @@ describe('WooGuardian Test Suite 1', () => {
       await wooGuardian.setToken(wooToken.address, wooChainLinkRefOracle.address)
     })
 
+    it('ctor reverted with priceBound out of range', async () => {
+      let normalPriceBound = BigNumber.from(10).pow(18)
+      await deployContract(owner, WooGuardian, [normalPriceBound])
+
+      let outRangePriceBound = BigNumber.from(10).pow(19)
+      await expect(deployContract(owner, WooGuardian, [outRangePriceBound]))
+        .to.be.revertedWith('WooGuardian: priceBound out of range')
+    })
+
+    it('initOwner should be executed once', async () => {
+      await expect(wooGuardian.initOwner(user1.address))
+        .to.be.revertedWith('InitializableOwnable: SHOULD_NOT_BE_INITIALIZED')
+    })
+
     it('Prevents zero addr from checkSwapPrice', async () => {
       await expect(
         wooGuardian.checkSwapPrice(utils.parseEther('64470'), ZERO_ADDR, usdtToken.address)
@@ -338,6 +367,55 @@ describe('WooGuardian Test Suite 1', () => {
       await expect(wooGuardian.setToken(ZERO_ADDR, usdtChainLinkRefOracle.address)).to.be.revertedWith(
         'WooGuardian: token_ZERO_ADDR'
       )
+    })
+
+    it('Prevents refPriceFixCoeff out of range', async () => {
+      // 1e29 greater than type(uint96).max, will be reverted
+      let testToken = await deployMockContract(owner, TestToken.abi)
+      await testToken.mock.decimals.returns(3)
+
+      let testChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
+      await testChainLinkRefOracle.mock.decimals.returns(4)
+      await expect(wooGuardian.setToken(testToken.address, testChainLinkRefOracle.address)).to.be.reverted
+    })
+
+    it('Prevents oracle zero addr from _refPrice', async () => {
+      let fromToken = await deployContract(owner, TestToken, [])
+      await wooGuardian.setToken(fromToken.address, ZERO_ADDR)
+
+      let toToken = await deployContract(owner, TestToken, [])
+      await wooGuardian.setToken(toToken.address, ZERO_ADDR)
+
+      let testChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
+      await testChainLinkRefOracle.mock.decimals.returns(8)
+
+      await expect(wooGuardian.checkSwapPrice(utils.parseEther('65000'), fromToken.address, toToken.address))
+        .to.be.revertedWith('WooGuardian: fromToken_RefOracle_INVALID')
+
+      await wooGuardian.setToken(fromToken.address, testChainLinkRefOracle.address)
+      await expect(wooGuardian.checkSwapPrice(utils.parseEther('65000'), fromToken.address, toToken.address))
+        .to.be.revertedWith('WooGuardian: toToken_RefOracle_INVALID')
+    })
+
+    it('Prevents invalid chainlink price from _refPrice', async () => {
+      let fromChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
+      await fromChainLinkRefOracle.mock.decimals.returns(8)
+      let fromToken = await deployContract(owner, TestToken, [])
+      await wooGuardian.setToken(fromToken.address, fromChainLinkRefOracle.address)
+
+      let toChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
+      await toChainLinkRefOracle.mock.decimals.returns(8)
+      let toToken = await deployContract(owner, TestToken, [])
+      await wooGuardian.setToken(toToken.address, toChainLinkRefOracle.address)
+
+      await fromChainLinkRefOracle.mock.latestRoundData.returns(0, -100000000, 0, 0, 0)
+      await expect(wooGuardian.checkSwapPrice(utils.parseEther('65000'), fromToken.address, toToken.address))
+        .to.be.revertedWith('WooGuardian: INVALID_CHAINLINK_PRICE')
+
+      await fromChainLinkRefOracle.mock.latestRoundData.returns(0, 100000000, 0, 0, 0)
+      await toChainLinkRefOracle.mock.latestRoundData.returns(0, -100000000, 0, 0, 0)
+      await expect(wooGuardian.checkSwapPrice(utils.parseEther('65000'), fromToken.address, toToken.address))
+        .to.be.revertedWith('WooGuardian: INVALID_CHAINLINK_QUOTE_PRICE')
     })
   })
 

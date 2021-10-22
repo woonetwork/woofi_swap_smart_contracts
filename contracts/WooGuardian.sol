@@ -62,7 +62,7 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
 
     constructor(uint256 newPriceBound) public {
         initOwner(msg.sender);
-        require(priceBound <= 1e18, 'WooGuardian: priceBound out of range');
+        require(newPriceBound <= 1e18, 'WooGuardian: priceBound out of range');
         priceBound = newPriceBound;
     }
 
