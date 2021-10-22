@@ -146,7 +146,7 @@ describe('WooPP Test Suite 1', () => {
     })
 
     it('addBaseToken revert2', async () => {
-      await expect(wooPP.addBaseToken(quoteToken.address, 1, 2, 3)).to.be.revertedWith('WooPP: BASE_TOKEN_INVALID')
+      await expect(wooPP.addBaseToken(quoteToken.address, 1, 2, 3)).to.be.revertedWith('WooPP: baseToken==quoteToken')
     })
 
     it('addBaseToken revert3', async () => {
