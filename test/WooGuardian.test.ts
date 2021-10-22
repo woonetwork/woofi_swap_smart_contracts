@@ -335,9 +335,9 @@ describe('WooGuardian Test Suite 1', () => {
     })
 
     it('Prevents zero addr from setToken', async () => {
-      await expect(
-        wooGuardian.setToken(ZERO_ADDR, usdtChainLinkRefOracle.address)
-      ).to.be.revertedWith('WooGuardian: token_ZERO_ADDR')
+      await expect(wooGuardian.setToken(ZERO_ADDR, usdtChainLinkRefOracle.address)).to.be.revertedWith(
+        'WooGuardian: token_ZERO_ADDR'
+      )
     })
   })
 
@@ -352,12 +352,9 @@ describe('WooGuardian Test Suite 1', () => {
     })
 
     it('setToken emit ChainlinkRefOracleUpdated', async () => {
-      await expect(
-        wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
-      ).to.emit(wooGuardian, 'ChainlinkRefOracleUpdated').withArgs(
-        usdtToken.address,
-        usdtChainLinkRefOracle.address
-      )
+      await expect(wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address))
+        .to.emit(wooGuardian, 'ChainlinkRefOracleUpdated')
+        .withArgs(usdtToken.address, usdtChainLinkRefOracle.address)
     })
   })
 
