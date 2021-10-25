@@ -166,11 +166,11 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         TransferHelper.safeTransferFrom(baseToken, from, address(this), baseAmount);
 
         quoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
+        wooGuardian.checkSwapAmount(baseToken, quoteToken, baseAmount, quoteAmount);
+
         uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
         quoteAmount = quoteAmount.sub(lpFee);
         require(quoteAmount >= minQuoteAmount, 'WooPP: quoteAmount<minQuoteAmount');
-
-        wooGuardian.checkSwapAmount(baseToken, quoteToken, baseAmount, quoteAmount.add(lpFee));
 
         uint256 balanceBefore = IERC20(quoteToken).balanceOf(to);
         TransferHelper.safeTransfer(quoteToken, to, quoteAmount);
@@ -209,7 +209,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         TransferHelper.safeTransferFrom(quoteToken, from, address(this), quoteAmount);
 
         uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
-        baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount.sub(lpFee), baseInfo, quoteInfo);
+        quoteAmount = quoteAmount.sub(lpFee);
+        baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
         require(baseAmount >= minBaseAmount, 'WooPP: baseAmount<minBaseAmount');
 
         wooGuardian.checkSwapAmount(quoteToken, baseToken, quoteAmount, baseAmount);
