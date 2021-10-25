@@ -451,27 +451,29 @@ describe('WooPP Test Suite 1', () => {
         .withArgs(baseToken1.address, user1.address, 111)
     })
 
-    it('withdrawToOwner accuracy1', async () => {
+    it('withdrawAllToOwner accuracy1', async () => {
       expect(await baseToken1.balanceOf(owner.address)).to.eq(100)
       expect(await baseToken1.balanceOf(wooPP.address)).to.eq(10000)
 
-      await wooPP.withdrawToOwner(baseToken1.address, 200)
+      await wooPP.withdrawAllToOwner(baseToken1.address)
 
       // await expect(() => wooPP.withdraw(baseToken1.address, user1.address, 2000))
       //     .to.changeTokenBalances(baseToken1, [wooPP, user1], [-2000, 2000]);
 
-      expect(await baseToken1.balanceOf(owner.address)).to.eq(100 + 200)
-      expect(await baseToken1.balanceOf(wooPP.address)).to.eq(10000 - 200)
+      expect(await baseToken1.balanceOf(owner.address)).to.eq(100 + 10000)
+      expect(await baseToken1.balanceOf(wooPP.address)).to.eq(0)
     })
 
-    it('withdrawToOwner revert1', async () => {
-      await expect(wooPP.withdrawToOwner(ZERO_ADDR, 100)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
+    it('withdrawAllToOwner revert1', async () => {
+      await expect(wooPP.withdrawAllToOwner(ZERO_ADDR)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
     })
 
-    it('withdrawToOwner event1', async () => {
-      await expect(wooPP.withdrawToOwner(baseToken1.address, 123))
+    it('withdrawAllToOwner event1', async () => {
+      const poolSize = await wooPP.poolSize(baseToken1.address)
+      console.log(poolSize)
+      await expect(wooPP.withdrawAllToOwner(baseToken1.address))
         .to.emit(wooPP, 'Withdraw')
-        .withArgs(baseToken1.address, owner.address, 123)
+        .withArgs(baseToken1.address, owner.address, poolSize)
     })
   })
 
@@ -508,8 +510,8 @@ describe('WooPP Test Suite 1', () => {
     it('pooSize accuracy', async () => {
       expect(await wooPP.poolSize(quoteToken.address)).to.eq(30000)
       expect(await wooPP.poolSize(baseToken1.address)).to.eq(10000)
-      await wooPP.withdrawToOwner(baseToken1.address, 1234)
-      expect(await wooPP.poolSize(baseToken1.address)).to.eq(10000 - 1234)
+      await wooPP.withdrawAllToOwner(baseToken1.address)
+      expect(await wooPP.poolSize(baseToken1.address)).to.eq(0)
     })
 
     it('wooracle accuracy', async () => {

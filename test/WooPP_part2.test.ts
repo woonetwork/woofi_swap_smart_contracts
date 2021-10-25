@@ -494,24 +494,25 @@ describe('WooPP Test Suite 2', () => {
     it('withdrawToOwner', async () => {
       expect(await btcToken.balanceOf(wooPP.address)).to.be.equal(WOOPP_BTC_BALANCE)
       expect(await btcToken.balanceOf(owner.address)).to.be.equal(0)
-      await wooPP.connect(user1).withdrawToOwner(btcToken.address, ONE)
-      expect(await btcToken.balanceOf(owner.address)).to.be.equal(ONE)
+      await wooPP.connect(user1).withdrawAllToOwner(btcToken.address)
+      expect(await btcToken.balanceOf(owner.address)).to.be.equal(WOOPP_BTC_BALANCE)
     })
 
     it('Prevents non-strategists from withdrawToOwner', async () => {
-      await expect(wooPP.connect(user2).withdrawToOwner(btcToken.address, ONE)).to.be.revertedWith(
+      await expect(wooPP.connect(user2).withdrawAllToOwner(btcToken.address)).to.be.revertedWith(
         'WooPP: NOT_STRATEGIST'
       )
     })
 
     it('Prevents zero addr from withdrawToOwner', async () => {
-      await expect(wooPP.withdrawToOwner(ZERO_ADDR, ONE)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
+      await expect(wooPP.withdrawAllToOwner(ZERO_ADDR)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
     })
 
     it('withdrawToOwner emit Withdraw event', async () => {
-      await expect(wooPP.connect(user1).withdrawToOwner(btcToken.address, ONE))
+      const poolSize = await wooPP.poolSize(btcToken.address)
+      await expect(wooPP.connect(user1).withdrawAllToOwner(btcToken.address))
         .to.emit(wooPP, 'Withdraw')
-        .withArgs(btcToken.address, owner.address, ONE)
+        .withArgs(btcToken.address, owner.address, poolSize)
     })
 
     it('setPairsInfo', async () => {

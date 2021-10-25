@@ -363,18 +363,27 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         address token,
         address to,
         uint256 amount
-    ) external nonReentrant onlyOwner {
+    ) public nonReentrant onlyOwner {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');
         require(to != address(0), 'WooPP: to_ZERO_ADDR');
         TransferHelper.safeTransfer(token, to, amount);
         emit Withdraw(token, to, amount);
     }
 
+    function withdrawAll(
+        address token,
+        address to
+    ) external nonReentrant onlyOwner {
+        withdraw(token, to, IERC20(token).balanceOf(address(this)));
+    }
+
     /// @dev Withdraw the token to the OWNER address
     /// @param token the token
-    /// @param amount the amount to address
-    function withdrawToOwner(address token, uint256 amount) external nonReentrant onlyStrategist {
+    function withdrawAllToOwner(
+        address token
+    ) external nonReentrant onlyStrategist {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');
+        uint256 amount = IERC20(token).balanceOf(address(this));
         TransferHelper.safeTransfer(token, _OWNER_, amount);
         emit Withdraw(token, _OWNER_, amount);
     }
