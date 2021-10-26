@@ -32,12 +32,11 @@
 */
 
 import { expect, use } from 'chai'
-import { Contract } from 'ethers'
 import { deployContract, solidity } from 'ethereum-waffle'
 import { ethers } from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-
-import InitializableOwnable from '../artifacts/contracts/libraries/InitializableOwnable.sol/InitializableOwnable.json'
+import { InitializableOwnable } from '../typechain'
+import InitializableOwnableArtifact from '../artifacts/contracts/libraries/InitializableOwnable.sol/InitializableOwnable.json'
 
 use(solidity)
 
@@ -46,14 +45,12 @@ const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 describe('InitializableOwnable', () => {
   let owner: SignerWithAddress
   let anotherOwner: SignerWithAddress
-  let initOwnable: Contract
 
-  before(async () => {
-    ;[owner, anotherOwner] = await ethers.getSigners()
-  })
+  let initOwnable: InitializableOwnable
 
   beforeEach(async () => {
-    initOwnable = await deployContract(owner, InitializableOwnable, [])
+    [owner, anotherOwner] = await ethers.getSigners()
+    initOwnable = (await deployContract(owner, InitializableOwnableArtifact, [])) as InitializableOwnable
   })
 
   it('_OWNER_ should be zero address when deployed', async () => {
