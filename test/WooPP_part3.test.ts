@@ -134,7 +134,11 @@ describe('WooPP Test Suite 3', () => {
     let wooPP: WooPP
 
     beforeEach('deploy WooPP & Tokens', async () => {
-      wooPP = (await deployContract(owner, WooPPArtifact, [usdtToken.address, wooracle.address, wooGuardian.address])) as WooPP
+      wooPP = (await deployContract(owner, WooPPArtifact, [
+        usdtToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])) as WooPP
 
       const threshold = 0
       // const lpFeeRate = BigNumber.from(10).pow(18).mul(1).div(1000)

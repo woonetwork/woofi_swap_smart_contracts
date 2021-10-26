@@ -85,7 +85,11 @@ describe('WooPP Test Suite 1', () => {
     let wooPP: WooPP
 
     beforeEach('deploy WooPP', async () => {
-      wooPP = (await deployContract(owner, WooPPArtifact, [quoteToken.address, wooracle.address, wooGuardian.address])) as WooPP
+      wooPP = (await deployContract(owner, WooPPArtifact, [
+        quoteToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])) as WooPP
     })
 
     it('ctor', async () => {
@@ -93,9 +97,9 @@ describe('WooPP Test Suite 1', () => {
     })
 
     it('ctor failure1', async () => {
-      await expect(deployContract(owner, WooPPArtifact, [ZERO_ADDR, wooracle.address, wooGuardian.address])).to.be.revertedWith(
-        'WooPP: INVALID_QUOTE'
-      )
+      await expect(
+        deployContract(owner, WooPPArtifact, [ZERO_ADDR, wooracle.address, wooGuardian.address])
+      ).to.be.revertedWith('WooPP: INVALID_QUOTE')
     })
 
     it('ctor failure2', async () => {
@@ -132,7 +136,11 @@ describe('WooPP Test Suite 1', () => {
     let wooPP: WooPP
 
     beforeEach('deploy WooPP', async () => {
-      wooPP = (await deployContract(owner, WooPPArtifact, [quoteToken.address, wooracle.address, wooGuardian.address])) as WooPP
+      wooPP = (await deployContract(owner, WooPPArtifact, [
+        quoteToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])) as WooPP
     })
 
     it('addBaseToken', async () => {
@@ -232,7 +240,11 @@ describe('WooPP Test Suite 1', () => {
     let wooPP: WooPP
 
     beforeEach('deploy WooPP', async () => {
-      wooPP = (await deployContract(owner, WooPPArtifact, [quoteToken.address, wooracle.address, wooGuardian.address])) as WooPP
+      wooPP = (await deployContract(owner, WooPPArtifact, [
+        quoteToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])) as WooPP
     })
 
     it('tuneParameters accuracy1', async () => {
@@ -367,7 +379,11 @@ describe('WooPP Test Suite 1', () => {
     })
 
     beforeEach('deploy WooPP', async () => {
-      wooPP = (await deployContract(owner, WooPPArtifact, [quoteToken.address, wooracle.address, wooGuardian.address])) as WooPP
+      wooPP = (await deployContract(owner, WooPPArtifact, [
+        quoteToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])) as WooPP
     })
 
     it('isStrategist accuracy1', async () => {
@@ -422,7 +438,11 @@ describe('WooPP Test Suite 1', () => {
       quoteToken = await deployContract(owner, TestToken, [])
       baseToken1 = await deployContract(owner, TestToken, [])
 
-      wooPP = (await deployContract(owner, WooPPArtifact, [quoteToken.address, wooOracle1.address, wooGuardian.address])) as WooPP
+      wooPP = (await deployContract(owner, WooPPArtifact, [
+        quoteToken.address,
+        wooOracle1.address,
+        wooGuardian.address,
+      ])) as WooPP
 
       await quoteToken.mint(wooPP.address, 30000)
       await baseToken1.mint(wooPP.address, 10000)
@@ -505,7 +525,11 @@ describe('WooPP Test Suite 1', () => {
       quoteToken = await deployContract(owner, TestToken, [])
       baseToken1 = await deployContract(owner, TestToken, [])
 
-      wooPP = (await deployContract(owner, WooPPArtifact, [quoteToken.address, wooOracle1.address, wooGuardian.address])) as WooPP
+      wooPP = (await deployContract(owner, WooPPArtifact, [
+        quoteToken.address,
+        wooOracle1.address,
+        wooGuardian.address,
+      ])) as WooPP
 
       await quoteToken.mint(wooPP.address, 30000)
       await baseToken1.mint(wooPP.address, 10000)

@@ -97,7 +97,11 @@ describe('WooPP Test Suite 2', () => {
     let wooPP: WooPP
 
     beforeEach('deploy WooPP & Tokens', async () => {
-      wooPP = (await deployContract(owner, WooPPArtifact, [usdtToken.address, wooracle.address, wooGuardian.address])) as WooPP
+      wooPP = (await deployContract(owner, WooPPArtifact, [
+        usdtToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])) as WooPP
 
       const threshold = 0
       // const lpFeeRate = BigNumber.from(10).pow(18).mul(1).div(1000)
@@ -233,7 +237,11 @@ describe('WooPP Test Suite 2', () => {
     })
 
     it('querySellBase reverted with quoteAmount greater than balance', async () => {
-      let newWooPP = await deployContract(owner, WooPPArtifact, [usdtToken.address, wooracle.address, wooGuardian.address])
+      let newWooPP = await deployContract(owner, WooPPArtifact, [
+        usdtToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])
 
       const threshold = 0
       const lpFeeRate = 0
@@ -266,7 +274,11 @@ describe('WooPP Test Suite 2', () => {
     })
 
     it('querySellQuote reverted with baseAmount greater than balance', async () => {
-      let newWooPP = await deployContract(owner, WooPPArtifact, [usdtToken.address, wooracle.address, wooGuardian.address])
+      let newWooPP = await deployContract(owner, WooPPArtifact, [
+        usdtToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])
 
       const threshold = 0
       const lpFeeRate = 0
@@ -432,7 +444,11 @@ describe('WooPP Test Suite 2', () => {
     })
 
     beforeEach('deploy WooPP & Tokens', async () => {
-      wooPP = (await deployContract(owner, WooPPArtifact, [usdtToken.address, wooracle.address, wooGuardian.address])) as WooPP
+      wooPP = (await deployContract(owner, WooPPArtifact, [
+        usdtToken.address,
+        wooracle.address,
+        wooGuardian.address,
+      ])) as WooPP
 
       const threshold = 0
       // const lpFeeRate = BigNumber.from(10).pow(18).mul(1).div(1000)
