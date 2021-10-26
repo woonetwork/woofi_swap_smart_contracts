@@ -35,7 +35,10 @@ import { expect, use } from 'chai'
 import { BigNumber, Contract } from 'ethers'
 import { ethers } from 'hardhat'
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
-import Wooracle from '../build/Wooracle.json'
+// import Wooracle from '../build/Wooracle.json'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { Wooracle } from '../typechain'
+import WooracleArtifact from '../artifacts/contracts/Wooracle.sol/Wooracle.json'
 
 use(solidity)
 
@@ -50,18 +53,22 @@ async function getCurrentBlockTimestamp() {
   return block.timestamp
 }
 
-async function checkWooracleTimestamp(wooracle: Contract) {
+async function checkWooracleTimestamp(wooracle: Wooracle) {
   let currentBlockTimestamp = await getCurrentBlockTimestamp()
   expect(await wooracle.timestamp()).to.gte(currentBlockTimestamp)
 }
 
 describe('Wooracle', () => {
-  let mockProvider = new MockProvider()
-  const [owner, user, baseToken, anotherBaseToken, quoteToken] = mockProvider.getWallets()
-  let wooracle: Contract
+  let owner:SignerWithAddress
+  let baseToken:SignerWithAddress
+  let anotherBaseToken:SignerWithAddress
+  let quoteToken:SignerWithAddress
+
+  let wooracle: Wooracle
 
   beforeEach(async () => {
-    wooracle = await deployContract(owner, Wooracle, [])
+    [owner, baseToken, anotherBaseToken, quoteToken] = await ethers.getSigners()
+    wooracle = (await deployContract(owner, WooracleArtifact, [])) as Wooracle
   })
 
   it('Init with correct owner', async () => {
@@ -94,6 +101,10 @@ describe('Wooracle', () => {
     await checkWooracleTimestamp(wooracle)
     expect(await wooracle.isValid(baseToken.address)).to.eq(true)
     expect(await wooracle.prices(baseToken.address)).to.eq(BN_1e18)
+
+    await wooracle.postPrice(baseToken.address, ZERO)
+    await checkWooracleTimestamp(wooracle)
+    expect(await wooracle.isValid(baseToken.address)).to.eq(false)
   })
 
   it('postPriceList', async () => {
@@ -109,6 +120,12 @@ describe('Wooracle', () => {
     for (let i = 0; i < bases.length; i += 1) {
       expect(await wooracle.isValid(bases[i])).to.eq(true)
       expect(await wooracle.prices(bases[i])).to.eq(newPrices[i])
+    }
+
+    await wooracle.postPriceList(bases, [ZERO, ZERO])
+    await checkWooracleTimestamp(wooracle)
+    for (let i = 0; i < bases.length; i += 1) {
+      expect(await wooracle.isValid(bases[i])).to.eq(false)
     }
   })
 
@@ -166,6 +183,10 @@ describe('Wooracle', () => {
     expect(await wooracle.spreads(baseToken.address)).to.eq(BN_1e18)
     expect(await wooracle.coeffs(baseToken.address)).to.eq(BN_1e18)
     expect(await wooracle.isValid(baseToken.address)).to.eq(true)
+
+    await wooracle.postState(baseToken.address, ZERO, BN_1e18, BN_1e18)
+    await checkWooracleTimestamp(wooracle)
+    expect(await wooracle.isValid(baseToken.address)).to.eq(false)
   })
 
   it('postStateList', async () => {
@@ -187,6 +208,12 @@ describe('Wooracle', () => {
       expect(await wooracle.spreads(bases[i])).to.eq(newSpreads[i])
       expect(await wooracle.coeffs(bases[i])).to.eq(newCoeffs[i])
       expect(await wooracle.isValid(bases[i])).to.eq(true)
+    }
+
+    await wooracle.postStateList(bases, [ZERO, ZERO], newSpreads, newCoeffs)
+    await checkWooracleTimestamp(wooracle)
+    for (let i = 0; i < bases.length; i += 1) {
+      expect(await wooracle.isValid(bases[i])).to.eq(false)
     }
   })
 

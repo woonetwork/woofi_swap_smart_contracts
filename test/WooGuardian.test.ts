@@ -35,9 +35,12 @@ import { expect, use } from 'chai'
 import { Contract, utils } from 'ethers'
 import { deployContract, deployMockContract, MockProvider, solidity } from 'ethereum-waffle'
 import { ethers } from 'hardhat'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { WooGuardian } from '../typechain'
+import WooGuardianArtifact from '../artifacts/contracts/WooGuardian.sol/WooGuardian.json'
 
 // import WooPP from '../build/WooPP.json'
-import WooGuardian from '../build/WooGuardian.json'
+// import WooGuardian from '../build/WooGuardian.json'
 import IERC20 from '../build/IERC20.json'
 import TestToken from '../build/TestToken.json'
 import IWooracle from '../build/IWooracle.json'
@@ -68,7 +71,8 @@ const DEFAULT_BOUND = utils.parseEther('0.01') // 1%
 // USDT: https://data.chain.link/bsc/mainnet/crypto-usd/usdt-usd
 
 describe('WooGuardian Test Suite 1', () => {
-  const [owner, user1, user2, wooracle] = new MockProvider().getWallets()
+  let owner: SignerWithAddress
+  let user1: SignerWithAddress
 
   let usdtToken: Contract
   let btcToken: Contract
@@ -79,6 +83,8 @@ describe('WooGuardian Test Suite 1', () => {
   let wooChainLinkRefOracle: Contract
 
   before('deploy ERC20 & Prepare chainlink oracles', async () => {
+    [owner, user1] = await ethers.getSigners()
+
     usdtToken = await deployContract(owner, TestToken, [])
     btcToken = await deployContract(owner, TestToken, [])
     wooToken = await deployContract(owner, TestToken, [])
@@ -115,10 +121,10 @@ describe('WooGuardian Test Suite 1', () => {
   })
 
   describe('check func accuracies and reverts test', () => {
-    let wooGuardian: Contract
+    let wooGuardian: WooGuardian
 
     before('deploy WooGuardian', async () => {
-      wooGuardian = await deployContract(owner, WooGuardian, [DEFAULT_BOUND])
+      wooGuardian = (await deployContract(owner, WooGuardianArtifact, [DEFAULT_BOUND])) as WooGuardian
       await wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
       await wooGuardian.setToken(btcToken.address, btcChainLinkRefOracle.address)
       await wooGuardian.setToken(wooToken.address, wooChainLinkRefOracle.address)
@@ -305,10 +311,10 @@ describe('WooGuardian Test Suite 1', () => {
   })
 
   describe('reverts test', () => {
-    let wooGuardian: Contract
+    let wooGuardian: WooGuardian
 
     before('deploy WooGuardian', async () => {
-      wooGuardian = await deployContract(owner, WooGuardian, [DEFAULT_BOUND])
+      wooGuardian = (await deployContract(owner, WooGuardianArtifact, [DEFAULT_BOUND])) as WooGuardian
       await wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
       await wooGuardian.setToken(btcToken.address, btcChainLinkRefOracle.address)
       await wooGuardian.setToken(wooToken.address, wooChainLinkRefOracle.address)
@@ -316,10 +322,10 @@ describe('WooGuardian Test Suite 1', () => {
 
     it('ctor reverted with priceBound out of range', async () => {
       let normalPriceBound = BigNumber.from(10).pow(18)
-      await deployContract(owner, WooGuardian, [normalPriceBound])
+      await deployContract(owner, WooGuardianArtifact, [normalPriceBound])
 
       let outRangePriceBound = BigNumber.from(10).pow(19)
-      await expect(deployContract(owner, WooGuardian, [outRangePriceBound])).to.be.revertedWith(
+      await expect(deployContract(owner, WooGuardianArtifact, [outRangePriceBound])).to.be.revertedWith(
         'WooGuardian: priceBound out of range'
       )
     })
@@ -426,10 +432,10 @@ describe('WooGuardian Test Suite 1', () => {
   })
 
   describe('events test', () => {
-    let wooGuardian: Contract
+    let wooGuardian: WooGuardian
 
     before('deploy WooGuardian', async () => {
-      wooGuardian = await deployContract(owner, WooGuardian, [DEFAULT_BOUND])
+      wooGuardian = (await deployContract(owner, WooGuardianArtifact, [DEFAULT_BOUND])) as WooGuardian
       await wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
       await wooGuardian.setToken(btcToken.address, btcChainLinkRefOracle.address)
       await wooGuardian.setToken(wooToken.address, wooChainLinkRefOracle.address)
@@ -443,10 +449,10 @@ describe('WooGuardian Test Suite 1', () => {
   })
 
   describe('onlyOwner test', () => {
-    let wooGuardian: Contract
+    let wooGuardian: WooGuardian
 
     before('deploy WooGuardian', async () => {
-      wooGuardian = await deployContract(owner, WooGuardian, [DEFAULT_BOUND])
+      wooGuardian = (await deployContract(owner, WooGuardianArtifact, [DEFAULT_BOUND])) as WooGuardian
       await wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
       await wooGuardian.setToken(btcToken.address, btcChainLinkRefOracle.address)
       await wooGuardian.setToken(wooToken.address, wooChainLinkRefOracle.address)

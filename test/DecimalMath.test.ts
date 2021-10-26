@@ -34,9 +34,12 @@
 import { expect, use } from 'chai'
 import { Contract } from 'ethers'
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
-import DecimalMath from '../build/DecimalMathTest.json'
+// import DecimalMath from '../build/DecimalMathTest.json'
 import { ethers } from 'hardhat'
 // import { Decimal } from 'decimal.js'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { DecimalMathTest as DecimalMath } from '../typechain'
+import DecimalMathArtifact from '../artifacts/contracts/test/DecimalMathTest.sol/DecimalMathTest.json'
 
 use(solidity)
 
@@ -52,13 +55,14 @@ const ONE2 = BigNumber.from(10).pow(36)
 const ONE3 = BigNumber.from(10).pow(52)
 
 describe('DecimalMath', () => {
-  const [owner, user, quoteToken] = new MockProvider().getWallets()
+  let owner: SignerWithAddress
 
   describe('#test functional methods', () => {
-    let decimalMath: Contract
+    let decimalMath: DecimalMath
 
     before('deploy DecimalMath', async () => {
-      decimalMath = await deployContract(owner, DecimalMath, [])
+      [owner, ] = await ethers.getSigners()
+      decimalMath = (await deployContract(owner, DecimalMathArtifact, [])) as DecimalMath
     })
 
     it('mulFloor accuracy', async () => {

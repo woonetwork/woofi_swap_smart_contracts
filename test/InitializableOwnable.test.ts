@@ -32,7 +32,9 @@
 */
 
 import { expect, use } from 'chai'
-import { deployContract, solidity } from 'ethereum-waffle'
+import { Contract } from 'ethers'
+import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
+// import InitializableOwnable from '../build/InitializableOwnable.json'
 import { ethers } from 'hardhat'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { InitializableOwnable } from '../typechain'
