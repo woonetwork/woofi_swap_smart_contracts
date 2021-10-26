@@ -35,7 +35,7 @@ import { expect, use } from 'chai'
 import { Contract } from 'ethers'
 import { deployContract, solidity } from 'ethereum-waffle'
 import { ethers } from 'hardhat'
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
 import InitializableOwnable from '../artifacts/contracts/libraries/InitializableOwnable.sol/InitializableOwnable.json'
 
@@ -49,7 +49,7 @@ describe('InitializableOwnable', () => {
   let initOwnable: Contract
 
   before(async () => {
-    [owner, anotherOwner] = await ethers.getSigners()
+    ;[owner, anotherOwner] = await ethers.getSigners()
   })
 
   beforeEach(async () => {
