@@ -49,7 +49,7 @@ describe('InitializableOwnable', () => {
   let initOwnable: InitializableOwnable
 
   beforeEach(async () => {
-    [owner, anotherOwner] = await ethers.getSigners()
+    ;[owner, anotherOwner] = await ethers.getSigners()
     initOwnable = (await deployContract(owner, InitializableOwnableArtifact, [])) as InitializableOwnable
   })
 
