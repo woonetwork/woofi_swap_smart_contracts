@@ -92,6 +92,7 @@ describe('WooRouter trading accuracy', () => {
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
     await wooGuardian.mock.checkSwapAmount.returns()
+    await wooGuardian.mock.checkInputAmount.returns()
   })
 
   describe('Query Functions', () => {

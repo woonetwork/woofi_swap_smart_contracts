@@ -109,6 +109,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
         require(baseToken != quoteToken, 'WooPP: baseToken==quoteToken');
+        wooGuardian.checkInputAmount(baseToken, baseAmount);
 
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
@@ -132,6 +133,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
         require(baseToken != quoteToken, 'WooPP: baseToken==quoteToken');
+        wooGuardian.checkInputAmount(quoteToken, quoteAmount);
 
         TokenInfo memory baseInfo = tokenInfo[baseToken];
         require(baseInfo.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
@@ -156,6 +158,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
         require(to != address(0), 'WooPP: to_ZERO_ADDR');
         require(baseToken != quoteToken, 'WooPP: baseToken==quoteToken');
+        wooGuardian.checkInputAmount(baseToken, baseAmount);
 
         address from = msg.sender;
         TokenInfo memory baseInfo = tokenInfo[baseToken];
@@ -199,6 +202,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         require(baseToken != address(0), 'WooPP: baseToken_ZERO_ADDR');
         require(to != address(0), 'WooPP: to_ZERO_ADDR');
         require(baseToken != quoteToken, 'WooPP: baseToken==quoteToken');
+        wooGuardian.checkInputAmount(quoteToken, quoteAmount);
 
         address from = msg.sender;
         TokenInfo memory baseInfo = tokenInfo[baseToken];
