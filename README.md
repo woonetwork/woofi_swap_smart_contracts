@@ -34,111 +34,117 @@ With the "minimalism" design, the whole code base consist of 4 main smart contra
 
 ## BSC Mainnet deployment
 
-| Contract | BSC address |
-| :--- |:---:|
-| WooRouter | [0x114f84658c99aa6EA62e3160a87A16dEaF7EFe83](https://bscscan.com/address/0x114f84658c99aa6ea62e3160a87a16deaf7efe83) |
-| WooPP | [0x8489d142Da126F4Ea01750e80ccAa12FD1642988](https://bscscan.com/address/0x8489d142Da126F4Ea01750e80ccAa12FD1642988) |
+| Contract    |                                                     BSC address                                                      |
+| :---------- | :------------------------------------------------------------------------------------------------------------------: |
+| WooRouter   | [0x114f84658c99aa6EA62e3160a87A16dEaF7EFe83](https://bscscan.com/address/0x114f84658c99aa6ea62e3160a87a16deaf7efe83) |
+| WooPP       | [0x8489d142Da126F4Ea01750e80ccAa12FD1642988](https://bscscan.com/address/0x8489d142Da126F4Ea01750e80ccAa12FD1642988) |
 | WooGuardian | [0xC90ec9Fe0d243B98DdF5468AFaFB4863EF12002F](https://bscscan.com/address/0xC90ec9Fe0d243B98DdF5468AFaFB4863EF12002F) |
-| Wooracle | [0xea4edfEfF60B375556459e106AB57B696c202A29](https://bscscan.com/address/0xea4edfEfF60B375556459e106AB57B696c202A29) |
-
+| Wooracle    | [0xea4edfEfF60B375556459e106AB57B696c202A29](https://bscscan.com/address/0xea4edfEfF60B375556459e106AB57B696c202A29) |
 
 ## Local Build & Tests
 
 Hardhat and yarn are utilized to compile, build and run tests for WOOFi smart contracts. We recommend to install [Hardhat](https://hardhat.org/) and [Shorthand (hh) and autocomplete](https://hardhat.org/guides/shorthand.html).
 
 To build the smart contracts:
+
 ```
 yarn
 hh compile
 ```
 
 To run the unit tests:
+
 ```
 yarn build-test
 hh test
 ```
 
 ## Using solidity interfaces
+
 To directly interact with WooPP interface:
 
 #### IWooRouter Interface
-```solidity
-    /// @dev query the amount to swap fromToken -> toToken
-    /// @param fromToken the from token
-    /// @param toToken the to token
-    /// @param fromAmount the amount of fromToken to swap
-    /// @return toAmount the predicted amount to receive
-    function querySwap(
-        address fromToken,
-        address toToken,
-        uint256 fromAmount
-    ) external view returns (uint256 toAmount);
 
-    /// @dev swap fromToken -> toToken
-    /// @param fromToken the from token
-    /// @param toToken the to token
-    /// @param fromAmount the amount of fromToken to swap
-    /// @param minToAmount the amount of fromToken to swap
-    /// @param to the amount of fromToken to swap
-    /// @param rebateTo the amount of fromToken to swap
-    /// @return realToAmount the amount of toToken to receive
-    function swap(
-        address fromToken,
-        address toToken,
-        uint256 fromAmount,
-        uint256 minToAmount,
-        address payable to,
-        address rebateTo
-    ) external payable returns (uint256 realToAmount);
+```solidity
+/// @dev query the amount to swap fromToken -> toToken
+/// @param fromToken the from token
+/// @param toToken the to token
+/// @param fromAmount the amount of fromToken to swap
+/// @return toAmount the predicted amount to receive
+function querySwap(
+  address fromToken,
+  address toToken,
+  uint256 fromAmount
+) external view returns (uint256 toAmount);
+
+/// @dev swap fromToken -> toToken
+/// @param fromToken the from token
+/// @param toToken the to token
+/// @param fromAmount the amount of fromToken to swap
+/// @param minToAmount the amount of fromToken to swap
+/// @param to the amount of fromToken to swap
+/// @param rebateTo the amount of fromToken to swap
+/// @return realToAmount the amount of toToken to receive
+function swap(
+  address fromToken,
+  address toToken,
+  uint256 fromAmount,
+  uint256 minToAmount,
+  address payable to,
+  address rebateTo
+) external payable returns (uint256 realToAmount);
+
 ```
 
 #### IWooPP Interface
+
 ```solidity
-    /// @dev Swap baseToken into quoteToken
-    /// @param baseToken the base token
-    /// @param baseAmount amount of baseToken that user want to swap
-    /// @param minQuoteAmount minimum amount of quoteToken that user accept to receive
-    /// @param to quoteToken receiver address
-    /// @param rebateTo the wallet address for rebate
-    /// @return quoteAmount the swapped amount of quote token
-    function sellBase(
-        address baseToken,
-        uint256 baseAmount,
-        uint256 minQuoteAmount,
-        address to,
-        address rebateTo
-    ) external returns (uint256 quoteAmount);
+/// @dev Swap baseToken into quoteToken
+/// @param baseToken the base token
+/// @param baseAmount amount of baseToken that user want to swap
+/// @param minQuoteAmount minimum amount of quoteToken that user accept to receive
+/// @param to quoteToken receiver address
+/// @param rebateTo the wallet address for rebate
+/// @return quoteAmount the swapped amount of quote token
+function sellBase(
+  address baseToken,
+  uint256 baseAmount,
+  uint256 minQuoteAmount,
+  address to,
+  address rebateTo
+) external returns (uint256 quoteAmount);
 
-    /// @dev Swap quoteToken into baseToken
-    /// @param baseToken the base token
-    /// @param quoteAmount amount of quoteToken that user want to swap
-    /// @param minBaseAmount minimum amount of baseToken that user accept to receive
-    /// @param to baseToken receiver address
-    /// @param rebateTo the wallet address for rebate
-    /// @return baseAmount the swapped amount of base token
-    function sellQuote(
-        address baseToken,
-        uint256 quoteAmount,
-        uint256 minBaseAmount,
-        address to,
-        address rebateTo
-    ) external returns (uint256 baseAmount);
+/// @dev Swap quoteToken into baseToken
+/// @param baseToken the base token
+/// @param quoteAmount amount of quoteToken that user want to swap
+/// @param minBaseAmount minimum amount of baseToken that user accept to receive
+/// @param to baseToken receiver address
+/// @param rebateTo the wallet address for rebate
+/// @return baseAmount the swapped amount of base token
+function sellQuote(
+  address baseToken,
+  uint256 quoteAmount,
+  uint256 minBaseAmount,
+  address to,
+  address rebateTo
+) external returns (uint256 baseAmount);
 
-    /// @dev Query the amount for selling the base token amount.
-    /// @param baseToken the base token to sell
-    /// @param baseAmount the amount to sell
-    /// @return quoteAmount the swapped quote amount
-    function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
+/// @dev Query the amount for selling the base token amount.
+/// @param baseToken the base token to sell
+/// @param baseAmount the amount to sell
+/// @return quoteAmount the swapped quote amount
+function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
 
-    /// @dev Query the amount for selling the quote token.
-    /// @param baseToken the base token to receive (buy)
-    /// @param quoteAmount the amount to sell
-    /// @return baseAmount the swapped base token amount
-    function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
+/// @dev Query the amount for selling the quote token.
+/// @param baseToken the base token to receive (buy)
+/// @param quoteAmount the amount to sell
+/// @return baseAmount the swapped base token amount
+function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
 
 ```
 
 ## Licensing
+
 ```
 MIT License
 ===========
