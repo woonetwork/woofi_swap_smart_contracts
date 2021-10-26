@@ -33,16 +33,24 @@
 
 import { expect, use } from 'chai'
 import { Contract } from 'ethers'
-import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
-import InitializableOwnable from '../build/InitializableOwnable.json'
+import { deployContract, solidity } from 'ethereum-waffle'
+import { ethers } from 'hardhat'
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+
+import InitializableOwnable from '../artifacts/contracts/libraries/InitializableOwnable.sol/InitializableOwnable.json'
 
 use(solidity)
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
 describe('InitializableOwnable', () => {
-  const [owner, anotherOwner, user, quoteToken] = new MockProvider().getWallets()
+  let owner: SignerWithAddress
+  let anotherOwner: SignerWithAddress
   let initOwnable: Contract
+
+  before(async () => {
+    [owner, anotherOwner] = await ethers.getSigners()
+  })
 
   beforeEach(async () => {
     initOwnable = await deployContract(owner, InitializableOwnable, [])
