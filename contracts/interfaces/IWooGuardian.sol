@@ -49,10 +49,7 @@ interface IWooGuardian {
         address toToken
     ) external view;
 
-    function checkInputAmount(
-        address token,
-        uint256 inputAmount
-    ) external view;
+    function checkInputAmount(address token, uint256 inputAmount) external view;
 
     function checkSwapAmount(
         address fromToken,

@@ -82,10 +82,7 @@ contract WooGuardian is IWooGuardian, InitializableOwnable {
         );
     }
 
-    function checkInputAmount(
-        address token,
-        uint256 inputAmount
-    ) external view override {
+    function checkInputAmount(address token, uint256 inputAmount) external view override {
         // TODO: qinchao
     }
 
