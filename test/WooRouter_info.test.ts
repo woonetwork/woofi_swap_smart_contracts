@@ -38,12 +38,15 @@ import { deployContract, deployMockContract, MockProvider, solidity } from 'ethe
 import IWooracle from '../build/IWooracle.json'
 import WooPP from '../build/WooPP.json'
 import IWooPP from '../build/IWooPP.json'
-import WooRouter from '../build/WooRouter.json'
+// import WooRouter from '../build/WooRouter.json'
 import IERC20 from '../build/IERC20.json'
 import IWooGuardian from '../build/IWooGuardian.json'
 import TestToken from '../build/TestToken.json'
 import { WSAECONNABORTED } from 'constants'
 import { BigNumberish } from '@ethersproject/bignumber'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { WooRouter } from '../typechain'
+import WooRouterArtifact from '../artifacts/contracts/WooRouter.sol/WooRouter.json'
 
 use(solidity)
 
@@ -62,7 +65,7 @@ const WOO_PRICE = 1.05
 const ONE = BigNumber.from(10).pow(18)
 
 describe('WooRouter Info', () => {
-  const [owner, user, approveTarget, swapTarget] = new MockProvider().getWallets()
+  let owner: SignerWithAddress
 
   let wooracle: Contract
   let wooGuardian: Contract
@@ -71,6 +74,7 @@ describe('WooRouter Info', () => {
   let usdtToken: Contract
 
   before('Deploy ERC20', async () => {
+    ;[owner] = await ethers.getSigners()
     btcToken = await deployContract(owner, TestToken, [])
     wooToken = await deployContract(owner, TestToken, [])
     usdtToken = await deployContract(owner, TestToken, [])
@@ -97,11 +101,11 @@ describe('WooRouter Info', () => {
 
   describe('Print slippage info', () => {
     let wooPP: Contract
-    let wooRouter: Contract
+    let wooRouter: WooRouter
 
     beforeEach('Deploy WooRouter', async () => {
       wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, wooGuardian.address])
-      wooRouter = await deployContract(owner, WooRouter, [WBNB_ADDR, wooPP.address])
+      wooRouter = (await deployContract(owner, WooRouterArtifact, [WBNB_ADDR, wooPP.address])) as WooRouter
 
       const threshold = 0
       const lpFeeRate = 0

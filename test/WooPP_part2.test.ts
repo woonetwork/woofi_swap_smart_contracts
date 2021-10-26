@@ -36,12 +36,15 @@ import { Contract, utils, Wallet } from 'ethers'
 import { deployContract, deployMockContract, MockProvider, solidity } from 'ethereum-waffle'
 import { ethers } from 'hardhat'
 
-import WooPP from '../build/WooPP.json'
+// import WooPP from '../build/WooPP.json'
 import IERC20 from '../build/IERC20.json'
 import IWooracle from '../build/IWooracle.json'
 import IWooGuardian from '../build/IWooGuardian.json'
 import TestToken from '../build/TestToken.json'
 import { basename } from 'path/posix'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { WooPP } from '../typechain'
+import WooPPArtifact from '../artifacts/contracts/WooPP.sol/WooPP.json'
 
 const {
   BigNumber,
@@ -61,7 +64,9 @@ const WOOPP_USDT_BALANCE = utils.parseEther('10000000') // 10 million usdt
 const WOOPP_WOO_BALANCE = utils.parseEther('5000000') // 5 million woo
 
 describe('WooPP Test Suite 2', () => {
-  const [owner, user1, user2] = new MockProvider().getWallets()
+  let owner: SignerWithAddress
+  let user1: SignerWithAddress
+  let user2: SignerWithAddress
 
   let wooracle: Contract
   let wooGuardian: Contract
@@ -70,6 +75,7 @@ describe('WooPP Test Suite 2', () => {
   let wooToken: Contract
 
   before('deploy tokens & wooracle', async () => {
+    ;[owner, user1, user2] = await ethers.getSigners()
     usdtToken = await deployContract(owner, TestToken, [])
     btcToken = await deployContract(owner, TestToken, [])
     wooToken = await deployContract(owner, TestToken, [])
@@ -88,10 +94,10 @@ describe('WooPP Test Suite 2', () => {
   })
 
   describe('swap func', () => {
-    let wooPP: Contract
+    let wooPP: WooPP
 
     beforeEach('deploy WooPP & Tokens', async () => {
-      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, wooGuardian.address])
+      wooPP = (await deployContract(owner, WooPPArtifact, [usdtToken.address, wooracle.address, wooGuardian.address])) as WooPP
 
       const threshold = 0
       // const lpFeeRate = BigNumber.from(10).pow(18).mul(1).div(1000)
@@ -227,7 +233,7 @@ describe('WooPP Test Suite 2', () => {
     })
 
     it('querySellBase reverted with quoteAmount greater than balance', async () => {
-      let newWooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, wooGuardian.address])
+      let newWooPP = await deployContract(owner, WooPPArtifact, [usdtToken.address, wooracle.address, wooGuardian.address])
 
       const threshold = 0
       const lpFeeRate = 0
@@ -260,7 +266,7 @@ describe('WooPP Test Suite 2', () => {
     })
 
     it('querySellQuote reverted with baseAmount greater than balance', async () => {
-      let newWooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, wooGuardian.address])
+      let newWooPP = await deployContract(owner, WooPPArtifact, [usdtToken.address, wooracle.address, wooGuardian.address])
 
       const threshold = 0
       const lpFeeRate = 0
@@ -401,7 +407,7 @@ describe('WooPP Test Suite 2', () => {
   })
 
   describe('access control', () => {
-    let wooPP: Contract
+    let wooPP: WooPP
     let wooracle: Contract
     let usdtToken: Contract
     let btcToken: Contract
@@ -426,7 +432,7 @@ describe('WooPP Test Suite 2', () => {
     })
 
     beforeEach('deploy WooPP & Tokens', async () => {
-      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, wooGuardian.address])
+      wooPP = (await deployContract(owner, WooPPArtifact, [usdtToken.address, wooracle.address, wooGuardian.address])) as WooPP
 
       const threshold = 0
       // const lpFeeRate = BigNumber.from(10).pow(18).mul(1).div(1000)
