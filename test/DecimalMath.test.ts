@@ -61,7 +61,7 @@ describe('DecimalMath', () => {
     let decimalMath: DecimalMath
 
     before('deploy DecimalMath', async () => {
-      [owner, ] = await ethers.getSigners()
+      ;[owner] = await ethers.getSigners()
       decimalMath = (await deployContract(owner, DecimalMathArtifact, [])) as DecimalMath
     })
 

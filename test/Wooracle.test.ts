@@ -59,15 +59,15 @@ async function checkWooracleTimestamp(wooracle: Wooracle) {
 }
 
 describe('Wooracle', () => {
-  let owner:SignerWithAddress
-  let baseToken:SignerWithAddress
-  let anotherBaseToken:SignerWithAddress
-  let quoteToken:SignerWithAddress
+  let owner: SignerWithAddress
+  let baseToken: SignerWithAddress
+  let anotherBaseToken: SignerWithAddress
+  let quoteToken: SignerWithAddress
 
   let wooracle: Wooracle
 
   beforeEach(async () => {
-    [owner, baseToken, anotherBaseToken, quoteToken] = await ethers.getSigners()
+    ;[owner, baseToken, anotherBaseToken, quoteToken] = await ethers.getSigners()
     wooracle = (await deployContract(owner, WooracleArtifact, [])) as Wooracle
   })
 

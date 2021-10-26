@@ -83,7 +83,7 @@ describe('WooGuardian Test Suite 1', () => {
   let wooChainLinkRefOracle: Contract
 
   before('deploy ERC20 & Prepare chainlink oracles', async () => {
-    [owner, user1] = await ethers.getSigners()
+    ;[owner, user1] = await ethers.getSigners()
 
     usdtToken = await deployContract(owner, TestToken, [])
     btcToken = await deployContract(owner, TestToken, [])
