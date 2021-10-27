@@ -678,18 +678,17 @@ describe('WooPP Test Suite 2', () => {
     })
 
     it('Prevents zero addr from setWooGuardian', async () => {
-      await expect(wooPP.connect(owner).setWooGuardian(ZERO_ADDR))
-        .to.be.revertedWith('WooPP: newWooGuardian_ZERO_ADDR')
+      await expect(wooPP.connect(owner).setWooGuardian(ZERO_ADDR)).to.be.revertedWith('WooPP: newWooGuardian_ZERO_ADDR')
     })
 
     it('Prevents non-strategists from setWooGuardian', async () => {
-      await expect(wooPP.connect(user2).setWooGuardian(wooGuardian.address))
-        .to.be.revertedWith('WooPP: NOT_STRATEGIST')
+      await expect(wooPP.connect(user2).setWooGuardian(wooGuardian.address)).to.be.revertedWith('WooPP: NOT_STRATEGIST')
     })
 
     it('setWooGuardian emit WooGuardianUpdated event', async () => {
       await expect(wooPP.connect(owner).setWooGuardian(wooGuardian.address))
-        .to.emit(wooPP, 'WooGuardianUpdated').withArgs(wooGuardian.address)
+        .to.emit(wooPP, 'WooGuardianUpdated')
+        .withArgs(wooGuardian.address)
     })
 
     it('addBaseToken', async () => {
