@@ -20,9 +20,11 @@ This repository contains the smart contracts and solidity library for the WOOFi 
 ## Security
 
 #### Bug Bounty
+
 Bug bounty for the smart contracts: [Bug Bounty](https://learn.woo.org/woofi/woofi-swap/bug-bounty).
 
 #### Security Audit
+
 3rd party security audit: [Audit Report](https://learn.woo.org/woofi/woofi-swap/audits).
 
 ## Code structure
