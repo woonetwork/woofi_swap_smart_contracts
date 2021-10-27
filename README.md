@@ -154,7 +154,7 @@ function querySellQuote(address baseToken, uint256 quoteAmount) external view re
 MIT License
 ===========
 
-Copyright (c) 2021 WooTrade
+Copyright (c) 2021 WOO Network
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
