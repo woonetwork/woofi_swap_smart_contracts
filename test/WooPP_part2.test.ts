@@ -40,6 +40,7 @@ import { ethers } from 'hardhat'
 import IERC20 from '../build/IERC20.json'
 import IWooracle from '../build/IWooracle.json'
 import IWooGuardian from '../build/IWooGuardian.json'
+import IRewardManager from '../build/IRewardManager.json'
 import TestToken from '../build/TestToken.json'
 import { basename } from 'path/posix'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -73,6 +74,7 @@ describe('WooPP Test Suite 2', () => {
   let usdtToken: Contract
   let btcToken: Contract
   let wooToken: Contract
+  let rewardManager: Contract
 
   before('deploy tokens & wooracle', async () => {
     ;[owner, user1, user2] = await ethers.getSigners()
@@ -91,6 +93,9 @@ describe('WooPP Test Suite 2', () => {
     await wooGuardian.mock.checkSwapPrice.returns()
     await wooGuardian.mock.checkSwapAmount.returns()
     await wooGuardian.mock.checkInputAmount.returns()
+
+    rewardManager = await deployMockContract(owner, IRewardManager.abi)
+    await rewardManager.mock.addReward.returns()
   })
 
   describe('swap func', () => {
@@ -113,6 +118,9 @@ describe('WooPP Test Suite 2', () => {
       await usdtToken.mint(wooPP.address, WOOPP_USDT_BALANCE)
       await btcToken.mint(wooPP.address, WOOPP_BTC_BALANCE)
       await wooToken.mint(wooPP.address, WOOPP_WOO_BALANCE)
+
+      await wooPP.connect(owner).setRewardManager(rewardManager.address)
+      expect(await wooPP.rewardManager()).to.be.eq(rewardManager.address)
     })
 
     it('querySellBase accuracy1', async () => {
@@ -185,6 +193,38 @@ describe('WooPP Test Suite 2', () => {
       console.log('wooPP btc: ', utils.formatEther(preBtcSize), utils.formatEther(btcSize))
     })
 
+    it('sellBase accuracy2', async () => {
+      await btcToken.mint(user1.address, ONE.mul(3))
+
+      const baseAmount = ONE.mul(1)
+      const minQuoteAmount = ONE.mul(BTC_PRICE).mul(999).div(1000)
+
+      await btcToken.connect(user1).approve(wooPP.address, ONE.mul(100))
+      for (let i = 0; i < 3; i += 1) {
+        let quoteAmount = await wooPP.querySellBase(btcToken.address, baseAmount)
+
+        let preUserUsdt = await usdtToken.balanceOf(user1.address)
+        let preUserBtc = await btcToken.balanceOf(user1.address)
+
+        let preWooppUsdtSize = await wooPP.poolSize(usdtToken.address)
+        let preBtcSize = await wooPP.poolSize(btcToken.address)
+
+        await wooPP.connect(user1).sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
+
+        let wppUsdtSize = await wooPP.poolSize(usdtToken.address)
+        expect(preWooppUsdtSize.sub(wppUsdtSize)).to.eq(quoteAmount)
+
+        let userUsdt = await usdtToken.balanceOf(user1.address)
+        expect(preWooppUsdtSize.sub(wppUsdtSize)).to.eq(userUsdt.sub(preUserUsdt))
+
+        let btcSize = await wooPP.poolSize(btcToken.address)
+        expect(btcSize.sub(preBtcSize)).to.eq(baseAmount)
+
+        let userBtc = await btcToken.balanceOf(user1.address)
+        expect(btcSize.sub(preBtcSize)).to.eq(preUserBtc.sub(userBtc))
+      }
+    })
+
     it('sellQuote accuracy1', async () => {
       await usdtToken.mint(user1.address, ONE.mul(100000))
       const preUserUsdt = await usdtToken.balanceOf(user1.address)
@@ -221,6 +261,38 @@ describe('WooPP Test Suite 2', () => {
 
       console.log('wooPP usdt: ', utils.formatEther(preUsdtSize), utils.formatEther(usdtSize))
       console.log('wooPP btc: ', utils.formatEther(preBtcSize), utils.formatEther(btcSize))
+    })
+
+    it('sellQuote accuracy2', async () => {
+      await usdtToken.mint(user1.address, ONE.mul(300000))
+
+      const quoteAmount = ONE.mul(100000)
+      const minBaseAmount = ONE.mul(999).div(1000)
+
+      await usdtToken.connect(user1).approve(wooPP.address, ONE.mul(1000000))
+      for (let i = 0; i < 3; i += 1) {
+        let preUserUsdt = await usdtToken.balanceOf(user1.address)
+        let preUserBtc = await btcToken.balanceOf(user1.address)
+
+        let preUsdtSize = await wooPP.poolSize(usdtToken.address)
+        let preBtcSize = await wooPP.poolSize(btcToken.address)
+
+        let baseAmount = await wooPP.querySellQuote(btcToken.address, quoteAmount)
+
+        await wooPP.connect(user1).sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR)
+
+        let usdtSize = await wooPP.poolSize(usdtToken.address)
+        expect(usdtSize.sub(preUsdtSize)).to.eq(quoteAmount)
+
+        let userUsdt = await usdtToken.balanceOf(user1.address)
+        expect(usdtSize.sub(preUsdtSize)).to.eq(preUserUsdt.sub(userUsdt))
+
+        let btcSize = await wooPP.poolSize(btcToken.address)
+        expect(preBtcSize.sub(btcSize)).to.eq(baseAmount)
+
+        let userBtc = await btcToken.balanceOf(user1.address)
+        expect(preBtcSize.sub(btcSize)).to.eq(userBtc.sub(preUserBtc))
+      }
     })
 
     it('querySellBase reverted with zero addr', async () => {
@@ -514,6 +586,19 @@ describe('WooPP Test Suite 2', () => {
         .withArgs(btcToken.address, user1.address, ONE)
     })
 
+    it('withdrawAll', async () => {
+      expect(await btcToken.balanceOf(wooPP.address)).to.be.equal(WOOPP_BTC_BALANCE)
+      expect(await btcToken.balanceOf(user2.address)).to.be.equal(0)
+      await wooPP.connect(owner).withdrawAll(btcToken.address, user2.address)
+      expect(await btcToken.balanceOf(user2.address)).to.be.equal(WOOPP_BTC_BALANCE)
+    })
+
+    it('Prevents non-owners from withdrawAll', async () => {
+      await expect(wooPP.connect(user2).withdrawAll(btcToken.address, user2.address)).to.be.revertedWith(
+        'InitializableOwnable: NOT_OWNER'
+      )
+    })
+
     it('withdrawToOwner', async () => {
       expect(await btcToken.balanceOf(wooPP.address)).to.be.equal(WOOPP_BTC_BALANCE)
       expect(await btcToken.balanceOf(owner.address)).to.be.equal(0)
@@ -585,6 +670,26 @@ describe('WooPP Test Suite 2', () => {
       await expect(wooPP.connect(user1).setRewardManager(user2.address))
         .to.emit(wooPP, 'RewardManagerUpdated')
         .withArgs(user2.address)
+    })
+
+    it('setWooGuardian', async () => {
+      await wooPP.connect(owner).setWooGuardian(wooGuardian.address)
+      expect(await wooPP.wooGuardian()).to.be.equal(wooGuardian.address)
+    })
+
+    it('Prevents zero addr from setWooGuardian', async () => {
+      await expect(wooPP.connect(owner).setWooGuardian(ZERO_ADDR))
+        .to.be.revertedWith('WooPP: newWooGuardian_ZERO_ADDR')
+    })
+
+    it('Prevents non-strategists from setWooGuardian', async () => {
+      await expect(wooPP.connect(user2).setWooGuardian(wooGuardian.address))
+        .to.be.revertedWith('WooPP: NOT_STRATEGIST')
+    })
+
+    it('setWooGuardian emit WooGuardianUpdated event', async () => {
+      await expect(wooPP.connect(owner).setWooGuardian(wooGuardian.address))
+        .to.emit(wooPP, 'WooGuardianUpdated').withArgs(wooGuardian.address)
     })
 
     it('addBaseToken', async () => {
