@@ -374,7 +374,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         emit Withdraw(token, to, amount);
     }
 
-    function withdrawAll(address token, address to) external nonReentrant onlyOwner {
+    function withdrawAll(address token, address to) external onlyOwner {
         withdraw(token, to, IERC20(token).balanceOf(address(this)));
     }
 
