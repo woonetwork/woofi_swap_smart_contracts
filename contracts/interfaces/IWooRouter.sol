@@ -85,8 +85,8 @@ interface IWooRouter {
     /// @param toToken the to token
     /// @param fromAmount the amount of fromToken to swap
     /// @param minToAmount the amount of fromToken to swap
-    /// @param to the amount of fromToken to swap
-    /// @param rebateTo the amount of fromToken to swap
+    /// @param to the destination address
+    /// @param rebateTo the rebate address (optional, can be 0)
     /// @return realToAmount the amount of toToken to receive
     function swap(
         address fromToken,

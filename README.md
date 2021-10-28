@@ -64,9 +64,75 @@ yarn build-test
 hh test
 ```
 
-## Using solidity interfaces
+## Integrate with WooFi Swap
 
-To directly interact with WooPP interface:
+Currently, WooRouter supports the following tokens on BSC:
+
+| Token  |               BSC address                  |
+| :----- | :----------------------------------------: |
+| usdt   | 0x55d398326f99059fF775485246999027B3197955 |
+| wbnb   | 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c |
+| btcb   | 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c |
+| eth    | 0x2170ed0880ac9a755fd29b2688956bd959f933f8 |
+| woo    | 0x4691937a7508860f876c9c0a2a617e7d9e945d4b |
+| bnb    | 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE |
+
+The easiest way is to interact with WooRouter.sol (BSC: https://bscscan.com/address/0x114f84658c99aa6ea62e3160a87a16deaf7efe83 )
+
+Quote the price:
+```solidity
+    /// @dev query the amount to swap fromToken -> toToken
+    /// @param fromToken the from token
+    /// @param toToken the to token
+    /// @param fromAmount the amount of fromToken to swap
+    /// @return toAmount the swapped amount to receive
+    function querySwap(
+        address fromToken,
+        address toToken,
+        uint256 fromAmount
+    ) external view returns (uint256 toAmount);
+```
+
+Sample call to quote selling 1 btc:
+```solidity
+querySwap(
+  0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c, // btcb token address
+  0x55d398326f99059fF775485246999027B3197955, // usdt token address
+  1000000000000000000);                       // btcb amount to swap in decimal 18
+```
+
+Swap the token:
+```solidity
+    /// @dev swap fromToken -> toToken
+    /// @param fromToken the from token
+    /// @param toToken the to token
+    /// @param fromAmount the amount of fromToken to swap
+    /// @param minToAmount the amount of fromToken to swap
+    /// @param to the destination address
+    /// @param rebateTo the amount of fromToken to swap (optional, can be '0')
+    /// @return realToAmount the amount of toToken to receive
+    function swap(
+        address fromToken,
+        address toToken,
+        uint256 fromAmount,
+        uint256 minToAmount,
+        address payable to,
+        address rebateTo
+    ) external payable returns (uint256 realToAmount);
+```
+Sample call to sell 1 btc to usdt:
+```solidity
+swap(
+  0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c, // btcb token address
+  0x55d398326f99059fF775485246999027B3197955, // usdt token address
+  1000000000000000000,                        // btcb amount to swap in decimal 18
+   990000000000000000,                        // min amount for 1% slippage
+  0xd51062A4aF7B76ee0b2893Ef8b52aCC155393E3D, // the address to receive the swap fund
+  0);                                         // the rebate address
+```
+
+You can directly play with BSC mainnet contract here: https://bscscan.com/address/0x114f84658c99aa6ea62e3160a87a16deaf7efe83#writeContract
+
 
 #### IWooRouter Interface
 
