@@ -130,7 +130,7 @@ typechain/
 crytic-export/
 
 # solidity-coverage
-coverage.jso
+coverage.json
 
 contracts/WooGuardian.sol
 
