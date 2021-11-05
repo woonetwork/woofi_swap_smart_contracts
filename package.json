@@ -1,5 +1,5 @@
 {
-  "name": "WooDex",
+  "name": "WOOFi_Swap",
   "version": "1.0.0",
   "description": "Smart contract code for proprietary market making strategy with high capital efficiency and low price spread, configurable rebate mechanism and smart route to 3rd party AMM DEXes if necessary.",
   "main": "index.js",
