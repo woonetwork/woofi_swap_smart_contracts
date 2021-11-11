@@ -34,76 +34,105 @@ pragma solidity 0.6.12;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/utils/Address.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
+import './interfaces/IWooCoolDownVault.sol';
 
-contract wVault is ERC20, Ownable {
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import '@openzeppelin/contracts/access/Ownable.sol';
+import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
+
+contract WooStakingVault is ERC20, Ownable {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
 
-    IERC20 public token;
+    /* ----- State variables ----- */
 
-    address public governance;
-    address public controller;
+    IERC20 public stakedToken;
+    IWooCoolDownVault public wooCoolDownVault;
+    mapping (address => uint256) public costSharePrice;
 
-    constructor(address _token)
+    bool public allowContract = false;
+
+    constructor(address _stakedToken, address _wooCoolDownVault)
         public
         ERC20(
-            string(abi.encodePacked('x', ERC20(_token).name())),
-            string(abi.encodePacked('x', ERC20(_token).symbol()))
+            string(abi.encodePacked("Interest bearing", ERC20(_stakedToken).name())),
+            string(abi.encodePacked("x", ERC20(_stakedToken).symbol()))
         )
     {
-        token = IERC20(_token);
-        governance = owner();
+        stakedToken = IERC20(_stakedToken);
+        wooCoolDownVault = IWooCoolDownVault(_wooCoolDownVault);
+        require(wooCoolDownVault.coolDownToken() == address(stakedToken));
     }
 
-    /* ----- Write Functions ----- */
+    /* ----- Modifier ----- */
 
-    function deposit(uint256 _amount) external {
-        uint256 _pool = balance();
-        uint256 _before = token.balanceOf(address(this));
-        token.safeTransferFrom(msg.sender, address(this), _amount);
-        uint256 _after = token.balanceOf(address(this));
-        _amount = _after.sub(_before);
-        uint256 shares = 0;
-        if (totalSupply() == 0) {
-            shares = _amount;
+    modifier onlyHuman {
+        if (!allowContract) {
+            require(tx.origin == msg.sender);
+            _;
         } else {
-            shares = (_amount.mul(totalSupply())).div(_pool);
+            _;
         }
+    }
+
+    /* ----- External Functions ----- */
+
+    function deposit(uint256 _amount) external onlyHuman {
+        uint256 poolBalance = balance();
+        uint256 balanceBefore = stakedToken.balanceOf(address(this));
+        TransferHelper.safeTransferFrom(address(stakedToken), msg.sender, address(this), _amount);
+        uint256 balanceAfter = stakedToken.balanceOf(address(this));
+        _amount = balanceAfter.sub(balanceBefore);
+
+        uint256 xTotalSupply = totalSupply();
+        uint256 shares = xTotalSupply == 0 ? _amount : _amount.mul(xTotalSupply).div(poolBalance);
+
+        _updateCostSharePrice(_amount, shares);
+
         _mint(msg.sender, shares);
     }
 
-    function withdraw(uint256 _shares) external {
-        uint256 r = (balance().mul(_shares)).div(totalSupply());
-        _burn(msg.sender, _shares);
-        // TODO safeTransfer WOO to WooCoolDownVault
-        //        uint256 b = token.balanceOf(address(this));
-        //        if (b < r) {
-        //            r = b;
-        //        }
-        //
-        //        token.safeTransfer(msg.sender, r);
-    }
+    function withdraw(uint256 _shares) external onlyHuman {
+        uint256 withdrawBalance = (balance().mul(_shares)).div(totalSupply());
+        uint256 poolBalance = balance();
+        if (poolBalance < withdrawBalance) {
+            withdrawBalance = poolBalance;
+        }
 
-    /* ----- Read Functions ----- */
+        _burn(msg.sender, _shares);
+        wooCoolDownVault.deposit(withdrawBalance);
+    }
 
     function getPricePerFullShare() external view returns (uint256) {
         return balance().mul(1e18).div(totalSupply());
     }
 
+    /* ----- Public Functions ----- */
+
     function balance() public view returns (uint256) {
-        return token.balanceOf(address(this));
+        return stakedToken.balanceOf(address(this));
+    }
+
+    /* ----- Private Functions ----- */
+
+    function _updateCostSharePrice(uint256 _amount, uint256 _shares) private {
+        uint256 beforeShares = balanceOf(msg.sender);
+        uint beforeCost = costSharePrice[msg.sender];
+        uint afterCost = (
+            beforeShares.mul(beforeCost).add(_amount.mul(1e18))
+        ).div(beforeShares.add(_shares));
+
+        costSharePrice[msg.sender] = afterCost;
     }
 
     /* ----- Admin Functions ----- */
 
-    function setGovernance(address _governance) external onlyOwner {
-        governance = _governance;
+    function toggleAllowContract(bool _allowContract) public onlyOwner {
+        allowContract = _allowContract;
     }
 }
