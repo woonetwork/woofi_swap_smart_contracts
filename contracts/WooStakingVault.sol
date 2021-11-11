@@ -34,11 +34,11 @@ pragma solidity 0.6.12;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 
 contract wVault is ERC20, Ownable {
@@ -54,8 +54,8 @@ contract wVault is ERC20, Ownable {
     constructor(address _token)
         public
         ERC20(
-            string(abi.encodePacked("x", ERC20(_token).name())),
-            string(abi.encodePacked("x", ERC20(_token).symbol()))
+            string(abi.encodePacked('x', ERC20(_token).name())),
+            string(abi.encodePacked('x', ERC20(_token).symbol()))
         )
     {
         token = IERC20(_token);
@@ -83,12 +83,12 @@ contract wVault is ERC20, Ownable {
         uint256 r = (balance().mul(_shares)).div(totalSupply());
         _burn(msg.sender, _shares);
         // TODO safeTransfer WOO to WooCoolDownVault
-//        uint256 b = token.balanceOf(address(this));
-//        if (b < r) {
-//            r = b;
-//        }
-//
-//        token.safeTransfer(msg.sender, r);
+        //        uint256 b = token.balanceOf(address(this));
+        //        if (b < r) {
+        //            r = b;
+        //        }
+        //
+        //        token.safeTransfer(msg.sender, r);
     }
 
     /* ----- Read Functions ----- */
