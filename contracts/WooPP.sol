@@ -39,6 +39,7 @@ import './libraries/InitializableOwnable.sol';
 import './libraries/DecimalMath.sol';
 import './interfaces/IWooracle.sol';
 import './interfaces/IWooPP.sol';
+import './interfaces/IWooFeeManager.sol';
 import './interfaces/IRewardManager.sol';
 import './interfaces/IWooGuardian.sol';
 import './interfaces/AggregatorV3Interface.sol';
@@ -69,6 +70,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     address public immutable override quoteToken;
     address public wooracle;
     IWooGuardian public wooGuardian;
+    address public feeManager;
     address public rewardManager;
     string public pairsInfo; // e.g. BNB/ETH/BTCB/WOO-USDT
 
@@ -117,7 +119,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         _autoUpdate(baseToken, baseInfo, quoteInfo);
 
         quoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
-        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
+        uint256 lpFee = quoteAmount.mulCeil(IWooFeeManager(feeManager).feeRate(baseToken));
         quoteAmount = quoteAmount.sub(lpFee);
 
         require(quoteAmount <= IERC20(quoteToken).balanceOf(address(this)), 'WooPP: INSUFF_QUOTE');
@@ -140,7 +142,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
         _autoUpdate(baseToken, baseInfo, quoteInfo);
 
-        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
+        uint256 lpFee = quoteAmount.mulCeil(IWooFeeManager(feeManager).feeRate(baseToken));
         quoteAmount = quoteAmount.sub(lpFee);
         baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
 
@@ -171,9 +173,11 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         quoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
         wooGuardian.checkSwapAmount(baseToken, quoteToken, baseAmount, quoteAmount);
 
-        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
+        uint256 lpFee = quoteAmount.mulCeil(IWooFeeManager(feeManager).feeRate(baseToken));
         quoteAmount = quoteAmount.sub(lpFee);
         require(quoteAmount >= minQuoteAmount, 'WooPP: quoteAmount<minQuoteAmount');
+
+        TransferHelper.safeTransfer(quoteToken, feeManager, lpFee);
 
         uint256 balanceBefore = IERC20(quoteToken).balanceOf(to);
         TransferHelper.safeTransfer(quoteToken, to, quoteAmount);
@@ -212,10 +216,12 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
 
         TransferHelper.safeTransferFrom(quoteToken, from, address(this), quoteAmount);
 
-        uint256 lpFee = quoteAmount.mulCeil(baseInfo.lpFeeRate);
+        uint256 lpFee = quoteAmount.mulCeil(IWooFeeManager(feeManager).feeRate(baseToken));
         quoteAmount = quoteAmount.sub(lpFee);
         baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
         require(baseAmount >= minBaseAmount, 'WooPP: baseAmount<minBaseAmount');
+
+        TransferHelper.safeTransfer(quoteToken, feeManager, lpFee);
 
         wooGuardian.checkSwapAmount(quoteToken, baseToken, quoteAmount, baseAmount);
 
@@ -263,6 +269,13 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         emit WooGuardianUpdated(newWooGuardian);
     }
 
+    /// @dev Set the feeManager.
+    /// @param newFeeManager the fee manager
+    function setFeeManager(address newFeeManager) external nonReentrant onlyStrategist {
+        feeManager = newFeeManager;
+        emit FeeManagerUpdated(newFeeManager);
+    }
+
     /// @dev Set the rewardManager.
     /// @param newRewardManager the reward manager
     function setRewardManager(address newRewardManager) external nonReentrant onlyStrategist {
@@ -273,32 +286,28 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     /// @dev Add the base token for swap
     /// @param baseToken the base token
     /// @param threshold the balance threshold info
-    /// @param lpFeeRate the swap fee rate
     /// @param R the rebalance refactor
     function addBaseToken(
         address baseToken,
         uint256 threshold,
-        uint256 lpFeeRate,
         uint256 R
     ) external nonReentrant onlyStrategist {
         require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
         require(baseToken != quoteToken, 'WooPP: baseToken==quoteToken');
         require(threshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
-        require(lpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE_OUT_OF_RANGE');
         require(R <= 1e18, 'WooPP: R_OUT_OF_RANGE');
 
         TokenInfo memory info = tokenInfo[baseToken];
         require(!info.isValid, 'WooPP: TOKEN_ALREADY_EXISTS');
 
         info.threshold = uint112(threshold);
-        info.lpFeeRate = uint64(lpFeeRate);
         info.R = uint64(R);
         info.target = max(info.threshold, info.target);
         info.isValid = true;
 
         tokenInfo[baseToken] = info;
 
-        emit ParametersUpdated(baseToken, threshold, lpFeeRate, R);
+        emit ParametersUpdated(baseToken, threshold, R);
     }
 
     /// @dev Remove the base token
@@ -307,35 +316,31 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         require(baseToken != address(0), 'WooPP: BASE_TOKEN_ZERO_ADDR');
         require(tokenInfo[baseToken].isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
         delete tokenInfo[baseToken];
-        emit ParametersUpdated(baseToken, 0, 0, 0);
+        emit ParametersUpdated(baseToken, 0, 0);
     }
 
     /// @dev Tune the token params
     /// @param token the token to tune
     /// @param newThreshold the new balance threshold info
-    /// @param newLpFeeRate the new swap fee rate
     /// @param newR the new rebalance refactor
     function tuneParameters(
         address token,
         uint256 newThreshold,
-        uint256 newLpFeeRate,
         uint256 newR
     ) external nonReentrant onlyStrategist {
         require(token != address(0), 'WooPP: token_ZERO_ADDR');
         require(newThreshold <= type(uint112).max, 'WooPP: THRESHOLD_OUT_OF_RANGE');
-        require(newLpFeeRate <= 1e18, 'WooPP: LP_FEE_RATE>1');
         require(newR <= 1e18, 'WooPP: R>1');
 
         TokenInfo memory info = tokenInfo[token];
         require(info.isValid, 'WooPP: TOKEN_DOES_NOT_EXIST');
 
         info.threshold = uint112(newThreshold);
-        info.lpFeeRate = uint64(newLpFeeRate);
         info.R = uint64(newR);
         info.target = max(info.threshold, info.target);
 
         tokenInfo[token] = info;
-        emit ParametersUpdated(token, newThreshold, newLpFeeRate, newR);
+        emit ParametersUpdated(token, newThreshold, newR);
     }
 
     /* ----- Admin Functions ----- */

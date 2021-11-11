@@ -44,5 +44,5 @@ interface IWooFeeManager {
 
     /* ----- External Functions ----- */
 
-    function feeRate(address token) external returns (uint256);
+    function feeRate(address token) external view returns (uint256);
 }
