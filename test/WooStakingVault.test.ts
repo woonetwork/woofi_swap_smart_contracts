@@ -55,8 +55,8 @@ describe('WooStakingVault', () => {
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
 
-  before(async() => {
-    [owner, user, treasury] = await ethers.getSigners()
+  before(async () => {
+    ;[owner, user, treasury] = await ethers.getSigners()
     wooToken = (await deployContract(owner, TestTokenArtifact, [])) as TestToken
     // 1.mint woo token to user
     // 2.make sure user woo balance start with 0
@@ -66,11 +66,11 @@ describe('WooStakingVault', () => {
 
     wooStakingVault = (await deployContract(owner, WooStakingVaultArtifact, [
       wooToken.address,
-      treasury.address
+      treasury.address,
     ])) as WooStakingVault
   })
 
-  it('Check state variables after contract initialized', async() => {
+  it('Check state variables after contract initialized', async () => {
     expect(await wooStakingVault.stakedToken()).to.eq(wooToken.address)
     expect(await wooStakingVault.costSharePrice(user.address)).to.eq(BN_ZERO)
     let [reserveAmount, lastReserveWithdrawTime] = await wooStakingVault.userInfo(user.address)
@@ -83,12 +83,12 @@ describe('WooStakingVault', () => {
     expect(await wooStakingVault.treasury()).to.eq(treasury.address)
   })
 
-  it('Share price should be 1e18 when xWOO non-supply', async() => {
+  it('Share price should be 1e18 when xWOO non-supply', async () => {
     expect(await wooStakingVault.totalSupply()).to.eq(BN_ZERO)
     expect(await wooStakingVault.getPricePerFullShare()).to.eq(BN_1e18)
   })
 
-  it('deposit', async() => {
+  it('deposit', async () => {
     // approve wooStakingVault and deposit by user
     expect(await wooStakingVault.balance()).to.eq(BN_ZERO)
     let wooDeposit = BN_1e18.mul(100)
@@ -101,7 +101,7 @@ describe('WooStakingVault', () => {
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(BN_1e18.mul(100))
   })
 
-  it('reserveWithdraw', async() => {
+  it('reserveWithdraw', async () => {
     // continue by deposit, user woo balance: BN_1e18.mul(900)
     expect(await wooToken.balanceOf(user.address)).to.eq(BN_1e18.mul(900))
     // xWOO(_shares) balance: BN_1e18.mul(100)
@@ -124,7 +124,7 @@ describe('WooStakingVault', () => {
     // can't confirm the block.timestamp, will be confirm on bsc testnet
   })
 
-  it('withdraw', async() => {
+  it('withdraw', async () => {
     // user woo balance: BN_1e18.mul(900)
     let userWooBalance = await wooToken.balanceOf(user.address)
     expect(userWooBalance).to.eq(BN_1e18.mul(900))

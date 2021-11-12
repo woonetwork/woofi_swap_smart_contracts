@@ -34,11 +34,11 @@ pragma solidity 0.6.12;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
@@ -56,7 +56,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     /* ----- State variables ----- */
 
     IERC20 public stakedToken;
-    mapping (address => uint256) public costSharePrice;
+    mapping(address => uint256) public costSharePrice;
     mapping(address => UserInfo) public userInfo;
 
     uint256 public totalReserveAmount = 0; // affected by reserveWithdraw and withdraw
@@ -146,8 +146,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     function _updateCostSharePrice(uint256 _amount, uint256 _shares) private {
         uint256 sharesBefore = balanceOf(msg.sender);
         uint256 costBefore = costSharePrice[msg.sender];
-        uint256 costAfter = (sharesBefore.mul(costBefore).add(_amount.mul(1e18))
-        ).div(sharesBefore.add(_shares));
+        uint256 costAfter = (sharesBefore.mul(costBefore).add(_amount.mul(1e18))).div(sharesBefore.add(_shares));
 
         costSharePrice[msg.sender] = costAfter;
     }
@@ -159,7 +158,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     function setWithdrawFeePeriod(uint256 _withdrawFeePeriod) external onlyOwner {
         require(
             _withdrawFeePeriod <= MAX_WITHDRAW_FEE_PERIOD,
-            "WooStakingVault: withdrawFeePeriod cannot be more than MAX_WITHDRAW_FEE_PERIOD"
+            'WooStakingVault: withdrawFeePeriod cannot be more than MAX_WITHDRAW_FEE_PERIOD'
         );
         withdrawFeePeriod = _withdrawFeePeriod;
     }
@@ -167,10 +166,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     /// @notice Sets withdraw fee
     /// @dev Only callable by the contract owner.
     function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
-        require(
-            _withdrawFee <= MAX_WITHDRAW_FEE,
-            "WooStakingVault: withdrawFee cannot be more than MAX_WITHDRAW_FEE"
-        );
+        require(_withdrawFee <= MAX_WITHDRAW_FEE, 'WooStakingVault: withdrawFee cannot be more than MAX_WITHDRAW_FEE');
         withdrawFee = _withdrawFee;
     }
 
