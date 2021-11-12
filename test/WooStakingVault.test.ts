@@ -125,12 +125,12 @@ describe('WooStakingVault Normal Accuracy', () => {
     // totalReserveAmount should add currentReserveAmount
     expect(await wooStakingVault.totalReserveAmount()).to.eq(currentReserveAmount)
     // userInfo update
-    let [reserveAmount, ] = await wooStakingVault.userInfo(user.address)
+    let [reserveAmount] = await wooStakingVault.userInfo(user.address)
     expect(reserveAmount).to.eq(currentReserveAmount)
     // can't confirm the block.timestamp, will be confirm on bsc testnet
   })
 
-  it('balance should subtract totalReserveAmount', async() => {
+  it('balance should subtract totalReserveAmount', async () => {
     let totalReserveAmount = await wooStakingVault.totalReserveAmount()
     expect(totalReserveAmount).to.not.eq(BN_ZERO)
     let totalWOOBalance = await wooToken.balanceOf(wooStakingVault.address)
@@ -142,7 +142,7 @@ describe('WooStakingVault Normal Accuracy', () => {
     let userWooBalance = await wooToken.balanceOf(user.address)
     expect(userWooBalance).to.eq(BN_1e18.mul(900))
     // continue by reserveWithdraw, user.reserveAmount: BN_1e18.mul(100)
-    let [withdrawAmount, ] = await wooStakingVault.userInfo(user.address)
+    let [withdrawAmount] = await wooStakingVault.userInfo(user.address)
     let currentWithdrawFee = withdrawAmount.mul(BigNumber.from(10)).div(BigNumber.from(10000))
     await wooStakingVault.connect(user).withdraw()
     // treasury will receive fee after withdraw during 3 days
@@ -152,7 +152,7 @@ describe('WooStakingVault Normal Accuracy', () => {
 
     expect(await wooStakingVault.totalReserveAmount()).to.eq(BN_ZERO)
 
-    let [reserveAmount, ] = await wooStakingVault.userInfo(user.address)
+    let [reserveAmount] = await wooStakingVault.userInfo(user.address)
     expect(reserveAmount).to.eq(BN_ZERO)
   })
 })
@@ -230,8 +230,9 @@ describe('WooStakingVault Access Control & Require Check', () => {
 
   it('Only owner able to setWithdrawFeePeriod', async () => {
     let withdrawFeePeriod = BigNumber.from(86400) // 1 days
-    await expect(wooStakingVault.connect(user).setWithdrawFeePeriod(withdrawFeePeriod))
-      .to.be.revertedWith(onlyOwnerRevertedMessage)
+    await expect(wooStakingVault.connect(user).setWithdrawFeePeriod(withdrawFeePeriod)).to.be.revertedWith(
+      onlyOwnerRevertedMessage
+    )
     await wooStakingVault.connect(owner).setWithdrawFeePeriod(withdrawFeePeriod)
     expect(await wooStakingVault.withdrawFeePeriod()).to.eq(withdrawFeePeriod)
   })
@@ -239,14 +240,14 @@ describe('WooStakingVault Access Control & Require Check', () => {
   it('New withdrawFeePeriod can not exceed MAX_WITHDRAW_FEE_PERIOD when setWithdrawFeePeriod', async () => {
     let maxWithdrawFeePeriod = await wooStakingVault.MAX_WITHDRAW_FEE_PERIOD()
     let newWithdrawFeePeriod = maxWithdrawFeePeriod.add(BigNumber.from(86400)) // add 1 days
-    await expect(wooStakingVault.connect(owner).setWithdrawFeePeriod(newWithdrawFeePeriod))
-      .to.be.revertedWith(setWithdrawFeePeriodExceedMessage)
+    await expect(wooStakingVault.connect(owner).setWithdrawFeePeriod(newWithdrawFeePeriod)).to.be.revertedWith(
+      setWithdrawFeePeriodExceedMessage
+    )
   })
 
   it('Only owner able to setWithdrawFee', async () => {
     let withdrawFee = BigNumber.from(20) // 0.2%
-    await expect(wooStakingVault.connect(user).setWithdrawFee(withdrawFee))
-      .to.be.revertedWith(onlyOwnerRevertedMessage)
+    await expect(wooStakingVault.connect(user).setWithdrawFee(withdrawFee)).to.be.revertedWith(onlyOwnerRevertedMessage)
     await wooStakingVault.connect(owner).setWithdrawFee(withdrawFee)
     expect(await wooStakingVault.withdrawFee()).to.eq(withdrawFee)
   })
@@ -254,51 +255,47 @@ describe('WooStakingVault Access Control & Require Check', () => {
   it('New withdrawFee can not exceed MAX_WITHDRAW_FEE when setWithdrawFee', async () => {
     let maxWithdrawFee = await wooStakingVault.MAX_WITHDRAW_FEE()
     let newWithdrawFee = maxWithdrawFee.add(BigNumber.from(10)) // add 0.1%
-    await expect(wooStakingVault.connect(owner).setWithdrawFee(newWithdrawFee))
-      .to.be.revertedWith(setWithdrawFeeExceedMessage)
+    await expect(wooStakingVault.connect(owner).setWithdrawFee(newWithdrawFee)).to.be.revertedWith(
+      setWithdrawFeeExceedMessage
+    )
   })
 
   it('Only owner able to setTreasury', async () => {
-    await expect(wooStakingVault.connect(user).setTreasury(newTreasury.address))
-      .to.be.revertedWith(onlyOwnerRevertedMessage)
+    await expect(wooStakingVault.connect(user).setTreasury(newTreasury.address)).to.be.revertedWith(
+      onlyOwnerRevertedMessage
+    )
     await wooStakingVault.connect(owner).setTreasury(newTreasury.address)
     expect(await wooStakingVault.treasury()).to.eq(newTreasury.address)
   })
 
   it('Only owner able to pause', async () => {
-    await expect(wooStakingVault.connect(user).pause())
-      .to.be.revertedWith(onlyOwnerRevertedMessage)
+    await expect(wooStakingVault.connect(user).pause()).to.be.revertedWith(onlyOwnerRevertedMessage)
     await wooStakingVault.connect(owner).pause()
 
     let wooDeposit = BN_1e18.mul(100)
     await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
     // deposit will be reverted when contract is paused
-    await expect(wooStakingVault.connect(user).deposit(wooDeposit))
-      .to.be.revertedWith(whenNotPausedRevertedMessage)
+    await expect(wooStakingVault.connect(user).deposit(wooDeposit)).to.be.revertedWith(whenNotPausedRevertedMessage)
     // reserveWithdraw will be reverted when contract is paused
-    await expect(wooStakingVault.connect(user).reserveWithdraw(BN_ZERO))
-      .to.be.revertedWith(whenNotPausedRevertedMessage)
+    await expect(wooStakingVault.connect(user).reserveWithdraw(BN_ZERO)).to.be.revertedWith(
+      whenNotPausedRevertedMessage
+    )
     // withdraw will be reverted when contract is paused
-    await expect(wooStakingVault.connect(user).withdraw())
-      .to.be.revertedWith(whenNotPausedRevertedMessage)
+    await expect(wooStakingVault.connect(user).withdraw()).to.be.revertedWith(whenNotPausedRevertedMessage)
     // getPricePerFullShare will be reverted when contract is paused
-    await expect(wooStakingVault.getPricePerFullShare())
-      .to.be.revertedWith(whenNotPausedRevertedMessage)
+    await expect(wooStakingVault.getPricePerFullShare()).to.be.revertedWith(whenNotPausedRevertedMessage)
     // balance will be reverted when contract is paused
-    await expect(wooStakingVault.balance())
-      .to.be.revertedWith(whenNotPausedRevertedMessage)
+    await expect(wooStakingVault.balance()).to.be.revertedWith(whenNotPausedRevertedMessage)
   })
 
   it('Only owner able to unpause', async () => {
     // make sure contract is paused now
     expect(await wooStakingVault.paused()).to.eq(true)
     // start to unpause
-    await expect(wooStakingVault.connect(user).unpause())
-      .to.be.revertedWith(onlyOwnerRevertedMessage)
+    await expect(wooStakingVault.connect(user).unpause()).to.be.revertedWith(onlyOwnerRevertedMessage)
     await wooStakingVault.connect(owner).unpause()
     expect(await wooStakingVault.paused()).to.eq(false)
     // unpause will be reverted when contract is working
-    await expect(wooStakingVault.unpause())
-      .to.be.revertedWith(whenPausedRevertedMessage)
+    await expect(wooStakingVault.unpause()).to.be.revertedWith(whenPausedRevertedMessage)
   })
 })
