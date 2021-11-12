@@ -57,7 +57,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
 
     /* ----- State variables ----- */
 
-    mapping (address => uint256) public override feeRate;
+    mapping(address => uint256) public override feeRate;
 
     constructor() public {
         initOwner(msg.sender);
