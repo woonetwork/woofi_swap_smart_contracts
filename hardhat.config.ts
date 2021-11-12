@@ -39,7 +39,7 @@ export default {
       url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
       chainId: 97,
       gasPrice: 20000000000,
-      accounts: [process.env.BSC_TESTNET_PRIVATE_KEY],
+      accounts: [],
     },
     bsc_mainnet: {
       url: 'https://bsc-dataseed.binance.org/',
