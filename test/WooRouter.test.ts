@@ -332,7 +332,7 @@ describe('WooRouter tests', () => {
       await wooracle.mock.state
         .withArgs(wooToken.address)
         .returns(utils.parseEther('1.05'), utils.parseEther('0.002'), utils.parseEther('0.00000005'), true)
-      
+
       await feeManager.mock.feeRate.withArgs(btcToken.address).returns(0)
       await feeManager.mock.feeRate.withArgs(wooToken.address).returns(0)
     })
