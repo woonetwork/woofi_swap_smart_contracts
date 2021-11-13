@@ -323,9 +323,7 @@ describe('WooPP Test Suite 1', () => {
     })
 
     it('tuneParameters revert4', async () => {
-      await expect(wooPP.tuneParameters(baseToken1.address, 11, 22)).to.be.revertedWith(
-        'WooPP: TOKEN_DOES_NOT_EXIST'
-      )
+      await expect(wooPP.tuneParameters(baseToken1.address, 11, 22)).to.be.revertedWith('WooPP: TOKEN_DOES_NOT_EXIST')
     })
 
     it('tuneParameters event1', async () => {

@@ -91,7 +91,7 @@ describe('WooPP Test Suite 2', () => {
     await wooracle.mock.state
       .withArgs(btcToken.address)
       .returns(ONE.mul(BTC_PRICE), BigNumber.from(10).pow(18).mul(1).div(10000), BigNumber.from(10).pow(9).mul(2), true)
-    
+
     feeManager = await deployMockContract(owner, IWooFeeManager.abi)
     await feeManager.mock.feeRate.withArgs(btcToken.address).returns(0)
 
@@ -720,9 +720,7 @@ describe('WooPP Test Suite 2', () => {
       let threshold = 0
       let R = BigNumber.from(0)
 
-      await expect(wooPP.addBaseToken(ZERO_ADDR, threshold, R)).to.be.revertedWith(
-        'WooPP: BASE_TOKEN_ZERO_ADDR'
-      )
+      await expect(wooPP.addBaseToken(ZERO_ADDR, threshold, R)).to.be.revertedWith('WooPP: BASE_TOKEN_ZERO_ADDR')
     })
 
     it('addBaseToken reverted with base token invalid', async () => {
@@ -757,9 +755,7 @@ describe('WooPP Test Suite 2', () => {
       let threshold = 0
       let R = BigNumber.from(0)
 
-      await expect(wooPP.addBaseToken(btcToken.address, threshold, R)).to.be.revertedWith(
-        'WooPP: TOKEN_ALREADY_EXISTS'
-      )
+      await expect(wooPP.addBaseToken(btcToken.address, threshold, R)).to.be.revertedWith('WooPP: TOKEN_ALREADY_EXISTS')
     })
 
     it('addBaseToken emit ParametersUpdated event', async () => {
@@ -815,18 +811,16 @@ describe('WooPP Test Suite 2', () => {
       let newThreshold = ONE.div(2)
       let newR = ONE.div(2)
 
-      await expect(
-        wooPP.connect(user2).tuneParameters(btcToken.address, newThreshold, newR)
-      ).to.be.revertedWith('WooPP: NOT_STRATEGIST')
+      await expect(wooPP.connect(user2).tuneParameters(btcToken.address, newThreshold, newR)).to.be.revertedWith(
+        'WooPP: NOT_STRATEGIST'
+      )
     })
 
     it('tuneParameters reverted with zero addr', async () => {
       let newThreshold = ONE.div(2)
       let newR = ONE.div(2)
 
-      await expect(wooPP.tuneParameters(ZERO_ADDR, newThreshold, newR)).to.be.revertedWith(
-        'WooPP: token_ZERO_ADDR'
-      )
+      await expect(wooPP.tuneParameters(ZERO_ADDR, newThreshold, newR)).to.be.revertedWith('WooPP: token_ZERO_ADDR')
     })
 
     it('tuneParameters reverted with threshold out of range', async () => {
@@ -844,9 +838,7 @@ describe('WooPP Test Suite 2', () => {
       let newR = ONE.div(2)
 
       let overRangeR = ONE.mul(2)
-      await expect(wooPP.tuneParameters(btcToken.address, newThreshold, overRangeR)).to.be.revertedWith(
-        'WooPP: R>1'
-      )
+      await expect(wooPP.tuneParameters(btcToken.address, newThreshold, overRangeR)).to.be.revertedWith('WooPP: R>1')
     })
 
     it('tuneParameters reverted with token dose not exist', async () => {

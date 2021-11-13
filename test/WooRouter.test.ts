@@ -100,7 +100,12 @@ describe('WooRouter tests', () => {
 
     beforeEach('Deploy WooRouter', async () => {
       wooracle = await deployContract(owner, Wooracle, [])
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, feeManager.address, wooGuardian.address])
+      wooPP = await deployContract(owner, WooPP, [
+        quoteToken.address,
+        wooracle.address,
+        feeManager.address,
+        wooGuardian.address,
+      ])
       wooRouter = (await deployContract(owner, WooRouterArtifact, [WBNB_ADDR, wooPP.address])) as WooRouter
     })
 
@@ -329,7 +334,12 @@ describe('WooRouter tests', () => {
     })
 
     beforeEach('Deploy WooRouter', async () => {
-      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, feeManager.address, wooGuardian.address])
+      wooPP = await deployContract(owner, WooPP, [
+        usdtToken.address,
+        wooracle.address,
+        feeManager.address,
+        wooGuardian.address,
+      ])
       wooRouter = (await deployContract(owner, WooRouterArtifact, [WBNB_ADDR, wooPP.address])) as WooRouter
 
       const threshold = 0
@@ -483,7 +493,12 @@ describe('WooRouter tests', () => {
     let wooRouter: WooRouter
 
     beforeEach('Deploy WooRouter', async () => {
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, feeManager.address, wooGuardian.address])
+      wooPP = await deployContract(owner, WooPP, [
+        quoteToken.address,
+        wooracle.address,
+        feeManager.address,
+        wooGuardian.address,
+      ])
       wooRouter = (await deployContract(owner, WooRouterArtifact, [WBNB_ADDR, wooPP.address])) as WooRouter
 
       await baseToken.mint(wooPP.address, ONE.mul(3))

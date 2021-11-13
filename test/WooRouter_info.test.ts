@@ -109,7 +109,12 @@ describe('WooRouter Info', () => {
     let wooRouter: WooRouter
 
     beforeEach('Deploy WooRouter', async () => {
-      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, feeManager.address, wooGuardian.address])
+      wooPP = await deployContract(owner, WooPP, [
+        usdtToken.address,
+        wooracle.address,
+        feeManager.address,
+        wooGuardian.address,
+      ])
       wooRouter = (await deployContract(owner, WooRouterArtifact, [WBNB_ADDR, wooPP.address])) as WooRouter
 
       const threshold = 0
