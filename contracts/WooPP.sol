@@ -84,15 +84,18 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     constructor(
         address newQuoteToken,
         address newWooracle,
+        address newFeeManager,
         address newWooGuardian
     ) public {
         require(newQuoteToken != address(0), 'WooPP: INVALID_QUOTE');
         require(newWooracle != address(0), 'WooPP: newWooracle_ZERO_ADDR');
         require(newWooGuardian != address(0), 'WooPP: newWooGuardian_ZERO_ADDR');
+        require(newFeeManager != address(0), 'WooPP: newFeeManager_ZERO_ADDR');
 
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
         wooracle = newWooracle;
+        feeManager = newFeeManager;
         wooGuardian = IWooGuardian(newWooGuardian);
 
         TokenInfo storage quoteInfo = tokenInfo[newQuoteToken];
