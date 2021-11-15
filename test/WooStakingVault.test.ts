@@ -221,8 +221,9 @@ describe('WooStakingVault Complex Accuracy', () => {
     // check everything after three holders deposited
     for (let i in holders) {
       let holder = holders[i]
-      expect(await wooToken.allowance(holder.address, wooStakingVault.address))
-        .to.eq((baseMint.sub(baseDeposit).mul(BN_TEN.pow(BigNumber.from(i)))))
+      expect(await wooToken.allowance(holder.address, wooStakingVault.address)).to.eq(
+        baseMint.sub(baseDeposit).mul(BN_TEN.pow(BigNumber.from(i)))
+      )
       expect(await wooStakingVault.costSharePrice(holder.address)).to.eq(BN_1e18)
       // WOO and xWOO ratio should be 1:1 when cost share price equal to BN_1e18
       let wooDeposit = baseDeposit.mul(BN_TEN.pow(BigNumber.from(i)))
@@ -234,8 +235,7 @@ describe('WooStakingVault Complex Accuracy', () => {
     let wooBalanceBefore = await wooStakingVault.balance() // balance of WOO before transfer
     let xTotalSupplyBefore = await wooStakingVault.totalSupply() // balance of xWOO before transfer
     expect(wooBalanceBefore).to.eq(xTotalSupplyBefore)
-    expect(await wooStakingVault.getPricePerFullShare())
-      .to.eq(wooBalanceBefore.mul(BN_1e18).div(xTotalSupplyBefore))
+    expect(await wooStakingVault.getPricePerFullShare()).to.eq(wooBalanceBefore.mul(BN_1e18).div(xTotalSupplyBefore))
 
     // transfer 100000 WOO to vault
     await wooToken.connect(owner).transfer(wooStakingVault.address, BN_1e18.mul(BN_TEN.pow(BigNumber.from(5))))
@@ -315,7 +315,9 @@ describe('WooStakingVault Complex Accuracy', () => {
     let bigWithdrawFee = bigWithdrawAmount.mul(BN_TEN).div(BigNumber.from(10000))
     await wooStakingVault.connect(bigHolder).withdraw()
     expect(await wooToken.balanceOf(treasury.address)).to.eq(bigWithdrawFee)
-    expect(await wooToken.balanceOf(bigHolder.address)).to.eq(bigHolderBalance.add(bigWithdrawAmount).sub(bigWithdrawFee))
+    expect(await wooToken.balanceOf(bigHolder.address)).to.eq(
+      bigHolderBalance.add(bigWithdrawAmount).sub(bigWithdrawFee)
+    )
 
     expect(await wooStakingVault.totalReserveAmount()).to.eq(totalRABeforeBigWithdraw.sub(bigWithdrawAmount))
     let [reserveAmountAfterBigWithdraw] = await wooStakingVault.userInfo(bigHolder.address)
@@ -394,10 +396,9 @@ describe('WooStakingVault Access Control & Require Check', () => {
   })
 
   it('Staked token can not be zero address', async () => {
-    await expect(deployContract(owner, WooStakingVaultArtifact, [
-      ZERO_ADDRESS,
-      treasury.address
-    ])).to.be.revertedWith(nonContractAccountMessage)
+    await expect(deployContract(owner, WooStakingVaultArtifact, [ZERO_ADDRESS, treasury.address])).to.be.revertedWith(
+      nonContractAccountMessage
+    )
   })
 
   it('Only owner able to setWithdrawFeePeriod', async () => {
@@ -501,13 +502,11 @@ describe('WooStakingVault Event', () => {
     let wooDeposit = BN_1e18.mul(100)
     await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
 
-    await expect(wooStakingVault.connect(user).deposit(wooDeposit))
-      .to.emit(wooStakingVault, 'Deposit')
-      .withArgs(
-        user.address,
-        wooDeposit,
-        BN_1e18.mul(100), // mintShares equal to wooDeposit when share price is 1e18
-      )
+    await expect(wooStakingVault.connect(user).deposit(wooDeposit)).to.emit(wooStakingVault, 'Deposit').withArgs(
+      user.address,
+      wooDeposit,
+      BN_1e18.mul(100) // mintShares equal to wooDeposit when share price is 1e18
+    )
   })
 
   it('ReserveWithdraw', async () => {
@@ -524,11 +523,7 @@ describe('WooStakingVault Event', () => {
     // make reserve to withdraw woo
     await expect(wooStakingVault.connect(user).reserveWithdraw(reserveShares))
       .to.emit(wooStakingVault, 'ReserveWithdraw')
-      .withArgs(
-        user.address,
-        currentReserveAmount,
-        reserveShares
-      )
+      .withArgs(user.address, currentReserveAmount, reserveShares)
   })
 
   it('Withdraw', async () => {
@@ -541,9 +536,6 @@ describe('WooStakingVault Event', () => {
 
     await expect(wooStakingVault.connect(user).withdraw())
       .to.emit(wooStakingVault, 'Withdraw')
-      .withArgs(
-        user.address,
-        withdrawAmount.sub(currentWithdrawFee)
-      )
+      .withArgs(user.address, withdrawAmount.sub(currentWithdrawFee))
   })
 })
