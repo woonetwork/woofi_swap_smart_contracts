@@ -43,10 +43,13 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
+import './libraries/DecimalMath.sol';
+
 contract WooStakingVault is ERC20, Ownable, Pausable {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
+    using DecimalMath for uint256;
 
     struct UserInfo {
         uint256 reserveAmount; // amount of stakedToken user reverseWithdraw
@@ -128,6 +131,30 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmount);
     }
 
+    function reserveAndWithdrawInstantly(uint256 shares) external whenNotPaused {
+        require(shares >= 0, '...');
+        require(shares <= userBalance(), '...');
+
+        uint256 wooAmountWithdraw = shares.mulFloor(getPricePerFullShare());
+
+        uint256 poolBalance = balance();
+        if (poolBalance < wooAmountWithdraw) {
+            wooAmountWithdraw = poolBalance;
+        }
+
+        _burn(msg.sender, shares);
+
+        uint256 withdrawFee = withdrawAmount.mul(withdrawFee).div(10000);
+        if (withdrawFee > 0) {
+            TransferHelper.safeTransfer(address(stakedToken), treasury, withdrawFee);
+        }
+        uint256 withdrawAmountAfterFee = wooAmountWithdraw.sub(withdrawFee);
+
+        TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmountAfterFee);
+
+        // emit the event
+    }
+
     /* ----- Public Functions ----- */
 
     function getPricePerFullShare() public view whenNotPaused returns (uint256) {
@@ -158,7 +185,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     function setWithdrawFeePeriod(uint256 _withdrawFeePeriod) external onlyOwner {
         require(
             _withdrawFeePeriod <= MAX_WITHDRAW_FEE_PERIOD,
-            'WooStakingVault: withdrawFeePeriod cannot be more than MAX_WITHDRAW_FEE_PERIOD'
+            'WooStakingVault: withdrawFeePeriod>MAX_WITHDRAW_FEE_PERIOD'
         );
         withdrawFeePeriod = _withdrawFeePeriod;
     }
@@ -166,7 +193,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     /// @notice Sets withdraw fee
     /// @dev Only callable by the contract owner.
     function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
-        require(_withdrawFee <= MAX_WITHDRAW_FEE, 'WooStakingVault: withdrawFee cannot be more than MAX_WITHDRAW_FEE');
+        require(_withdrawFee <= MAX_WITHDRAW_FEE, 'WooStakingVault: withdrawFee>MAX_WITHDRAW_FEE');
         withdrawFee = _withdrawFee;
     }
 
