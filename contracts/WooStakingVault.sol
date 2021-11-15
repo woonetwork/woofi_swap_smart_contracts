@@ -53,6 +53,12 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         uint256 lastReserveWithdrawTime; // keeps track of reverseWithdraw time for potential penalty
     }
 
+    /* ----- Events ----- */
+
+    event Deposit(address indexed user, uint256 depositAmount, uint256 mintShares);
+    event ReserveWithdraw(address indexed user, uint256 reserveAmount, uint256 burnShares);
+    event Withdraw(address indexed user, uint256 withdrawAmount);
+
     /* ----- State variables ----- */
 
     IERC20 public stakedToken;
@@ -61,14 +67,14 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     uint256 public totalReserveAmount = 0; // affected by reserveWithdraw and withdraw
     uint256 public withdrawFeePeriod = 72 hours; // 3 days
-    uint256 public withdrawFee = 10; // 0.1%
+    uint256 public withdrawFee = 10; // 0.1% (10000 as denominator)
 
     address public treasury;
 
     /* ----- Constant variables ----- */
 
     uint256 public constant MAX_WITHDRAW_FEE_PERIOD = 72 hours; // 3 days
-    uint256 public constant MAX_WITHDRAW_FEE = 100; // 1%
+    uint256 public constant MAX_WITHDRAW_FEE = 100; // 1% (10000 as denominator)
 
     constructor(address _stakedToken, address _treasury)
         public
@@ -77,6 +83,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
             string(abi.encodePacked('x', ERC20(_stakedToken).symbol()))
         )
     {
+        require(_stakedToken != address(0), 'WooStakingVault: _stakedToken_ZERO_ADDR');
         stakedToken = IERC20(_stakedToken);
         treasury = _treasury;
     }
@@ -86,7 +93,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     function deposit(uint256 _amount) external whenNotPaused {
         uint256 balanceBefore = balance();
         TransferHelper.safeTransferFrom(address(stakedToken), msg.sender, address(this), _amount);
-        uint256 balanceAfter = stakedToken.balanceOf(address(this)).sub(totalReserveAmount);
+        uint256 balanceAfter = balance();
         _amount = balanceAfter.sub(balanceBefore);
 
         uint256 xTotalSupply = totalSupply();
@@ -96,6 +103,8 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         _updateCostSharePrice(_amount, shares);
 
         _mint(msg.sender, shares);
+
+        emit Deposit(msg.sender, _amount, shares);
     }
 
     function reserveWithdraw(uint256 _shares) external whenNotPaused {
@@ -112,6 +121,8 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         UserInfo storage user = userInfo[msg.sender];
         user.reserveAmount = user.reserveAmount.add(currentReserveAmount);
         user.lastReserveWithdrawTime = block.timestamp;
+
+        emit ReserveWithdraw(msg.sender, currentReserveAmount, _shares);
     }
 
     function withdraw() external whenNotPaused {
@@ -126,6 +137,8 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         user.reserveAmount = 0;
 
         TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmount);
+
+        emit Withdraw(msg.sender, withdrawAmount);
     }
 
     /* ----- Public Functions ----- */
