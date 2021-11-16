@@ -72,7 +72,7 @@ describe('WooStakingVault Normal Accuracy', () => {
       treasury.address,
     ])) as WooStakingVault
 
-    burnExceedBalanceMessage = "ERC20: burn amount exceeds balance"
+    burnExceedBalanceMessage = 'ERC20: burn amount exceeds balance'
   })
 
   it('Check state variables after contract initialized', async () => {
@@ -127,8 +127,9 @@ describe('WooStakingVault Normal Accuracy', () => {
     // will be reverted if shares exceed user shares balance
     let exceedShares = BN_1e18.mul(200)
     expect(await wooStakingVault.balanceOf(user.address)).to.lt(exceedShares)
-    await expect(wooStakingVault.connect(user).instantWithdraw(exceedShares))
-      .to.be.revertedWith(burnExceedBalanceMessage)
+    await expect(wooStakingVault.connect(user).instantWithdraw(exceedShares)).to.be.revertedWith(
+      burnExceedBalanceMessage
+    )
     // make reserve to withdraw woo
     await wooStakingVault.connect(user).reserveWithdraw(reserveShares)
     // xWOO balance should be zero after reserveWithdraw
@@ -185,8 +186,9 @@ describe('WooStakingVault Normal Accuracy', () => {
     // will be reverted if shares exceed user shares balance
     let exceedShares = BN_1e18.mul(200)
     expect(await wooStakingVault.balanceOf(user.address)).to.lt(exceedShares)
-    await expect(wooStakingVault.connect(user).instantWithdraw(exceedShares))
-      .to.be.revertedWith(burnExceedBalanceMessage)
+    await expect(wooStakingVault.connect(user).instantWithdraw(exceedShares)).to.be.revertedWith(
+      burnExceedBalanceMessage
+    )
     // instantWithdraw by charging fee
     let userWooBalanceBefore = await wooToken.balanceOf(user.address)
     let wooWithdraw = wooDeposit.div(2)
