@@ -56,8 +56,6 @@ describe('WooStakingVault Normal Accuracy', () => {
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
 
-  let burnExceedBalanceMessage: string
-
   before(async () => {
     ;[owner, user, treasury] = await ethers.getSigners()
     wooToken = (await deployContract(owner, TestTokenArtifact, [])) as TestToken
@@ -71,8 +69,6 @@ describe('WooStakingVault Normal Accuracy', () => {
       wooToken.address,
       treasury.address,
     ])) as WooStakingVault
-
-    burnExceedBalanceMessage = 'ERC20: burn amount exceeds balance'
   })
 
   it('Check state variables after contract initialized', async () => {
@@ -124,12 +120,6 @@ describe('WooStakingVault Normal Accuracy', () => {
     let currentReserveAmount = reserveShares.mul(sharePrice).div(BN_1e18)
     let poolBalance = await wooStakingVault.balance()
     expect(currentReserveAmount).to.eq(poolBalance)
-    // will be reverted if shares exceed user shares balance
-    let exceedShares = BN_1e18.mul(200)
-    expect(await wooStakingVault.balanceOf(user.address)).to.lt(exceedShares)
-    await expect(wooStakingVault.connect(user).instantWithdraw(exceedShares)).to.be.revertedWith(
-      burnExceedBalanceMessage
-    )
     // make reserve to withdraw woo
     await wooStakingVault.connect(user).reserveWithdraw(reserveShares)
     // xWOO balance should be zero after reserveWithdraw
@@ -183,12 +173,6 @@ describe('WooStakingVault Normal Accuracy', () => {
     await wooStakingVault.connect(user).deposit(wooDeposit)
     expect(await wooToken.allowance(user.address, wooStakingVault.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
-    // will be reverted if shares exceed user shares balance
-    let exceedShares = BN_1e18.mul(200)
-    expect(await wooStakingVault.balanceOf(user.address)).to.lt(exceedShares)
-    await expect(wooStakingVault.connect(user).instantWithdraw(exceedShares)).to.be.revertedWith(
-      burnExceedBalanceMessage
-    )
     // instantWithdraw by charging fee
     let userWooBalanceBefore = await wooToken.balanceOf(user.address)
     let wooWithdraw = wooDeposit.div(2)
@@ -405,6 +389,8 @@ describe('WooStakingVault Access Control & Require Check', () => {
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
 
+  let initialTreasuryZeroAddressMessage: string
+  let sharesExceedBalanceMessage: string
   let nonContractAccountMessage: string
   let onlyOwnerRevertedMessage: string
   let setWithdrawFeePeriodExceedMessage: string
@@ -426,18 +412,42 @@ describe('WooStakingVault Access Control & Require Check', () => {
       treasury.address,
     ])) as WooStakingVault
 
+    initialTreasuryZeroAddressMessage = "WooStakingVault: initialTreasury_ZERO_ADDR"
+    sharesExceedBalanceMessage = "WooStakingVault: shares exceed balance"
     nonContractAccountMessage = 'function call to a non-contract account'
     onlyOwnerRevertedMessage = 'Ownable: caller is not the owner'
-    setWithdrawFeePeriodExceedMessage = 'WooStakingVault: withdrawFeePeriod>MAX_WITHDRAW_FEE_PERIOD'
-    setWithdrawFeeExceedMessage = 'WooStakingVault: withdrawFee>MAX_WITHDRAW_FEE'
+    setWithdrawFeePeriodExceedMessage = 'WooStakingVault: newWithdrawFeePeriod>MAX_WITHDRAW_FEE_PERIOD'
+    setWithdrawFeeExceedMessage = 'WooStakingVault: newWithdrawFee>MAX_WITHDRAW_FEE'
     whenNotPausedRevertedMessage = 'Pausable: paused'
     whenPausedRevertedMessage = 'Pausable: not paused'
   })
 
-  it('Staked token can not be zero address', async () => {
+  it('Initial staked token can not be zero address', async () => {
     await expect(deployContract(owner, WooStakingVaultArtifact, [ZERO_ADDRESS, treasury.address])).to.be.revertedWith(
       nonContractAccountMessage
     )
+  })
+
+  it('Initial treasury can not be zero address', async () => {
+    await expect(deployContract(owner, WooStakingVaultArtifact, [wooToken.address, ZERO_ADDRESS])).to.be.revertedWith(
+      initialTreasuryZeroAddressMessage
+    )
+  })
+
+  it('reserveWithdraw shares exceed balance will be reverted', async () => {
+    let exceedShares = BN_1e18.mul(200)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balanceOf(user.address)).to.lt(exceedShares)
+    await expect(wooStakingVault.connect(user).reserveWithdraw(exceedShares))
+      .to.be.revertedWith(sharesExceedBalanceMessage)
+  })
+
+  it('instantWithdraw shares exceed balance will be reverted', async () => {
+    let exceedShares = BN_1e18.mul(200)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balanceOf(user.address)).to.lt(exceedShares)
+    await expect(wooStakingVault.connect(user).instantWithdraw(exceedShares))
+      .to.be.revertedWith(sharesExceedBalanceMessage)
   })
 
   it('Only owner able to setWithdrawFeePeriod', async () => {
@@ -575,6 +585,19 @@ describe('WooStakingVault Event', () => {
 
     await expect(wooStakingVault.connect(user).withdraw())
       .to.emit(wooStakingVault, 'Withdraw')
-      .withArgs(user.address, withdrawAmount.sub(currentWithdrawFee))
+      .withArgs(user.address, withdrawAmount.sub(currentWithdrawFee), currentWithdrawFee)
+  })
+
+  it('InstantWithdraw', async () => {
+    expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
+    let wooDeposit = BN_1e18.mul(100)
+    await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
+    await wooStakingVault.connect(user).deposit(wooDeposit)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
+
+    await wooStakingVault.connect(owner).setWithdrawFee(BN_ZERO)
+    await expect(wooStakingVault.connect(user).instantWithdraw(wooDeposit))
+      .to.emit(wooStakingVault, 'InstantWithdraw')
+      .withArgs(user.address, wooDeposit, BN_ZERO)
   })
 })
