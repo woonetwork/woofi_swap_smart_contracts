@@ -157,6 +157,39 @@ describe('WooStakingVault Normal Accuracy', () => {
     let [reserveAmount] = await wooStakingVault.userInfo(user.address)
     expect(reserveAmount).to.eq(BN_ZERO)
   })
+
+  it('instantWithdraw', async () => {
+    // pre check
+    expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balance()).to.eq(BN_ZERO)
+    expect(await wooStakingVault.getPricePerFullShare()).to.eq(BN_1e18)
+    expect(await wooStakingVault.totalReserveAmount()).to.eq(BN_ZERO)
+    let [reserveAmount] = await wooStakingVault.userInfo(user.address)
+    expect(reserveAmount).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(BN_ZERO)
+    // deposit 100 WOO into vault
+    let wooDeposit = BN_1e18.mul(100)
+    await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
+    await wooStakingVault.connect(user).deposit(wooDeposit)
+    expect(await wooToken.allowance(user.address, wooStakingVault.address)).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
+    // instantWithdraw by charging fee
+    let userWooBalanceBefore = await wooToken.balanceOf(user.address)
+    let wooWithdraw = wooDeposit.div(2)
+    expect(await wooStakingVault.withdrawFee()).to.eq(BN_TEN)
+    await wooStakingVault.connect(user).instantWithdraw(wooWithdraw)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooWithdraw)
+    let currentWithdrawFee = wooWithdraw.mul(BN_TEN).div(BigNumber.from(10000))
+    let userWooBalanceAfter = await wooToken.balanceOf(user.address)
+    expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooWithdraw).sub(currentWithdrawFee))
+    // instantWithdraw no charging fee
+    userWooBalanceBefore = await wooToken.balanceOf(user.address)
+    await wooStakingVault.setWithdrawFee(BN_ZERO)
+    expect(await wooStakingVault.withdrawFee()).to.eq(BN_ZERO)
+    await wooStakingVault.connect(user).instantWithdraw(wooWithdraw)
+    userWooBalanceAfter = await wooToken.balanceOf(user.address)
+    expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooWithdraw))
+  })
 })
 
 describe('WooStakingVault Complex Accuracy', () => {
@@ -197,16 +230,6 @@ describe('WooStakingVault Complex Accuracy', () => {
       await wooToken.connect(holder).approve(wooStakingVault.address, mintWooBalance)
     }
   })
-
-  /**
-   * TODO(@merlin)
-   * deposit by multi-users
-   * mint WOO after deposit
-   * check share price change
-   * reserveWithdraw by multi-users
-   * withdraw by multi-users
-   * check balance and totalReserveAmount correct or not
-   */
 
   it('Deposit by multiple holders', async () => {
     // make sure vault start with 0 balance
@@ -389,8 +412,8 @@ describe('WooStakingVault Access Control & Require Check', () => {
 
     nonContractAccountMessage = 'function call to a non-contract account'
     onlyOwnerRevertedMessage = 'Ownable: caller is not the owner'
-    setWithdrawFeePeriodExceedMessage = 'WooStakingVault: withdrawFeePeriod cannot be more than MAX_WITHDRAW_FEE_PERIOD'
-    setWithdrawFeeExceedMessage = 'WooStakingVault: withdrawFee cannot be more than MAX_WITHDRAW_FEE'
+    setWithdrawFeePeriodExceedMessage = 'WooStakingVault: withdrawFeePeriod>MAX_WITHDRAW_FEE_PERIOD'
+    setWithdrawFeeExceedMessage = 'WooStakingVault: withdrawFee>MAX_WITHDRAW_FEE'
     whenNotPausedRevertedMessage = 'Pausable: paused'
     whenPausedRevertedMessage = 'Pausable: not paused'
   })
