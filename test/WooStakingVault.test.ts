@@ -412,8 +412,8 @@ describe('WooStakingVault Access Control & Require Check', () => {
       treasury.address,
     ])) as WooStakingVault
 
-    initialTreasuryZeroAddressMessage = "WooStakingVault: initialTreasury_ZERO_ADDR"
-    sharesExceedBalanceMessage = "WooStakingVault: shares exceed balance"
+    initialTreasuryZeroAddressMessage = 'WooStakingVault: initialTreasury_ZERO_ADDR'
+    sharesExceedBalanceMessage = 'WooStakingVault: shares exceed balance'
     nonContractAccountMessage = 'function call to a non-contract account'
     onlyOwnerRevertedMessage = 'Ownable: caller is not the owner'
     setWithdrawFeePeriodExceedMessage = 'WooStakingVault: newWithdrawFeePeriod>MAX_WITHDRAW_FEE_PERIOD'
@@ -438,16 +438,18 @@ describe('WooStakingVault Access Control & Require Check', () => {
     let exceedShares = BN_1e18.mul(200)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balanceOf(user.address)).to.lt(exceedShares)
-    await expect(wooStakingVault.connect(user).reserveWithdraw(exceedShares))
-      .to.be.revertedWith(sharesExceedBalanceMessage)
+    await expect(wooStakingVault.connect(user).reserveWithdraw(exceedShares)).to.be.revertedWith(
+      sharesExceedBalanceMessage
+    )
   })
 
   it('instantWithdraw shares exceed balance will be reverted', async () => {
     let exceedShares = BN_1e18.mul(200)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balanceOf(user.address)).to.lt(exceedShares)
-    await expect(wooStakingVault.connect(user).instantWithdraw(exceedShares))
-      .to.be.revertedWith(sharesExceedBalanceMessage)
+    await expect(wooStakingVault.connect(user).instantWithdraw(exceedShares)).to.be.revertedWith(
+      sharesExceedBalanceMessage
+    )
   })
 
   it('Only owner able to setWithdrawFeePeriod', async () => {
