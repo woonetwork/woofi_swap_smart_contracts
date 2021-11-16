@@ -144,28 +144,25 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         emit Withdraw(msg.sender, withdrawAmount);
     }
 
-    function reserveAndWithdrawInstantly(uint256 shares) external whenNotPaused {
-        require(shares >= 0, '...');
-        require(shares <= userBalance(), '...');
-
-        uint256 wooAmountWithdraw = shares.mulFloor(getPricePerFullShare());
+    function instantWithdraw(uint256 shares) external whenNotPaused {
+        uint256 withdrawAmount = shares.mulFloor(getPricePerFullShare());
 
         uint256 poolBalance = balance();
-        if (poolBalance < wooAmountWithdraw) {
-            wooAmountWithdraw = poolBalance;
+        if (poolBalance < withdrawAmount) {
+            withdrawAmount = poolBalance;
         }
 
-        _burn(msg.sender, shares);
+        _burn(msg.sender, shares); // _burn will check the balance of user's shares enough or not
 
-        uint256 withdrawFee = withdrawAmount.mul(withdrawFee).div(10000);
-        if (withdrawFee > 0) {
-            TransferHelper.safeTransfer(address(stakedToken), treasury, withdrawFee);
+        uint256 currentWithdrawFee = withdrawAmount.mul(withdrawFee).div(10000);
+        if (currentWithdrawFee > 0) {
+            TransferHelper.safeTransfer(address(stakedToken), treasury, currentWithdrawFee);
         }
-        uint256 withdrawAmountAfterFee = wooAmountWithdraw.sub(withdrawFee);
+        withdrawAmount = withdrawAmount.sub(currentWithdrawFee);
 
-        TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmountAfterFee);
+        TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmount);
 
-        // emit the event
+        emit Withdraw(msg.sender, withdrawAmount);
     }
 
     /* ----- Public Functions ----- */
