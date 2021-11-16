@@ -39,7 +39,7 @@ import { ethers } from 'hardhat'
 // import WooPP from '../build/WooPP.json'
 import IERC20 from '../build/IERC20.json'
 import IWooracle from '../build/IWooracle.json'
-import WooGuardian from '../build/WooGuardian.json'
+import IWooGuardian from '../build/IWooGuardian.json'
 import TestToken from '../build/TestToken.json'
 import AggregatorV3Interface from '../build/AggregatorV3Interface.json'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -93,7 +93,10 @@ describe('WooPP Test Suite 3', () => {
       .withArgs(usdtToken.address)
       .returns(ONE, BigNumber.from(10).pow(18).mul(1).div(10000), BigNumber.from(10).pow(9).mul(2), true)
 
-    wooGuardian = await deployContract(owner, WooGuardian, [utils.parseEther('0.01')])
+    wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
+    await wooGuardian.mock.checkSwapPrice.returns()
+    await wooGuardian.mock.checkSwapAmount.returns()
+    await wooGuardian.mock.checkInputAmount.returns()
 
     usdtChainLinkRefOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
     await usdtChainLinkRefOracle.mock.decimals.returns(8)
@@ -124,10 +127,6 @@ describe('WooPP Test Suite 3', () => {
       BigNumber.from('1634799201'),
       BigNumber.from('36893488147419122884')
     )
-
-    await wooGuardian.setToken(usdtToken.address, usdtChainLinkRefOracle.address)
-    await wooGuardian.setToken(btcToken.address, btcChainLinkRefOracle.address)
-    await wooGuardian.setToken(wooToken.address, wooChainLinkRefOracle.address)
   })
 
   describe('Swap test with guardian', () => {
