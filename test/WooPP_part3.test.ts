@@ -39,6 +39,7 @@ import { ethers } from 'hardhat'
 // import WooPP from '../build/WooPP.json'
 import IERC20 from '../build/IERC20.json'
 import IWooracle from '../build/IWooracle.json'
+import IWooFeeManager from '../build/IWooFeeManager.json'
 import IWooGuardian from '../build/IWooGuardian.json'
 import TestToken from '../build/TestToken.json'
 import AggregatorV3Interface from '../build/AggregatorV3Interface.json'
@@ -68,6 +69,7 @@ describe('WooPP Test Suite 3', () => {
   let user1: SignerWithAddress
 
   let wooracle: Contract
+  let feeManager: Contract
   let usdtToken: Contract
   let btcToken: Contract
   let wooToken: Contract
@@ -92,6 +94,9 @@ describe('WooPP Test Suite 3', () => {
     await wooracle.mock.state
       .withArgs(usdtToken.address)
       .returns(ONE, BigNumber.from(10).pow(18).mul(1).div(10000), BigNumber.from(10).pow(9).mul(2), true)
+
+    feeManager = await deployMockContract(owner, IWooFeeManager.abi)
+    await feeManager.mock.feeRate.withArgs(btcToken.address).returns(0)
 
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
@@ -136,6 +141,7 @@ describe('WooPP Test Suite 3', () => {
       wooPP = (await deployContract(owner, WooPPArtifact, [
         usdtToken.address,
         wooracle.address,
+        feeManager.address,
         wooGuardian.address,
       ])) as WooPP
 
@@ -143,7 +149,7 @@ describe('WooPP Test Suite 3', () => {
       // const lpFeeRate = BigNumber.from(10).pow(18).mul(1).div(1000)
       const lpFeeRate = 0
       const R = BigNumber.from(0)
-      await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R)
+      await wooPP.addBaseToken(btcToken.address, threshold, R)
 
       await usdtToken.mint(wooPP.address, WOOPP_USDT_BALANCE)
       await btcToken.mint(wooPP.address, WOOPP_BTC_BALANCE)

@@ -42,6 +42,7 @@ import IWooPP from '../build/IWooPP.json'
 import IERC20 from '../build/IERC20.json'
 import TestToken from '../build/TestToken.json'
 import IWooracle from '../build/IWooracle.json'
+import IWooFeeManager from '../build/IWooFeeManager.json'
 import IWooGuardian from '../build/IWooGuardian.json'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { WooRouter } from '../typechain'
@@ -73,6 +74,7 @@ describe('WooRouter tests', () => {
   let wooToken: Contract
   let wooGuardian: Contract
   let wooracle: Contract
+  let feeManager: Contract
 
   before('Deploy ERC20', async () => {
     ;[owner, user] = await ethers.getSigners()
@@ -81,6 +83,10 @@ describe('WooRouter tests', () => {
     wooToken = await deployContract(owner, TestToken, [])
 
     wooracle = await deployMockContract(owner, IWooracle.abi)
+
+    feeManager = await deployMockContract(owner, IWooFeeManager.abi)
+    await feeManager.mock.feeRate.withArgs(baseToken.address).returns(0)
+    await feeManager.mock.feeRate.withArgs(wooToken.address).returns(0)
 
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
@@ -95,7 +101,12 @@ describe('WooRouter tests', () => {
 
     beforeEach('Deploy WooRouter', async () => {
       wooracle = await deployContract(owner, Wooracle, [])
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, wooGuardian.address])
+      wooPP = await deployContract(owner, WooPP, [
+        quoteToken.address,
+        wooracle.address,
+        feeManager.address,
+        wooGuardian.address,
+      ])
       wooRouter = (await deployContract(owner, WooRouterArtifact, [WBNB_ADDR, wooPP.address])) as WooRouter
     })
 
@@ -137,6 +148,7 @@ describe('WooRouter tests', () => {
       let anotherWooPP = await deployContract(owner, WooPP, [
         anotherQuoteToken.address,
         wooracle.address,
+        feeManager.address,
         wooGuardian.address,
       ])
       await wooRouter.setPool(anotherWooPP.address)
@@ -159,6 +171,7 @@ describe('WooRouter tests', () => {
       let anotherWooPP = await deployContract(owner, WooPP, [
         anotherQuoteToken.address,
         wooracle.address,
+        feeManager.address,
         wooGuardian.address,
       ])
       await wooRouter.setPool(anotherWooPP.address)
@@ -172,6 +185,7 @@ describe('WooRouter tests', () => {
       let anotherWooPP = await deployContract(owner, WooPP, [
         anotherQuoteToken.address,
         wooracle.address,
+        feeManager.address,
         wooGuardian.address,
       ])
       await expect(wooRouter.connect(user).setPool(anotherWooPP.address)).to.be.revertedWith(
@@ -318,17 +332,24 @@ describe('WooRouter tests', () => {
       await wooracle.mock.state
         .withArgs(wooToken.address)
         .returns(utils.parseEther('1.05'), utils.parseEther('0.002'), utils.parseEther('0.00000005'), true)
+
+      await feeManager.mock.feeRate.withArgs(btcToken.address).returns(0)
+      await feeManager.mock.feeRate.withArgs(wooToken.address).returns(0)
     })
 
     beforeEach('Deploy WooRouter', async () => {
-      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, wooGuardian.address])
+      wooPP = await deployContract(owner, WooPP, [
+        usdtToken.address,
+        wooracle.address,
+        feeManager.address,
+        wooGuardian.address,
+      ])
       wooRouter = (await deployContract(owner, WooRouterArtifact, [WBNB_ADDR, wooPP.address])) as WooRouter
 
       const threshold = 0
-      const lpFeeRate = 0
       const R = BigNumber.from(0)
-      await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R)
-      await wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, R)
+      await wooPP.addBaseToken(btcToken.address, threshold, R)
+      await wooPP.addBaseToken(wooToken.address, threshold, R)
 
       await btcToken.mint(wooPP.address, ONE.mul(10))
       await usdtToken.mint(wooPP.address, ONE.mul(5000000))
@@ -475,7 +496,12 @@ describe('WooRouter tests', () => {
     let wooRouter: WooRouter
 
     beforeEach('Deploy WooRouter', async () => {
-      wooPP = await deployContract(owner, WooPP, [quoteToken.address, wooracle.address, wooGuardian.address])
+      wooPP = await deployContract(owner, WooPP, [
+        quoteToken.address,
+        wooracle.address,
+        feeManager.address,
+        wooGuardian.address,
+      ])
       wooRouter = (await deployContract(owner, WooRouterArtifact, [WBNB_ADDR, wooPP.address])) as WooRouter
 
       await baseToken.mint(wooPP.address, ONE.mul(3))

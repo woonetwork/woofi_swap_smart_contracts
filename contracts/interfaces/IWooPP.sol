@@ -47,7 +47,6 @@ interface IWooPP {
         uint112 reserve; // Token balance
         uint112 threshold; // Threshold for reserve update
         uint32 lastResetTimestamp; // Timestamp for last param update
-        uint64 lpFeeRate; // Fee rate: e.g. 0.001 = 0.1%
         uint64 R; // Rebalance coefficient [0, 1]
         uint112 target; // Targeted balance for pricing
         bool isValid; // is this token info valid
@@ -56,10 +55,11 @@ interface IWooPP {
     /* ----- Events ----- */
 
     event StrategistUpdated(address indexed strategist, bool flag);
+    event FeeManagerUpdated(address indexed newFeeManager);
     event RewardManagerUpdated(address indexed newRewardManager);
     event WooracleUpdated(address indexed newWooracle);
     event WooGuardianUpdated(address indexed newWooGuardian);
-    event ParametersUpdated(address indexed baseToken, uint256 newThreshold, uint256 newLpFeeRate, uint256 newR);
+    event ParametersUpdated(address indexed baseToken, uint256 newThreshold, uint256 newR);
     event Withdraw(address indexed token, address indexed to, uint256 amount);
     event WooSwap(
         address indexed fromToken,

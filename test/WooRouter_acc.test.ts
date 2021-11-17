@@ -39,6 +39,7 @@ import IWooracle from '../build/IWooracle.json'
 import WooPP from '../build/WooPP.json'
 import IWooPP from '../build/IWooPP.json'
 import IWooGuardian from '../build/IWooGuardian.json'
+import IWooFeeManager from '../build/IWooFeeManager.json'
 // import WooRouter from '../build/WooRouter.json'
 import IERC20 from '../build/IERC20.json'
 import TestToken from '../build/TestToken.json'
@@ -69,6 +70,7 @@ describe('WooRouter trading accuracy', () => {
   let user: SignerWithAddress
 
   let wooracle: Contract
+  let feeManager: Contract
   let wooGuardian: Contract
   let btcToken: Contract
   let wooToken: Contract
@@ -94,6 +96,10 @@ describe('WooRouter trading accuracy', () => {
       .withArgs(wooToken.address)
       .returns(utils.parseEther('1.05'), utils.parseEther('0.002'), utils.parseEther('0.00000005'), true)
 
+    feeManager = await deployMockContract(owner, IWooFeeManager.abi)
+    await feeManager.mock.feeRate.withArgs(btcToken.address).returns(0)
+    await feeManager.mock.feeRate.withArgs(wooToken.address).returns(0)
+
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
     await wooGuardian.mock.checkSwapAmount.returns()
@@ -105,14 +111,18 @@ describe('WooRouter trading accuracy', () => {
     let wooRouter: WooRouter
 
     beforeEach('Deploy WooRouter', async () => {
-      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, wooGuardian.address])
+      wooPP = await deployContract(owner, WooPP, [
+        usdtToken.address,
+        wooracle.address,
+        feeManager.address,
+        wooGuardian.address,
+      ])
       wooRouter = (await deployContract(owner, WooRouterArtifact, [WBNB_ADDR, wooPP.address])) as WooRouter
 
       const threshold = 0
-      const lpFeeRate = 0
       const R = BigNumber.from(0)
-      await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R)
-      await wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, R)
+      await wooPP.addBaseToken(btcToken.address, threshold, R)
+      await wooPP.addBaseToken(wooToken.address, threshold, R)
 
       await btcToken.mint(wooPP.address, ONE.mul(10))
       await usdtToken.mint(wooPP.address, ONE.mul(5000000))
@@ -225,14 +235,18 @@ describe('WooRouter trading accuracy', () => {
     let wooRouter: WooRouter
 
     beforeEach('Deploy WooRouter', async () => {
-      wooPP = await deployContract(owner, WooPP, [usdtToken.address, wooracle.address, wooGuardian.address])
+      wooPP = await deployContract(owner, WooPP, [
+        usdtToken.address,
+        wooracle.address,
+        feeManager.address,
+        wooGuardian.address,
+      ])
       wooRouter = (await deployContract(owner, WooRouterArtifact, [WBNB_ADDR, wooPP.address])) as WooRouter
 
       const threshold = 0
-      const lpFeeRate = 0
       const R = BigNumber.from(0)
-      await wooPP.addBaseToken(btcToken.address, threshold, lpFeeRate, R)
-      await wooPP.addBaseToken(wooToken.address, threshold, lpFeeRate, R)
+      await wooPP.addBaseToken(btcToken.address, threshold, R)
+      await wooPP.addBaseToken(wooToken.address, threshold, R)
 
       await btcToken.mint(wooPP.address, ONE.mul(100))
       await usdtToken.mint(wooPP.address, ONE.mul(8000000))
