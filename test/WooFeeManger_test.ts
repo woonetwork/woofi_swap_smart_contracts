@@ -94,9 +94,7 @@ describe('WooFeeManager Info', () => {
     })
 
     it('Set fee rate revert', async () => {
-      await expect(feeManager.setFeeRate(btcToken.address, ONE)).to.be.revertedWith(
-        'WooFeeManager: FEE_RATE>1%'
-      )
+      await expect(feeManager.setFeeRate(btcToken.address, ONE)).to.be.revertedWith('WooFeeManager: FEE_RATE>1%')
     })
   })
 
@@ -123,11 +121,15 @@ describe('WooFeeManager Info', () => {
     })
 
     it('withdraw revert1', async () => {
-      await expect(feeManager.withdraw(ZERO_ADDR, user1.address, 100)).to.be.revertedWith('WooFeeManager: token_ZERO_ADDR')
+      await expect(feeManager.withdraw(ZERO_ADDR, user1.address, 100)).to.be.revertedWith(
+        'WooFeeManager: token_ZERO_ADDR'
+      )
     })
 
     it('withdraw revert2', async () => {
-      await expect(feeManager.withdraw(quoteToken.address, ZERO_ADDR, 100)).to.be.revertedWith('WooFeeManager: to_ZERO_ADDR')
+      await expect(feeManager.withdraw(quoteToken.address, ZERO_ADDR, 100)).to.be.revertedWith(
+        'WooFeeManager: to_ZERO_ADDR'
+      )
     })
 
     it('withdraw event1', async () => {
