@@ -43,10 +43,13 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
+import './libraries/DecimalMath.sol';
+
 contract WooStakingVault is ERC20, Ownable, Pausable {
     using SafeERC20 for IERC20;
     using Address for address;
     using SafeMath for uint256;
+    using DecimalMath for uint256;
 
     struct UserInfo {
         uint256 reserveAmount; // amount of stakedToken user reverseWithdraw
@@ -57,7 +60,8 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     event Deposit(address indexed user, uint256 depositAmount, uint256 mintShares);
     event ReserveWithdraw(address indexed user, uint256 reserveAmount, uint256 burnShares);
-    event Withdraw(address indexed user, uint256 withdrawAmount);
+    event Withdraw(address indexed user, uint256 withdrawAmount, uint256 withdrawFee);
+    event InstantWithdraw(address indexed user, uint256 withdrawAmount, uint256 withdrawFee);
 
     /* ----- State variables ----- */
 
@@ -76,45 +80,49 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     uint256 public constant MAX_WITHDRAW_FEE_PERIOD = 72 hours; // 3 days
     uint256 public constant MAX_WITHDRAW_FEE = 100; // 1% (10000 as denominator)
 
-    constructor(address _stakedToken, address _treasury)
+    constructor(address initialStakedToken, address initialTreasury)
         public
         ERC20(
-            string(abi.encodePacked('Interest bearing', ERC20(_stakedToken).name())),
-            string(abi.encodePacked('x', ERC20(_stakedToken).symbol()))
+            string(abi.encodePacked('Interest bearing', ERC20(initialStakedToken).name())),
+            string(abi.encodePacked('x', ERC20(initialStakedToken).symbol()))
         )
     {
-        require(_stakedToken != address(0), 'WooStakingVault: _stakedToken_ZERO_ADDR');
-        stakedToken = IERC20(_stakedToken);
-        treasury = _treasury;
+        require(initialStakedToken != address(0), 'WooStakingVault: initialStakedToken_ZERO_ADDR');
+        require(initialTreasury != address(0), 'WooStakingVault: initialTreasury_ZERO_ADDR');
+
+        stakedToken = IERC20(initialStakedToken);
+        treasury = initialTreasury;
     }
 
     /* ----- External Functions ----- */
 
-    function deposit(uint256 _amount) external whenNotPaused {
+    function deposit(uint256 amount) external whenNotPaused {
         uint256 balanceBefore = balance();
-        TransferHelper.safeTransferFrom(address(stakedToken), msg.sender, address(this), _amount);
+        TransferHelper.safeTransferFrom(address(stakedToken), msg.sender, address(this), amount);
         uint256 balanceAfter = balance();
-        _amount = balanceAfter.sub(balanceBefore);
+        amount = balanceAfter.sub(balanceBefore);
 
         uint256 xTotalSupply = totalSupply();
-        uint256 shares = xTotalSupply == 0 ? _amount : _amount.mul(xTotalSupply).div(balanceBefore);
+        uint256 shares = xTotalSupply == 0 ? amount : amount.mul(xTotalSupply).div(balanceBefore);
 
         // must be execute before _mint
-        _updateCostSharePrice(_amount, shares);
+        _updateCostSharePrice(amount, shares);
 
         _mint(msg.sender, shares);
 
-        emit Deposit(msg.sender, _amount, shares);
+        emit Deposit(msg.sender, amount, shares);
     }
 
-    function reserveWithdraw(uint256 _shares) external whenNotPaused {
-        uint256 currentReserveAmount = _shares.mul(getPricePerFullShare()).div(1e18); // calculate reserveAmount before _burn
+    function reserveWithdraw(uint256 shares) external whenNotPaused {
+        require(shares <= balanceOf(msg.sender), 'WooStakingVault: shares exceed balance');
+
+        uint256 currentReserveAmount = shares.mul(getPricePerFullShare()).div(1e18); // calculate reserveAmount before _burn
         uint256 poolBalance = balance();
         if (poolBalance < currentReserveAmount) {
             // incase reserve amount exceeds pool balance
             currentReserveAmount = poolBalance;
         }
-        _burn(msg.sender, _shares); // _burn will check the balance of user's shares enough or not
+        _burn(msg.sender, shares); // _burn will check the balance of user's shares enough or not
 
         totalReserveAmount = totalReserveAmount.add(currentReserveAmount);
 
@@ -122,14 +130,15 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         user.reserveAmount = user.reserveAmount.add(currentReserveAmount);
         user.lastReserveWithdrawTime = block.timestamp;
 
-        emit ReserveWithdraw(msg.sender, currentReserveAmount, _shares);
+        emit ReserveWithdraw(msg.sender, currentReserveAmount, shares);
     }
 
     function withdraw() external whenNotPaused {
         UserInfo storage user = userInfo[msg.sender];
         uint256 withdrawAmount = user.reserveAmount;
+        uint256 currentWithdrawFee = 0;
         if (block.timestamp < user.lastReserveWithdrawTime.add(withdrawFeePeriod)) {
-            uint256 currentWithdrawFee = withdrawAmount.mul(withdrawFee).div(10000);
+            currentWithdrawFee = withdrawAmount.mul(withdrawFee).div(10000);
             TransferHelper.safeTransfer(address(stakedToken), treasury, currentWithdrawFee);
             withdrawAmount = withdrawAmount.sub(currentWithdrawFee);
         }
@@ -138,7 +147,30 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
         TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmount);
 
-        emit Withdraw(msg.sender, withdrawAmount);
+        emit Withdraw(msg.sender, withdrawAmount, currentWithdrawFee);
+    }
+
+    function instantWithdraw(uint256 shares) external whenNotPaused {
+        require(shares <= balanceOf(msg.sender), 'WooStakingVault: shares exceed balance');
+
+        uint256 withdrawAmount = shares.mulFloor(getPricePerFullShare());
+
+        uint256 poolBalance = balance();
+        if (poolBalance < withdrawAmount) {
+            withdrawAmount = poolBalance;
+        }
+
+        _burn(msg.sender, shares); // _burn will check the balance of user's shares enough or not
+
+        uint256 currentWithdrawFee = withdrawAmount.mul(withdrawFee).div(10000);
+        if (currentWithdrawFee > 0) {
+            TransferHelper.safeTransfer(address(stakedToken), treasury, currentWithdrawFee);
+        }
+        withdrawAmount = withdrawAmount.sub(currentWithdrawFee);
+
+        TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmount);
+
+        emit InstantWithdraw(msg.sender, withdrawAmount, currentWithdrawFee);
     }
 
     /* ----- Public Functions ----- */
@@ -156,10 +188,10 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     /* ----- Private Functions ----- */
 
-    function _updateCostSharePrice(uint256 _amount, uint256 _shares) private {
+    function _updateCostSharePrice(uint256 amount, uint256 shares) private {
         uint256 sharesBefore = balanceOf(msg.sender);
         uint256 costBefore = costSharePrice[msg.sender];
-        uint256 costAfter = (sharesBefore.mul(costBefore).add(_amount.mul(1e18))).div(sharesBefore.add(_shares));
+        uint256 costAfter = (sharesBefore.mul(costBefore).add(amount.mul(1e18))).div(sharesBefore.add(shares));
 
         costSharePrice[msg.sender] = costAfter;
     }
@@ -168,25 +200,25 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     /// @notice Sets withdraw fee period
     /// @dev Only callable by the contract owner.
-    function setWithdrawFeePeriod(uint256 _withdrawFeePeriod) external onlyOwner {
+    function setWithdrawFeePeriod(uint256 newWithdrawFeePeriod) external onlyOwner {
         require(
-            _withdrawFeePeriod <= MAX_WITHDRAW_FEE_PERIOD,
-            'WooStakingVault: withdrawFeePeriod cannot be more than MAX_WITHDRAW_FEE_PERIOD'
+            newWithdrawFeePeriod <= MAX_WITHDRAW_FEE_PERIOD,
+            'WooStakingVault: newWithdrawFeePeriod>MAX_WITHDRAW_FEE_PERIOD'
         );
-        withdrawFeePeriod = _withdrawFeePeriod;
+        withdrawFeePeriod = newWithdrawFeePeriod;
     }
 
     /// @notice Sets withdraw fee
     /// @dev Only callable by the contract owner.
-    function setWithdrawFee(uint256 _withdrawFee) external onlyOwner {
-        require(_withdrawFee <= MAX_WITHDRAW_FEE, 'WooStakingVault: withdrawFee cannot be more than MAX_WITHDRAW_FEE');
-        withdrawFee = _withdrawFee;
+    function setWithdrawFee(uint256 newWithdrawFee) external onlyOwner {
+        require(newWithdrawFee <= MAX_WITHDRAW_FEE, 'WooStakingVault: newWithdrawFee>MAX_WITHDRAW_FEE');
+        withdrawFee = newWithdrawFee;
     }
 
     /// @notice Sets treasury address
     /// @dev Only callable by the contract owner.
-    function setTreasury(address _treasury) external onlyOwner {
-        treasury = _treasury;
+    function setTreasury(address newTreasury) external onlyOwner {
+        treasury = newTreasury;
     }
 
     /// @notice Pause the contract.
