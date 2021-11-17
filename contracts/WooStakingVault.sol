@@ -83,7 +83,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     constructor(address initialStakedToken, address initialTreasury)
         public
         ERC20(
-            string(abi.encodePacked('Interest bearing', ERC20(initialStakedToken).name())),
+            string(abi.encodePacked('Interest bearing ', ERC20(initialStakedToken).name())),
             string(abi.encodePacked('x', ERC20(initialStakedToken).symbol()))
         )
     {
