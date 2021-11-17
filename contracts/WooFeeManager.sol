@@ -81,8 +81,8 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         address to,
         uint256 amount
     ) public nonReentrant onlyOwner {
-        require(token != address(0), 'WooPP: token_ZERO_ADDR');
-        require(to != address(0), 'WooPP: to_ZERO_ADDR');
+        require(token != address(0), 'WooFeeManager: token_ZERO_ADDR');
+        require(to != address(0), 'WooFeeManager: to_ZERO_ADDR');
         TransferHelper.safeTransfer(token, to, amount);
         emit Withdraw(token, to, amount);
     }
@@ -94,7 +94,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     /// @dev Withdraw the token to the OWNER address
     /// @param token the token
     function withdrawAllToOwner(address token) external nonReentrant onlyOwner {
-        require(token != address(0), 'WooPP: token_ZERO_ADDR');
+        require(token != address(0), 'WooFeeManager: token_ZERO_ADDR');
         uint256 amount = IERC20(token).balanceOf(address(this));
         TransferHelper.safeTransfer(token, _OWNER_, amount);
         emit Withdraw(token, _OWNER_, amount);
