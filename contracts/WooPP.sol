@@ -425,7 +425,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         // priceFactor = 1 + k * baseAmount * p * r;
         uint256 priceFactor = DecimalMath.ONE.add(k.mulCeil(baseAmount).mulCeil(p).mulCeil(r));
         // return baseAmount * p / priceFactor;
-        return DecimalMath.divFloor(baseAmount.mulFloor(p), priceFactor); // round down
+        return baseAmount.mulFloor(p).divFloor(priceFactor); // round down
     }
 
     // When baseSold >= 0
@@ -437,8 +437,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     ) private pure returns (uint256) {
         // priceFactor = (1 - k * quoteAmount * r);
         uint256 priceFactor = DecimalMath.ONE.sub(k.mulFloor(quoteAmount).mulFloor(r));
-        // return quoteAmount * p^{-1} / priceFactor;
-        return DecimalMath.divFloor(DecimalMath.divFloor(quoteAmount, p), priceFactor); // round down
+        // return quoteAmount / p / priceFactor;
+        return quoteAmount.divFloor(p).divFloor(priceFactor);
     }
 
     // When quoteSold >= 0
@@ -450,8 +450,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     ) private pure returns (uint256) {
         // priceFactor = 1 + k * quoteAmount * r;
         uint256 priceFactor = DecimalMath.ONE.add(k.mulCeil(quoteAmount).mulCeil(r));
-        // return quoteAmount * p^{-1} / priceFactor;
-        return DecimalMath.divFloor(DecimalMath.divFloor(quoteAmount, p), priceFactor); // round down
+        // return quoteAmount / p / priceFactor;
+        return quoteAmount.divFloor(p).divFloor(priceFactor); // round down
     }
 
     // When quoteSold >= 0
@@ -464,7 +464,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         // priceFactor = 1 - k * baseAmount * p * r;
         uint256 priceFactor = DecimalMath.ONE.sub(k.mulFloor(baseAmount).mulFloor(p).mulFloor(r));
         // return baseAmount * p / priceFactor;
-        return DecimalMath.divFloor(baseAmount.mulFloor(p), priceFactor); // round down
+        return baseAmount.mulFloor(p).divFloor(priceFactor); // round down
     }
 
     function getBoughtAmount(
@@ -488,7 +488,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         }
 
         if (baseSold.mulCeil(p) > quoteSold) {
-            baseSold = baseSold.sub(DecimalMath.divFloor(quoteSold, p));
+            baseSold = baseSold.sub(quoteSold.divFloor(p));
             quoteSold = 0;
         } else {
             quoteSold = quoteSold.sub(baseSold.mulCeil(p));
@@ -520,7 +520,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
 
         wooGuardian.checkSwapPrice(p, baseToken, quoteToken);
 
-        p = p.mulFloor(DecimalMath.ONE.sub(DecimalMath.divCeil(s, DecimalMath.TWO)));
+        // price: p * (1 - s / 2)
+        p = p.mulFloor(DecimalMath.ONE.sub(s.divCeil(DecimalMath.TWO)));
 
         uint256 baseBought;
         uint256 quoteBought;
@@ -539,9 +540,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
             uint256 baseSold = getBaseAmountLowQuoteSide(p, k, DecimalMath.ONE, quoteBought);
             uint256 newBaseSold = baseAmount.add(baseSold);
             uint256 newQuoteBought = getQuoteAmountLowQuoteSide(p, k, DecimalMath.ONE, newBaseSold);
-            if (newQuoteBought > quoteBought) {
-                quoteAmount = newQuoteBought.sub(quoteBought);
-            }
+            quoteAmount = newQuoteBought > quoteBought ? newQuoteBought.sub(quoteBought) : 0;
         }
     }
 
@@ -560,7 +559,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
 
         wooGuardian.checkSwapPrice(p, baseToken, quoteToken);
 
-        p = p.mulCeil(DecimalMath.ONE.add(DecimalMath.divCeil(s, DecimalMath.TWO)));
+        // price: p * (1 + s / 2)
+        p = p.mulCeil(DecimalMath.ONE.add(s.divCeil(DecimalMath.TWO)));
 
         uint256 baseBought;
         uint256 quoteBought;
@@ -579,9 +579,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
             uint256 quoteSold = getQuoteAmountLowBaseSide(p, k, DecimalMath.ONE, baseBought);
             uint256 newQuoteSold = quoteAmount.add(quoteSold);
             uint256 newBaseBought = getBaseAmountLowBaseSide(p, k, DecimalMath.ONE, newQuoteSold);
-            if (newBaseBought > baseBought) {
-                baseAmount = newBaseBought.sub(baseBought);
-            }
+            baseAmount = newBaseBought > baseBought ? newBaseBought.sub(baseBought) : 0;
         }
     }
 
