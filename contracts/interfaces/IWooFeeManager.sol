@@ -45,4 +45,5 @@ interface IWooFeeManager {
     /* ----- External Functions ----- */
 
     function feeRate(address token) external view returns (uint256);
+    function collectFee(uint256 amount, address rebateTo) external;
 }

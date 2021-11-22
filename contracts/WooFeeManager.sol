@@ -60,14 +60,14 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
 
     mapping(address => uint256) public override feeRate;
     address quoteToken;
-    IWooRewardManger public rewardManager;
+    IWooRewardManager public rewardManager;
 
     constructor(address newQuoteToken, address newRewardManager) public {
         initOwner(msg.sender);
         require(newQuoteToken != address(0), "WooFeeManager: quoteToken_ZERO_ADDR");
-        require(newRewardManger != address(0), "WooFeeManager: rewardManager_ZERO_ADDR");
+        require(newRewardManager != address(0), "WooFeeManager: rewardManager_ZERO_ADDR");
         quoteToken = newQuoteToken;
-        rewardManager = IWooRewardManager(newRewardManger);
+        rewardManager = IWooRewardManager(newRewardManager);
     }
 
     /* ----- Admin Functions ----- */
@@ -79,9 +79,9 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         emit FeeRateUpdated(token, newFeeRate);
     }
 
-    function collectFee(uint256 amount, address rebateTo) external {
+    function collectFee(uint256 amount, address rebateTo) external override {
         TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amount);
-        rewardManager.addReward(amount, rebateTo);
+        rewardManager.addReward(rebateTo, amount);
     }
 
     /// @dev Withdraw the token.

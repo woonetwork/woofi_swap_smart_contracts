@@ -61,16 +61,12 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
     }
 
     event PriceOracleUpdated(address indexed newPriceOracle);
-    event ChainlinkRefOracleUpdated(
-        address indexed newRewardChainlinkRefOracle,
-        address indexed newQuoteChainlinkRefOracle
-    );
     event Withdraw(address indexed token, address indexed to, uint256 amount);
     event Approve(address indexed user, bool approved);
     event ClaimReward(address indexed user, uint256 amount);
 
     uint256 public rewardRatio;
-    adderss public quoteToken; // USDT
+    address public quoteToken; // USDT
     address public rewardToken; // WOO
 
     address public priceOracle; // WooOracle
@@ -120,11 +116,11 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
         if (user == address(0)) {
             return;
         }
-        (uint256 price, bool isFeasible) = IOracle(priceOracle).getPrice(rewardToken);
+        (uint256 price, bool isFeasible) = IWooracle(priceOracle).price(rewardToken);
         if (!isFeasible) {
             return;
         }
-        IWooGuadian(wooGuardian).checkSwapPrice(price, quoteToken, rewardToken);
+        IWooGuardian(wooGuardian).checkSwapPrice(price, quoteToken, rewardToken);
         uint256 rewardAmount = amount.mulFloor(rewardRatio).divFloor(price);
         pendingReward[user] = pendingReward[user].add(rewardAmount);
     }
