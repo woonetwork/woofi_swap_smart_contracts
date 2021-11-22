@@ -65,7 +65,8 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
     event Approve(address indexed user, bool approved);
     event ClaimReward(address indexed user, uint256 amount);
 
-    uint256 public rewardRatio;
+    uint256 public override rewardRatio;
+    uint256 public override brokerRewardRatio;
     address public quoteToken; // USDT
     address public rewardToken; // WOO
 
@@ -77,6 +78,7 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
     constructor(
         address owner,
         uint256 newRewardRatio,
+        uint256 newBrokerRewardRatio,
         address newQuoteToken,
         address newRewardToken,
         address newPriceOracle
@@ -84,6 +86,7 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
         init(
             owner,
             newRewardRatio,
+            newBrokerRewardRatio,
             newQuoteToken,
             newRewardToken,
             newPriceOracle
@@ -93,18 +96,21 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
     function init(
         address owner,
         uint256 newRewardRatio,
+        uint256 newBrokerRewardRatio,
         address newQuoteToken,
         address newRewardToken,
         address newPriceOracle
     ) public {
         require(owner != address(0), 'WooRewardManager: INVALID_OWNER');
         require(newRewardRatio <= 1e18, 'WooRewardManager: INVALID_REWARD_RATIO');
+        require(newBrokerRewardRatio <= 1e18, 'WooRewardManager: INVALID_BROKER_REWARD_RATIO');
         require(newQuoteToken != address(0), 'WooRewardManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooRewardManager: INVALID_RAWARD_TOKEN');
         require(newPriceOracle != address(0), 'WooRewardManager: INVALID_ORACLE');
 
         initOwner(owner);
         rewardRatio = newRewardRatio;
+        brokerRewardRatio = newBrokerRewardRatio;
         quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
         priceOracle = newPriceOracle;
@@ -112,18 +118,17 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
     }
 
     function addReward(address user, uint256 amount) external override onlyApproved {
-        // amount in USDT
+        // amount of reward in USDT
         if (user == address(0)) {
             return;
         }
         (uint256 price, bool isFeasible) = IWooracle(priceOracle).price(rewardToken);
-        if (!isFeasible) {
-            return;
-        }
+        require(isFeasible, "WooRewardManager: PRICE_NOT_FEASIBLE");
         IWooGuardian(wooGuardian).checkSwapPrice(price, quoteToken, rewardToken);
-        uint256 rewardAmount = amount.mulFloor(rewardRatio).divFloor(price);
+        uint256 rewardAmount = amount.divFloor(price);
         pendingReward[user] = pendingReward[user].add(rewardAmount);
     }
+
 
     function claimReward(address user) external override {
         uint256 amount = pendingReward[user];

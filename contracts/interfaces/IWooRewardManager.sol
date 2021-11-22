@@ -38,6 +38,10 @@ pragma experimental ABIEncoderV2;
 /// @title Reward manager interface for WooFi Swap.
 /// @notice this is for swap rebate or potential incentive program
 interface IWooRewardManager {
+    function rewardRatio() view external returns (uint256);
+
+    function brokerRewardRatio() view external returns (uint256);
+
     /// @dev adds the pending reward for the given user.
     /// @param user the user
     /// @param amount the pending reward amount
