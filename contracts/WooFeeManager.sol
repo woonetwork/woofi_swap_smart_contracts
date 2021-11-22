@@ -37,6 +37,7 @@ pragma experimental ABIEncoderV2;
 
 import './libraries/InitializableOwnable.sol';
 import './libraries/DecimalMath.sol';
+import './interfaces/IWooRewardManager.sol';
 import './interfaces/IWooFeeManager.sol';
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -58,9 +59,15 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     /* ----- State variables ----- */
 
     mapping(address => uint256) public override feeRate;
+    address quoteToken;
+    IWooRewardManger public rewardManager;
 
-    constructor() public {
+    constructor(address newQuoteToken, address newRewardManager) public {
         initOwner(msg.sender);
+        require(newQuoteToken != address(0), "WooFeeManager: quoteToken_ZERO_ADDR");
+        require(newRewardManger != address(0), "WooFeeManager: rewardManager_ZERO_ADDR");
+        quoteToken = newQuoteToken;
+        rewardManager = IWooRewardManager(newRewardManger);
     }
 
     /* ----- Admin Functions ----- */
@@ -70,6 +77,11 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         require(newFeeRate <= 1e16, 'WooFeeManager: FEE_RATE>1%');
         feeRate[token] = newFeeRate;
         emit FeeRateUpdated(token, newFeeRate);
+    }
+
+    function collectFee(uint256 amount, address rebateTo) external {
+        TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amount);
+        rewardManager.addReward(amount, rebateTo);
     }
 
     /// @dev Withdraw the token.

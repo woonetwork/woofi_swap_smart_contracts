@@ -38,7 +38,8 @@ pragma experimental ABIEncoderV2;
 import './libraries/InitializableOwnable.sol';
 import './libraries/DecimalMath.sol';
 import './interfaces/IWooracle.sol';
-import './interfaces/IRewardManager.sol';
+import './interfaces/IWooRewardManager.sol';
+import './interfaces/IWooGuardian.sol';
 import './interfaces/AggregatorV3Interface.sol';
 
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
@@ -47,7 +48,7 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
-contract RewardManager is InitializableOwnable, IRewardManager {
+contract WooRewardManager is InitializableOwnable, IWooRewardManager {
     using SafeMath for uint256;
     using DecimalMath for uint256;
     using SafeERC20 for IERC20;
@@ -69,75 +70,49 @@ contract RewardManager is InitializableOwnable, IRewardManager {
     event ClaimReward(address indexed user, uint256 amount);
 
     uint256 public rewardRatio;
+    adderss public quoteToken; // USDT
     address public rewardToken; // WOO
 
     address public priceOracle; // WooOracle
-    address public rewardChainlinkRefOracle; // Reference
-    address public quoteChainlinkRefOracle; // Reference
-    uint8 internal quoteDecimals;
-    uint256 internal refPriceFixCoeff;
+    address wooGuardian; // WooGuardian
 
     mapping(address => uint256) public pendingReward;
 
     constructor(
         address owner,
         uint256 newRewardRatio,
+        address newQuoteToken,
         address newRewardToken,
-        address newPriceOracle,
-        address newRewardChainlinkRefOracle,
-        address newQuoteChainlinkRefOracle,
-        address quoteToken
+        address newPriceOracle
     ) public {
         init(
             owner,
             newRewardRatio,
+            newQuoteToken,
             newRewardToken,
-            newPriceOracle,
-            newRewardChainlinkRefOracle,
-            newQuoteChainlinkRefOracle,
-            quoteToken
+            newPriceOracle
         );
     }
 
     function init(
         address owner,
         uint256 newRewardRatio,
+        address newQuoteToken,
         address newRewardToken,
-        address newPriceOracle,
-        address newRewardChainlinkRefOracle,
-        address newQuoteChainlinkRefOracle,
-        address quoteToken
+        address newPriceOracle
     ) public {
-        require(owner != address(0), 'RewardManager: INVALID_OWNER');
-        require(newRewardRatio <= 1e18, 'RewardManager: INVALID_REWARD_RATIO');
-        require(newRewardToken != address(0), 'RewardManager: INVALID_RAWARD_TOKEN');
-        require(newPriceOracle != address(0), 'RewardManager: INVALID_ORACLE');
-        require(quoteToken != address(0), 'RewardManager: INVALID_QUOTE');
+        require(owner != address(0), 'WooRewardManager: INVALID_OWNER');
+        require(newRewardRatio <= 1e18, 'WooRewardManager: INVALID_REWARD_RATIO');
+        require(newQuoteToken != address(0), 'WooRewardManager: INVALID_QUOTE');
+        require(newRewardToken != address(0), 'WooRewardManager: INVALID_RAWARD_TOKEN');
+        require(newPriceOracle != address(0), 'WooRewardManager: INVALID_ORACLE');
 
         initOwner(owner);
         rewardRatio = newRewardRatio;
+        quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
         priceOracle = newPriceOracle;
-        rewardChainlinkRefOracle = newRewardChainlinkRefOracle;
-        quoteChainlinkRefOracle = newQuoteChainlinkRefOracle;
-        // TODO: (@qinchao) double check with UBC team
-        quoteDecimals = ERC20(quoteToken).decimals();
-        if (rewardChainlinkRefOracle != address(0) && quoteChainlinkRefOracle != address(0)) {
-            uint256 rewardDecimalsToFix = uint256(ERC20(rewardToken).decimals()).add(
-                uint256(AggregatorV3Interface(rewardChainlinkRefOracle).decimals())
-            );
-            uint256 rewardRefPriceFixCoeff = 10**(uint256(36).sub(rewardDecimalsToFix));
-            require(rewardRefPriceFixCoeff < type(uint96).max);
-            uint256 quoteDecimalsToFix = uint256(quoteDecimals).add(
-                uint256(AggregatorV3Interface(quoteChainlinkRefOracle).decimals())
-            );
-            uint256 quoteRefPriceFixCoeff = 10**(uint256(36).sub(quoteDecimalsToFix));
-            require(quoteRefPriceFixCoeff < type(uint96).max);
-            refPriceFixCoeff = rewardRefPriceFixCoeff.divFloor(quoteRefPriceFixCoeff);
-        }
-
         emit PriceOracleUpdated(newPriceOracle);
-        emit ChainlinkRefOracleUpdated(newRewardChainlinkRefOracle, newQuoteChainlinkRefOracle);
     }
 
     function addReward(address user, uint256 amount) external override onlyApproved {
@@ -146,9 +121,10 @@ contract RewardManager is InitializableOwnable, IRewardManager {
             return;
         }
         (uint256 price, bool isFeasible) = IOracle(priceOracle).getPrice(rewardToken);
-        if (!isFeasible || !isPriceReliable(price)) {
+        if (!isFeasible) {
             return;
         }
+        IWooGuadian(wooGuardian).checkSwapPrice(price, quoteToken, rewardToken);
         uint256 rewardAmount = amount.mulFloor(rewardRatio).divFloor(price);
         pendingReward[user] = pendingReward[user].add(rewardAmount);
     }
@@ -183,26 +159,5 @@ contract RewardManager is InitializableOwnable, IRewardManager {
     function revoke(address user) external onlyOwner {
         isApproved[user] = false;
         emit Approve(user, false);
-    }
-
-    function setPriceOracle(address newPriceOracle) external onlyApproved {
-        require(newPriceOracle != address(0), 'RewardManager: INVALID_ORACLE');
-        priceOracle = newPriceOracle;
-        emit PriceOracleUpdated(newPriceOracle);
-    }
-
-    function isPriceReliable(uint256 price) internal view returns (bool) {
-        if (rewardChainlinkRefOracle == address(0) || quoteChainlinkRefOracle == address(0)) {
-            // NOTE: price checking disabled
-            return true;
-        }
-
-        (, int256 rawRewardRefPrice, , , ) = AggregatorV3Interface(rewardChainlinkRefOracle).latestRoundData();
-        require(rawRewardRefPrice >= 0, 'RewardManager: INVALID_CHAINLINK_PRICE');
-        (, int256 rawQuoteRefPrice, , , ) = AggregatorV3Interface(quoteChainlinkRefOracle).latestRoundData();
-        require(rawQuoteRefPrice >= 0, 'RewardManager: INVALID_CHAINLINK_QUOTE_PRICE');
-        uint256 refPrice = uint256(rawRewardRefPrice).divFloor(uint256(rawQuoteRefPrice));
-        refPrice = refPrice.mul(refPriceFixCoeff);
-        return uint256(refPrice).mulFloor(1e18 - 1e16) <= price && price <= uint256(refPrice).mulCeil(1e18 + 1e16);
     }
 }
