@@ -81,7 +81,8 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
         uint256 newBrokerRewardRatio,
         address newQuoteToken,
         address newRewardToken,
-        address newPriceOracle
+        address newPriceOracle,
+        address newWooGuardian
     ) public {
         init(
             owner,
@@ -89,7 +90,8 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
             newBrokerRewardRatio,
             newQuoteToken,
             newRewardToken,
-            newPriceOracle
+            newPriceOracle,
+            newWooGuardian
         );
     }
 
@@ -99,7 +101,8 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
         uint256 newBrokerRewardRatio,
         address newQuoteToken,
         address newRewardToken,
-        address newPriceOracle
+        address newPriceOracle,
+        address newWooGuardian
     ) public {
         require(owner != address(0), 'WooRewardManager: INVALID_OWNER');
         require(newRewardRatio <= 1e18, 'WooRewardManager: INVALID_REWARD_RATIO');
@@ -107,13 +110,14 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
         require(newQuoteToken != address(0), 'WooRewardManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooRewardManager: INVALID_RAWARD_TOKEN');
         require(newPriceOracle != address(0), 'WooRewardManager: INVALID_ORACLE');
-
+        require(newWooGuardian != address(0), 'WooRewardManager: INVALID_GUARDIAN');
         initOwner(owner);
         rewardRatio = newRewardRatio;
         brokerRewardRatio = newBrokerRewardRatio;
         quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
         priceOracle = newPriceOracle;
+        wooGuardian = newWooGuardian;
         emit PriceOracleUpdated(newPriceOracle);
     }
 
