@@ -127,12 +127,11 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
             return;
         }
         (uint256 price, bool isFeasible) = IWooracle(priceOracle).price(rewardToken);
-        require(isFeasible, "WooRewardManager: PRICE_NOT_FEASIBLE");
+        require(isFeasible, 'WooRewardManager: PRICE_NOT_FEASIBLE');
         IWooGuardian(wooGuardian).checkSwapPrice(price, quoteToken, rewardToken);
         uint256 rewardAmount = amount.divFloor(price);
         pendingReward[user] = pendingReward[user].add(rewardAmount);
     }
-
 
     function claimReward(address user) external override {
         uint256 amount = pendingReward[user];

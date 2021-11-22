@@ -64,8 +64,8 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
 
     constructor(address newQuoteToken, address newRewardManager) public {
         initOwner(msg.sender);
-        require(newQuoteToken != address(0), "WooFeeManager: quoteToken_ZERO_ADDR");
-        require(newRewardManager != address(0), "WooFeeManager: rewardManager_ZERO_ADDR");
+        require(newQuoteToken != address(0), 'WooFeeManager: quoteToken_ZERO_ADDR');
+        require(newRewardManager != address(0), 'WooFeeManager: rewardManager_ZERO_ADDR');
         quoteToken = newQuoteToken;
         rewardManager = IWooRewardManager(newRewardManager);
     }
