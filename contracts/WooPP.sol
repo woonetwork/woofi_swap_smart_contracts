@@ -495,7 +495,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         }
 
         if (baseSold.mulCeil(p) > quoteSold) {
-            baseSold = baseSold.sub(DecimalMath.divFloor(quoteSold, p));
+            baseSold = baseSold.sub(quoteSold.divFloor(p));
             quoteSold = 0;
         } else {
             quoteSold = quoteSold.sub(baseSold.mulCeil(p));

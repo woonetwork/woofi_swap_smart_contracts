@@ -1,3 +1,5 @@
+// Transported from WooPP.sol on Nov 23, 2021
+
 import BigNumber from 'bignumber.js';
 import { Wooracle } from '../../typechain';
 BigNumber.config({
@@ -190,7 +192,6 @@ export class WooPP {
         // check validity of input args
 
         const quoteAmount = this.getQuoteAmountSellBase(
-            baseToken,
             baseAmount,
             baseTokenInfo,
             quoteTokenInfo,
@@ -212,7 +213,6 @@ export class WooPP {
         const lpFee = quoteAmount.multipliedBy(baseTokenInfo.lpFeeRate).div(BASE)
         const quoteAmountAfterFee = quoteAmount.minus(lpFee)
         return this.getBaseAmountSellQuote(
-            baseToken,
             quoteAmountAfterFee,
             baseTokenInfo,
             quoteTokenInfo,
@@ -220,31 +220,66 @@ export class WooPP {
     }
 
     private getQuoteAmountSellBase(
-        baseToken: Token,
         baseAmount: BigNumber,
-        baseTokenInfo: WooppTokenInfo,
-        quoteTokenInfo: WooppTokenInfo,
+        baseInfo: WooppTokenInfo,
+        quoteInfo: WooppTokenInfo,
         baseState: WooracleState
     ): BigNumber {
-        let p = baseState.priceNow.multipliedBy(ONE.minus(baseState.spreadNow.div(2))).div(BASE)
+        let p = baseState.priceNow.multipliedBy(ONE.minus(baseState.spreadNow.div(2))).div(BASE) // TODO: round up
         let k = baseState.coeffNow
-        let r = ONE
-        return this.getQuoteAmountLowQuoteSide(p, k, r, baseAmount)
+
+        const { baseBought, quoteBought } = this.getBoughtAmount(baseInfo, quoteInfo, p, k, true);
+
+        let quoteAmount = new BigNumber(0)
+        if (baseBought.gt(0)) { // baseBought > 0
+            const quoteSold = this.getQuoteAmountLowBaseSide(p, k, baseInfo.R, baseBought)
+            if (baseAmount.gt(baseBought)) {
+                const newBaseSold = baseAmount.minus(baseBought)
+                quoteAmount = quoteSold.plus(this.getQuoteAmountLowQuoteSide(p, k, ONE, newBaseSold))
+            } else {
+                const newBaseBought = baseBought.minus(baseAmount)
+                quoteAmount = quoteSold.minus(this.getQuoteAmountLowBaseSide(p, k, baseInfo.R, newBaseBought))
+            }
+        } else {
+            const baseSold = this.getBaseAmountLowQuoteSide(p, k, ONE, quoteBought)
+            const newBaseSold = baseAmount.plus(baseSold)
+            const newQuoteBought = this.getQuoteAmountLowQuoteSide(p, k, ONE, newBaseSold)
+            quoteAmount = newQuoteBought.gt(quoteBought) ? newQuoteBought.minus(quoteBought) : new BigNumber(0)
+        }
+
+        return quoteAmount
     }
 
     private getBaseAmountSellQuote(
-        baseToken: Token,
         quoteAmount: BigNumber,
-        baseTokenInfo: WooppTokenInfo,
-        quoteTokenInfo: WooppTokenInfo,
+        baseInfo: WooppTokenInfo,
+        quoteInfo: WooppTokenInfo,
         baseState: WooracleState
     ): BigNumber {
-        let p = baseState.priceNow.multipliedBy(ONE.plus(baseState.spreadNow.div(2))).div(BASE)
+        let p = baseState.priceNow.multipliedBy(ONE.plus(baseState.spreadNow.div(2))).div(BASE) // round up
         let k = baseState.coeffNow
-        let r = ONE
-        return this.getBaseAmountLowBaseSide(p, k, r, quoteAmount)
-    }
 
+        const { baseBought, quoteBought } = this.getBoughtAmount(baseInfo, quoteInfo, p, k, false);
+
+        let baseAmount = new BigNumber(0)
+        if (quoteBought.gt(0)) { // quoteBought > 0
+            const baseSold = this.getBaseAmountLowQuoteSide(p, k, baseInfo.R, quoteBought)
+            if (quoteAmount.gt(quoteBought)) {
+                const newQuoteSold = quoteAmount.minus(quoteBought)
+                baseAmount = baseSold.plus(this.getBaseAmountLowBaseSide(p, k, ONE, newQuoteSold))
+            } else {
+                const newQuoteBought = quoteBought.minus(quoteAmount)
+                baseAmount = baseSold.minus(this.getBaseAmountLowQuoteSide(p, k, baseInfo.R, newQuoteBought))
+            }
+        } else {
+            const quoteSold = this.getQuoteAmountLowBaseSide(p, k, ONE, baseBought)
+            const newQuoteSold = quoteAmount.plus(quoteSold)
+            const newBaseBought = this.getBaseAmountLowBaseSide(p, k, ONE, newQuoteSold)
+            baseAmount = newBaseBought.gt(baseBought) ? newBaseBought.minus(baseBought) : new BigNumber(0)
+        }
+
+        return baseAmount
+    }
 
     public isBaseToken(token: Token): boolean {
         return token.address in this.baseTokens
@@ -259,6 +294,52 @@ export class WooPP {
     }
 
     // --------- private method --------- //
+
+    private getBoughtAmount(
+        baseInfo: WooppTokenInfo,
+        quoteInfo: WooppTokenInfo,
+        p: BigNumber,
+        k: BigNumber,
+        isSellBase: boolean): { baseBought: BigNumber, quoteBought: BigNumber } {
+
+        let baseBought = new BigNumber(0)
+        let quoteBought = new BigNumber(0)
+
+        let baseSold = new BigNumber(0)
+        const baseTarget = BigNumber.max(baseInfo.reserve, baseInfo.threshold)
+        if (baseInfo.reserve.lt(baseTarget)) { // baseInfo.reserve < baseTarget
+            baseBought = baseTarget.minus(baseInfo.reserve)
+        } else {
+            baseSold = baseInfo.reserve.minus(baseTarget)
+        }
+
+        let quoteSold = new BigNumber(0)
+        const quoteTarget = BigNumber.max(quoteInfo.reserve, quoteInfo.threshold)
+        if (quoteInfo.reserve.lt(quoteTarget)) {
+            quoteBought = quoteTarget.minus(quoteInfo.reserve)
+        } else {
+            quoteSold = quoteInfo.reserve.minus(quoteTarget)
+        }
+
+        if (baseSold.multipliedBy(p).div(BASE).lt(quoteSold)) {
+            baseSold = baseSold.minus(quoteSold.multipliedBy(BASE).div(p))
+            quoteSold = new BigNumber(0)
+        } else {
+            quoteSold = quoteSold.minus(baseSold.multipliedBy(p).div(BASE))
+            baseSold = new BigNumber(0)
+        }
+
+        const virtualBaseBought = this.getBaseAmountLowBaseSide(p, k, ONE, quoteSold)
+        if (isSellBase == (virtualBaseBought.lt(baseBought))) {
+            baseBought = virtualBaseBought;
+        }
+        const virtualQuoteBought = this.getQuoteAmountLowQuoteSide(p, k, ONE, baseSold)
+        if (isSellBase == (virtualQuoteBought.gt(quoteBought))) {
+            quoteBought = virtualQuoteBought
+        }
+
+        return { baseBought, quoteBought }
+    }
 
     private getQuoteAmountLowQuoteSide(
         p: BigNumber,
