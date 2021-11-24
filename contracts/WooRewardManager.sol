@@ -100,12 +100,16 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
         emit PriceOracleUpdated(newPriceOracle);
     }
 
-    function getRewardInfo(address broker) external view override returns (uint256 userRewardRate, uint256 brokerRewardRate) {
+    function getRewardInfo(address broker)
+        external
+        view
+        override
+        returns (uint256 userRewardRate, uint256 brokerRewardRate)
+    {
         if (broker != address(0)) {
             userRewardRate = rewardInfoByBroker[broker].userRewardRate;
             brokerRewardRate = rewardInfoByBroker[broker].userRewardRate;
-        }
-        else {
+        } else {
             // TODO reward rate without broker
             userRewardRate = 0;
             brokerRewardRate = 0;
@@ -133,7 +137,11 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
         emit ClaimReward(user, amountToTransfer);
     }
 
-    function setRewardInfoByBroker(address broker, uint256 userRewardRate, uint256 brokerRewardRate) external onlyOwner {
+    function setRewardInfoByBroker(
+        address broker,
+        uint256 userRewardRate,
+        uint256 brokerRewardRate
+    ) external onlyOwner {
         require(broker != address(0), 'WooRewardManager: INVALID_BROKER');
         require(userRewardRate <= 1e18, 'WooRewardManager: INVALID_USER_REWARD_RATE');
         require(brokerRewardRate <= 1e18, 'WooRewardManager: INVALID_BROKER_REWARD_RATE');
