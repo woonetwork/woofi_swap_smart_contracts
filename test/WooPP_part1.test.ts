@@ -42,7 +42,6 @@ import TestToken from '../build/TestToken.json'
 import IWooracle from '../build/IWooracle.json'
 import IWooFeeManager from '../build/IWooFeeManager.json'
 import IWooGuardian from '../build/IWooGuardian.json'
-import IRewardManager from '../build/IRewardManager.json'
 import AggregatorV3Interface from '../build/AggregatorV3Interface.json'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { WooPP, IWooFeeManager__factory } from '../typechain'
@@ -486,19 +485,17 @@ describe('WooPP Test Suite 1', () => {
     })
   })
 
-  describe('reward manager and oracles', () => {
+  describe('fee manager and oracles', () => {
     let wooPP: WooPP
     let quoteToken: Contract
     let baseToken1: Contract
     let wooOracle1: Contract
     let wooOracle2: Contract
-    let rewardManager: Contract
     let chainlinkOracle: Contract
 
     before('deploy ERC20', async () => {
       wooOracle1 = await deployMockContract(owner, IWooracle.abi)
       wooOracle2 = await deployMockContract(owner, IWooracle.abi)
-      rewardManager = await deployMockContract(owner, IRewardManager.abi)
 
       chainlinkOracle = await deployMockContract(owner, AggregatorV3Interface.abi)
       await chainlinkOracle.mock.decimals.returns(18)
@@ -548,20 +545,20 @@ describe('WooPP Test Suite 1', () => {
 
     // --------------------------------------------
 
-    it('rewardManager accuracy', async () => {
-      expect(await wooPP.rewardManager()).to.eq(ZERO_ADDR)
+    it('feeManager accuracy', async () => {
+      expect(await wooPP.feeManager()).to.eq(feeManager.address)
     })
 
-    it('setRewardManager accuracy', async () => {
-      expect(await wooPP.rewardManager()).to.eq(ZERO_ADDR)
-      await wooPP.setRewardManager(rewardManager.address)
-      expect(await wooPP.rewardManager()).to.eq(rewardManager.address)
+    it('setFeeManager accuracy', async () => {
+      expect(await wooPP.feeManager()).to.eq(feeManager.address)
+      await wooPP.setFeeManager(feeManager.address)
+      expect(await wooPP.feeManager()).to.eq(feeManager.address)
     })
 
-    it('setRewardManager event1', async () => {
-      await expect(wooPP.setRewardManager(rewardManager.address))
-        .to.emit(wooPP, 'RewardManagerUpdated')
-        .withArgs(rewardManager.address)
+    it('setFeeManager event1', async () => {
+      await expect(wooPP.setFeeManager(feeManager.address))
+        .to.emit(wooPP, 'FeeManagerUpdated')
+        .withArgs(feeManager.address)
     })
   })
 })

@@ -41,7 +41,6 @@ import IERC20 from '../build/IERC20.json'
 import IWooracle from '../build/IWooracle.json'
 import IWooFeeManager from '../build/IWooFeeManager.json'
 import IWooGuardian from '../build/IWooGuardian.json'
-import IRewardManager from '../build/IRewardManager.json'
 import TestToken from '../build/TestToken.json'
 import { basename } from 'path/posix'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
@@ -77,7 +76,6 @@ describe('WooPP Test Suite 2', () => {
   let usdtToken: Contract
   let btcToken: Contract
   let wooToken: Contract
-  let rewardManager: Contract
 
   before('deploy tokens & wooracle', async () => {
     ;[owner, user1, user2] = await ethers.getSigners()
@@ -93,15 +91,13 @@ describe('WooPP Test Suite 2', () => {
       .returns(ONE.mul(BTC_PRICE), BigNumber.from(10).pow(18).mul(1).div(10000), BigNumber.from(10).pow(9).mul(2), true)
 
     feeManager = await deployMockContract(owner, IWooFeeManager.abi)
-    await feeManager.mock.feeRate.withArgs(btcToken.address).returns(0)
+    await feeManager.mock.feeRate.returns(0)
+    await feeManager.mock.collectFee.returns()
 
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
     await wooGuardian.mock.checkSwapAmount.returns()
     await wooGuardian.mock.checkInputAmount.returns()
-
-    rewardManager = await deployMockContract(owner, IRewardManager.abi)
-    await rewardManager.mock.addReward.returns()
   })
 
   describe('swap func', () => {
@@ -123,9 +119,6 @@ describe('WooPP Test Suite 2', () => {
       await usdtToken.mint(wooPP.address, WOOPP_USDT_BALANCE)
       await btcToken.mint(wooPP.address, WOOPP_BTC_BALANCE)
       await wooToken.mint(wooPP.address, WOOPP_WOO_BALANCE)
-
-      await wooPP.connect(owner).setRewardManager(rewardManager.address)
-      expect(await wooPP.rewardManager()).to.be.eq(rewardManager.address)
     })
 
     it('querySellBase accuracy1', async () => {
@@ -664,18 +657,18 @@ describe('WooPP Test Suite 2', () => {
         .withArgs(newWooracle.address)
     })
 
-    it('setRewardManager', async () => {
-      await wooPP.connect(user1).setRewardManager(user2.address)
-      expect(await wooPP.rewardManager()).to.be.equal(user2.address)
+    it('setFeeManager', async () => {
+      await wooPP.connect(user1).setFeeManager(user2.address)
+      expect(await wooPP.feeManager()).to.be.equal(user2.address)
     })
 
-    it('Prevents non-strategists from setRewardManager', async () => {
-      await expect(wooPP.connect(user2).setRewardManager(user2.address)).to.be.revertedWith('WooPP: NOT_STRATEGIST')
+    it('Prevents non-strategists from setFeeManager', async () => {
+      await expect(wooPP.connect(user2).setFeeManager(user2.address)).to.be.revertedWith('WooPP: NOT_STRATEGIST')
     })
 
-    it('setRewardManager emit RewardManagerUpdated event', async () => {
-      await expect(wooPP.connect(user1).setRewardManager(user2.address))
-        .to.emit(wooPP, 'RewardManagerUpdated')
+    it('setFeeManager emit FeeManagerUpdated event', async () => {
+      await expect(wooPP.connect(user1).setFeeManager(user2.address))
+        .to.emit(wooPP, 'FeeManagerUpdated')
         .withArgs(user2.address)
     })
 

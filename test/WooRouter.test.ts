@@ -85,8 +85,8 @@ describe('WooRouter tests', () => {
     wooracle = await deployMockContract(owner, IWooracle.abi)
 
     feeManager = await deployMockContract(owner, IWooFeeManager.abi)
-    await feeManager.mock.feeRate.withArgs(baseToken.address).returns(0)
-    await feeManager.mock.feeRate.withArgs(wooToken.address).returns(0)
+    await feeManager.mock.feeRate.returns(0)
+    await feeManager.mock.collectFee.returns()
 
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
