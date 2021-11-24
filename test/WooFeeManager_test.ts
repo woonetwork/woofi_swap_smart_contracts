@@ -38,6 +38,7 @@ import { deployContract, deployMockContract, MockProvider, solidity } from 'ethe
 import IWooracle from '../build/IWooracle.json'
 import WooPP from '../build/WooPP.json'
 import IWooPP from '../build/IWooPP.json'
+import IWooRewardManager from '../build/IWooRewardManager.json'
 // import WooRouter from '../build/WooRouter.json'
 import IERC20 from '../build/IERC20.json'
 import IWooGuardian from '../build/IWooGuardian.json'
@@ -72,6 +73,9 @@ describe('WooFeeManager Info', () => {
   let feeManager: Contract
   let btcToken: Contract
   let usdtToken: Contract
+  let wooPP : Contract
+  let rewardManager: Contract
+
 
   before('Deploy ERC20', async () => {
     ;[owner, user1] = await ethers.getSigners()
@@ -81,7 +85,9 @@ describe('WooFeeManager Info', () => {
 
   describe('ctor, init & basic func', () => {
     beforeEach('Deploy WooFeeManager', async () => {
-      feeManager = (await deployContract(owner, WooFeeManagerArtifact, [])) as WooFeeManager
+      wooPP = await deployMockContract(owner, IWooPP.abi)
+      rewardManager = await deployMockContract(owner, IWooRewardManager.abi)
+      feeManager = (await deployContract(owner, WooFeeManagerArtifact, [usdtToken.address, rewardManager.address])) as WooFeeManager
     })
 
     it('ctor', async () => {
@@ -104,7 +110,9 @@ describe('WooFeeManager Info', () => {
     beforeEach('deploy WooFeeManager', async () => {
       quoteToken = await deployContract(owner, TestToken, [])
 
-      feeManager = (await deployContract(owner, WooFeeManagerArtifact, [])) as WooFeeManager
+      wooPP = await deployMockContract(owner, IWooPP.abi)
+      rewardManager = await deployMockContract(owner, IWooRewardManager.abi)
+      feeManager = (await deployContract(owner, WooFeeManagerArtifact, [usdtToken.address, rewardManager.address])) as WooFeeManager
 
       await quoteToken.mint(feeManager.address, 30000)
       await quoteToken.mint(owner.address, 100)
