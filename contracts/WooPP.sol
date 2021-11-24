@@ -40,7 +40,6 @@ import './libraries/DecimalMath.sol';
 import './interfaces/IWooracle.sol';
 import './interfaces/IWooPP.sol';
 import './interfaces/IWooFeeManager.sol';
-import './interfaces/IRewardManager.sol';
 import './interfaces/IWooGuardian.sol';
 import './interfaces/AggregatorV3Interface.sol';
 
@@ -71,7 +70,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     address public wooracle;
     IWooGuardian public wooGuardian;
     address public feeManager;
-    address public rewardManager;
     string public pairsInfo; // e.g. BNB/ETH/BTCB/WOO-USDT
 
     /* ----- Modifiers ----- */
@@ -180,15 +178,12 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         quoteAmount = quoteAmount.sub(lpFee);
         require(quoteAmount >= minQuoteAmount, 'WooPP: quoteAmount<minQuoteAmount');
 
-        TransferHelper.safeTransfer(quoteToken, feeManager, lpFee);
+        TransferHelper.safeApprove(quoteToken, feeManager, lpFee);
+        IWooFeeManager(feeManager).collectFee(lpFee, rebateTo);
 
         uint256 balanceBefore = IERC20(quoteToken).balanceOf(to);
         TransferHelper.safeTransfer(quoteToken, to, quoteAmount);
         require(IERC20(quoteToken).balanceOf(to).sub(balanceBefore) >= minQuoteAmount, 'WooPP: INSUFF_OUTPUT_AMOUNT');
-
-        if (rewardManager != address(0)) {
-            IRewardManager(rewardManager).addReward(rebateTo, lpFee);
-        }
 
         _updateReserve(baseToken, baseInfo, quoteInfo);
 
@@ -224,17 +219,14 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
         require(baseAmount >= minBaseAmount, 'WooPP: baseAmount<minBaseAmount');
 
-        TransferHelper.safeTransfer(quoteToken, feeManager, lpFee);
+        TransferHelper.safeApprove(quoteToken, feeManager, lpFee);
+        IWooFeeManager(feeManager).collectFee(lpFee, rebateTo);
 
         wooGuardian.checkSwapAmount(quoteToken, baseToken, quoteAmount, baseAmount);
 
         uint256 balanceBefore = IERC20(baseToken).balanceOf(to);
         TransferHelper.safeTransfer(baseToken, to, baseAmount);
         require(IERC20(baseToken).balanceOf(to).sub(balanceBefore) >= minBaseAmount, 'WooPP: INSUFF_OUTPUT_AMOUNT');
-
-        if (rewardManager != address(0)) {
-            IRewardManager(rewardManager).addReward(rebateTo, lpFee);
-        }
 
         _updateReserve(baseToken, baseInfo, quoteInfo);
 
@@ -277,13 +269,6 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     function setFeeManager(address newFeeManager) external nonReentrant onlyStrategist {
         feeManager = newFeeManager;
         emit FeeManagerUpdated(newFeeManager);
-    }
-
-    /// @dev Set the rewardManager.
-    /// @param newRewardManager the reward manager
-    function setRewardManager(address newRewardManager) external nonReentrant onlyStrategist {
-        rewardManager = newRewardManager;
-        emit RewardManagerUpdated(newRewardManager);
     }
 
     /// @dev Add the base token for swap

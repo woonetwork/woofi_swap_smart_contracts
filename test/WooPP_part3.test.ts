@@ -96,7 +96,8 @@ describe('WooPP Test Suite 3', () => {
       .returns(ONE, BigNumber.from(10).pow(18).mul(1).div(10000), BigNumber.from(10).pow(9).mul(2), true)
 
     feeManager = await deployMockContract(owner, IWooFeeManager.abi)
-    await feeManager.mock.feeRate.withArgs(btcToken.address).returns(0)
+    await feeManager.mock.feeRate.returns(0)
+    await feeManager.mock.collectFee.returns()
 
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()

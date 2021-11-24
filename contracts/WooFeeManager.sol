@@ -37,6 +37,8 @@ pragma experimental ABIEncoderV2;
 
 import './libraries/InitializableOwnable.sol';
 import './libraries/DecimalMath.sol';
+import './interfaces/IWooPP.sol';
+import './interfaces/IWooRewardManager.sol';
 import './interfaces/IWooFeeManager.sol';
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
@@ -58,9 +60,26 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     /* ----- State variables ----- */
 
     mapping(address => uint256) public override feeRate;
+    address public wooPP;
+    address public quoteToken;
+    address public rewardToken;
+    IWooRewardManager public rewardManager;
 
-    constructor() public {
+    constructor(address newQuoteToken, address newRewardManager) public {
         initOwner(msg.sender);
+        require(newQuoteToken != address(0), 'WooFeeManager: quoteToken_ZERO_ADDR');
+        require(newRewardManager != address(0), 'WooFeeManager: rewardManager_ZERO_ADDR');
+        quoteToken = newQuoteToken;
+        rewardManager = IWooRewardManager(newRewardManager);
+    }
+
+    /* ----- Public Functions ----- */
+
+    function collectFee(uint256 amount, address broker) external override {
+        TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amount);
+        (uint256 userRewardRate, uint256 brokerRewardRate) = rewardManager.getRewardInfo(broker);
+        rewardManager.addReward(tx.origin, amount.mulFloor(userRewardRate));
+        rewardManager.addReward(broker, amount.mulFloor(brokerRewardRate));
     }
 
     /* ----- Admin Functions ----- */
@@ -70,6 +89,22 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         require(newFeeRate <= 1e16, 'WooFeeManager: FEE_RATE>1%');
         feeRate[token] = newFeeRate;
         emit FeeRateUpdated(token, newFeeRate);
+    }
+
+    /// @dev Set WooPP.
+    function setWooPP(address newWooPP) external onlyOwner {
+        wooPP = newWooPP;
+    }
+
+    /// @dev Set reward token.
+    function setRewardToken(address newRewardToken) external onlyOwner {
+        rewardToken = newRewardToken;
+    }
+
+    /// @dev Swap quote token to reward token.
+    /// @param amount the amount of quote token to swap
+    function swap(uint256 amount) external onlyOwner {
+        _swap(amount);
     }
 
     /// @dev Withdraw the token.
@@ -98,5 +133,13 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         uint256 amount = IERC20(token).balanceOf(address(this));
         TransferHelper.safeTransfer(token, _OWNER_, amount);
         emit Withdraw(token, _OWNER_, amount);
+    }
+
+    /* ----- Internal Functions ----- */
+
+    function _swap(uint256 amount) internal {
+        require(wooPP != address(0), 'WooFeeManager: wooPP_ZERO_ADDR');
+        TransferHelper.safeApprove(quoteToken, wooPP, amount);
+        IWooPP(wooPP).sellQuote(rewardToken, amount, 0, address(rewardManager), address(this));
     }
 }
