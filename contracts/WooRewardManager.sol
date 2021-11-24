@@ -53,6 +53,11 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
     using DecimalMath for uint256;
     using SafeERC20 for IERC20;
 
+    struct RewardInfo {
+        uint128 userRewardRate;
+        uint128 brokerRewardRate;
+    }
+
     mapping(address => bool) public isApproved;
 
     modifier onlyApproved() {
@@ -65,8 +70,8 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
     event Approve(address indexed user, bool approved);
     event ClaimReward(address indexed user, uint256 amount);
 
-    uint256 public override rewardRatio;
-    uint256 public override brokerRewardRatio;
+    mapping(address => RewardInfo) public rewardInfoByBroker;
+    // uint256 public rewardRate;
     address public quoteToken; // USDT
     address public rewardToken; // WOO
 
@@ -77,48 +82,34 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
 
     constructor(
         address owner,
-        uint256 newRewardRatio,
-        uint256 newBrokerRewardRatio,
-        address newQuoteToken,
-        address newRewardToken,
-        address newPriceOracle,
-        address newWooGuardian
-    ) public {
-        init(
-            owner,
-            newRewardRatio,
-            newBrokerRewardRatio,
-            newQuoteToken,
-            newRewardToken,
-            newPriceOracle,
-            newWooGuardian
-        );
-    }
-
-    function init(
-        address owner,
-        uint256 newRewardRatio,
-        uint256 newBrokerRewardRatio,
         address newQuoteToken,
         address newRewardToken,
         address newPriceOracle,
         address newWooGuardian
     ) public {
         require(owner != address(0), 'WooRewardManager: INVALID_OWNER');
-        require(newRewardRatio <= 1e18, 'WooRewardManager: INVALID_REWARD_RATIO');
-        require(newBrokerRewardRatio <= 1e18, 'WooRewardManager: INVALID_BROKER_REWARD_RATIO');
         require(newQuoteToken != address(0), 'WooRewardManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooRewardManager: INVALID_RAWARD_TOKEN');
         require(newPriceOracle != address(0), 'WooRewardManager: INVALID_ORACLE');
         require(newWooGuardian != address(0), 'WooRewardManager: INVALID_GUARDIAN');
         initOwner(owner);
-        rewardRatio = newRewardRatio;
-        brokerRewardRatio = newBrokerRewardRatio;
         quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
         priceOracle = newPriceOracle;
         wooGuardian = newWooGuardian;
         emit PriceOracleUpdated(newPriceOracle);
+    }
+
+    function getRewardInfo(address broker) external view override returns (uint256 userRewardRate, uint256 brokerRewardRate) {
+        if (broker != address(0)) {
+            userRewardRate = rewardInfoByBroker[broker].userRewardRate;
+            brokerRewardRate = rewardInfoByBroker[broker].userRewardRate;
+        }
+        else {
+            // TODO reward rate without broker
+            userRewardRate = 0;
+            brokerRewardRate = 0;
+        }
     }
 
     function addReward(address user, uint256 amount) external override onlyApproved {
@@ -140,6 +131,15 @@ contract WooRewardManager is InitializableOwnable, IWooRewardManager {
         pendingReward[user] = amount.sub(amountToTransfer);
         IERC20(rewardToken).safeTransfer(user, amountToTransfer);
         emit ClaimReward(user, amountToTransfer);
+    }
+
+    function setRewardInfoByBroker(address broker, uint256 userRewardRate, uint256 brokerRewardRate) external onlyOwner {
+        require(broker != address(0), 'WooRewardManager: INVALID_BROKER');
+        require(userRewardRate <= 1e18, 'WooRewardManager: INVALID_USER_REWARD_RATE');
+        require(brokerRewardRate <= 1e18, 'WooRewardManager: INVALID_BROKER_REWARD_RATE');
+        require(userRewardRate + brokerRewardRate <= 1e18, 'WooRewardManager: INVALID_TOTAL_REWARD_RATE');
+        rewardInfoByBroker[broker].userRewardRate = uint128(userRewardRate);
+        rewardInfoByBroker[broker].brokerRewardRate = uint128(brokerRewardRate);
     }
 
     function withdraw(

@@ -75,10 +75,11 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
 
     /* ----- Public Functions ----- */
 
-    function collectFee(uint256 amount, address rebateTo) external override {
+    function collectFee(uint256 amount, address broker) external override {
         TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amount);
-        rewardManager.addReward(tx.origin, amount.mulFloor(rewardManager.rewardRatio()));
-        rewardManager.addReward(rebateTo, amount.mulFloor(rewardManager.brokerRewardRatio()));
+        (uint256 userRewardRate, uint256 brokerRewardRate) = rewardManager.getRewardInfo(broker);
+        rewardManager.addReward(tx.origin, amount.mulFloor(userRewardRate));
+        rewardManager.addReward(broker, amount.mulFloor(brokerRewardRate));
     }
 
     /* ----- Admin Functions ----- */
