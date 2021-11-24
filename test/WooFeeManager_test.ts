@@ -73,9 +73,8 @@ describe('WooFeeManager Info', () => {
   let feeManager: Contract
   let btcToken: Contract
   let usdtToken: Contract
-  let wooPP : Contract
+  let wooPP: Contract
   let rewardManager: Contract
-
 
   before('Deploy ERC20', async () => {
     ;[owner, user1] = await ethers.getSigners()
@@ -87,7 +86,10 @@ describe('WooFeeManager Info', () => {
     beforeEach('Deploy WooFeeManager', async () => {
       wooPP = await deployMockContract(owner, IWooPP.abi)
       rewardManager = await deployMockContract(owner, IWooRewardManager.abi)
-      feeManager = (await deployContract(owner, WooFeeManagerArtifact, [usdtToken.address, rewardManager.address])) as WooFeeManager
+      feeManager = (await deployContract(owner, WooFeeManagerArtifact, [
+        usdtToken.address,
+        rewardManager.address,
+      ])) as WooFeeManager
     })
 
     it('ctor', async () => {
@@ -112,7 +114,10 @@ describe('WooFeeManager Info', () => {
 
       wooPP = await deployMockContract(owner, IWooPP.abi)
       rewardManager = await deployMockContract(owner, IWooRewardManager.abi)
-      feeManager = (await deployContract(owner, WooFeeManagerArtifact, [usdtToken.address, rewardManager.address])) as WooFeeManager
+      feeManager = (await deployContract(owner, WooFeeManagerArtifact, [
+        usdtToken.address,
+        rewardManager.address,
+      ])) as WooFeeManager
 
       await quoteToken.mint(feeManager.address, 30000)
       await quoteToken.mint(owner.address, 100)
