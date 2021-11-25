@@ -52,7 +52,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     using DecimalMath for uint256;
 
     struct UserInfo {
-        uint256 reserveAmount;           // amount of stakedToken user reverseWithdraw
+        uint256 reserveAmount; // amount of stakedToken user reverseWithdraw
         uint256 lastReserveWithdrawTime; // keeps track of reverseWithdraw time for potential penalty
     }
 
@@ -69,9 +69,9 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     mapping(address => uint256) public costSharePrice;
     mapping(address => UserInfo) public userInfo;
 
-    uint256 public totalReserveAmount = 0;       // affected by reserveWithdraw and withdraw
+    uint256 public totalReserveAmount = 0; // affected by reserveWithdraw and withdraw
     uint256 public withdrawFeePeriod = 72 hours; // 3 days
-    uint256 public withdrawFee = 10;             // 0.1% (10000 as denominator)
+    uint256 public withdrawFee = 10; // 0.1% (10000 as denominator)
 
     address public treasury;
 
