@@ -52,7 +52,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     using DecimalMath for uint256;
 
     struct UserInfo {
-        uint256 reserveAmount; // amount of stakedToken user reverseWithdraw
+        uint256 reserveAmount;           // amount of stakedToken user reverseWithdraw
         uint256 lastReserveWithdrawTime; // keeps track of reverseWithdraw time for potential penalty
     }
 
@@ -69,9 +69,9 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     mapping(address => uint256) public costSharePrice;
     mapping(address => UserInfo) public userInfo;
 
-    uint256 public totalReserveAmount = 0; // affected by reserveWithdraw and withdraw
+    uint256 public totalReserveAmount = 0;       // affected by reserveWithdraw and withdraw
     uint256 public withdrawFeePeriod = 72 hours; // 3 days
-    uint256 public withdrawFee = 10; // 0.1% (10000 as denominator)
+    uint256 public withdrawFee = 10;             // 0.1% (10000 as denominator)
 
     address public treasury;
 
@@ -105,7 +105,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         uint256 xTotalSupply = totalSupply();
         uint256 shares = xTotalSupply == 0 ? amount : amount.mul(xTotalSupply).div(balanceBefore);
 
-        // must be execute before _mint
+        // must be executed before _mint
         _updateCostSharePrice(amount, shares);
 
         _mint(msg.sender, shares);
@@ -116,13 +116,13 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     function reserveWithdraw(uint256 shares) external whenNotPaused {
         require(shares <= balanceOf(msg.sender), 'WooStakingVault: shares exceed balance');
 
-        uint256 currentReserveAmount = shares.mul(getPricePerFullShare()).div(1e18); // calculate reserveAmount before _burn
+        uint256 currentReserveAmount = shares.mulFloor(getPricePerFullShare()); // calculate reserveAmount before _burn
         uint256 poolBalance = balance();
         if (poolBalance < currentReserveAmount) {
             // incase reserve amount exceeds pool balance
             currentReserveAmount = poolBalance;
         }
-        _burn(msg.sender, shares); // _burn will check the balance of user's shares enough or not
+        _burn(msg.sender, shares);
 
         totalReserveAmount = totalReserveAmount.add(currentReserveAmount);
 
@@ -135,19 +135,22 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     function withdraw() external whenNotPaused {
         UserInfo storage user = userInfo[msg.sender];
+
         uint256 withdrawAmount = user.reserveAmount;
-        uint256 currentWithdrawFee = 0;
+        uint256 fee = 0;
         if (block.timestamp < user.lastReserveWithdrawTime.add(withdrawFeePeriod)) {
-            currentWithdrawFee = withdrawAmount.mul(withdrawFee).div(10000);
-            TransferHelper.safeTransfer(address(stakedToken), treasury, currentWithdrawFee);
-            withdrawAmount = withdrawAmount.sub(currentWithdrawFee);
+            fee = withdrawAmount.mul(withdrawFee).div(10000);
+            if (fee > 0) {
+                TransferHelper.safeTransfer(address(stakedToken), treasury, fee);
+            }
         }
-        totalReserveAmount = totalReserveAmount.sub(user.reserveAmount);
+        uint256 withdrawAmountAfterFee = withdrawAmount.sub(fee);
+        TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmountAfterFee);
+
         user.reserveAmount = 0;
+        totalReserveAmount = totalReserveAmount.sub(withdrawAmount);
 
-        TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmount);
-
-        emit Withdraw(msg.sender, withdrawAmount, currentWithdrawFee);
+        emit Withdraw(msg.sender, withdrawAmount, fee);
     }
 
     function instantWithdraw(uint256 shares) external whenNotPaused {
@@ -162,15 +165,15 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
         _burn(msg.sender, shares); // _burn will check the balance of user's shares enough or not
 
-        uint256 currentWithdrawFee = withdrawAmount.mul(withdrawFee).div(10000);
-        if (currentWithdrawFee > 0) {
-            TransferHelper.safeTransfer(address(stakedToken), treasury, currentWithdrawFee);
+        uint256 fee = withdrawAmount.mul(withdrawFee).div(10000);
+        if (fee > 0) {
+            TransferHelper.safeTransfer(address(stakedToken), treasury, fee);
         }
-        withdrawAmount = withdrawAmount.sub(currentWithdrawFee);
+        uint256 withdrawAmountAfterFee = withdrawAmount.sub(fee);
 
-        TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmount);
+        TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmountAfterFee);
 
-        emit InstantWithdraw(msg.sender, withdrawAmount, currentWithdrawFee);
+        emit InstantWithdraw(msg.sender, withdrawAmount, fee);
     }
 
     /* ----- Public Functions ----- */
@@ -179,7 +182,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         if (totalSupply() == 0) {
             return 1e18;
         }
-        return balance().mul(1e18).div(totalSupply());
+        return balance().divFloor(totalSupply());
     }
 
     function balance() public view whenNotPaused returns (uint256) {
