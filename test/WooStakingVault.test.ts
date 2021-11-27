@@ -587,10 +587,10 @@ describe('WooStakingVault Event', () => {
 
     await expect(wooStakingVault.connect(user).withdraw())
       .to.emit(wooStakingVault, 'Withdraw')
-      .withArgs(user.address, withdrawAmount.sub(currentWithdrawFee), currentWithdrawFee)
+      .withArgs(user.address, withdrawAmount, currentWithdrawFee)
   })
 
-  it('InstantWithdraw', async () => {
+  it('InstantWithdraw with zero fee', async () => {
     expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
     let wooDeposit = BN_1e18.mul(100)
     await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
@@ -601,5 +601,19 @@ describe('WooStakingVault Event', () => {
     await expect(wooStakingVault.connect(user).instantWithdraw(wooDeposit))
       .to.emit(wooStakingVault, 'InstantWithdraw')
       .withArgs(user.address, wooDeposit, BN_ZERO)
+  })
+
+  it('InstantWithdraw with 1% fee', async () => {
+    expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
+    let wooDeposit = BN_1e18.mul(100)
+    await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
+    await wooStakingVault.connect(user).deposit(wooDeposit)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
+
+    const feeRate = 100
+    await wooStakingVault.connect(owner).setWithdrawFee(feeRate)
+    await expect(wooStakingVault.connect(user).instantWithdraw(wooDeposit))
+      .to.emit(wooStakingVault, 'InstantWithdraw')
+      .withArgs(user.address, wooDeposit, wooDeposit.mul(feeRate).div(10000))
   })
 })
