@@ -163,7 +163,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
             withdrawAmount = poolBalance;
         }
 
-        _burn(msg.sender, shares); // _burn will check the balance of user's shares enough or not
+        _burn(msg.sender, shares);
 
         uint256 fee = withdrawAmount.mul(withdrawFee).div(10000);
         if (fee > 0) {

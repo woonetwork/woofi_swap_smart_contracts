@@ -610,7 +610,7 @@ describe('WooStakingVault Event', () => {
     await wooStakingVault.connect(user).deposit(wooDeposit)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
 
-    const feeRate = 100
+    let feeRate = BigNumber.from(100)
     await wooStakingVault.connect(owner).setWithdrawFee(feeRate)
     await expect(wooStakingVault.connect(user).instantWithdraw(wooDeposit))
       .to.emit(wooStakingVault, 'InstantWithdraw')
