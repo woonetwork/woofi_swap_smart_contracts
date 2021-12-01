@@ -62,6 +62,13 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     event ReserveWithdraw(address indexed user, uint256 reserveAmount, uint256 burnShares);
     event Withdraw(address indexed user, uint256 withdrawAmount, uint256 withdrawFee);
     event InstantWithdraw(address indexed user, uint256 withdrawAmount, uint256 withdrawFee);
+    event SendReward(
+        address indexed sender,
+        uint256 balanceBefore,
+        uint256 sharePriceBefore,
+        uint256 balanceAfter,
+        uint256 sharePriceAfter
+    );
 
     /* ----- State variables ----- */
 
@@ -70,20 +77,20 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     mapping(address => UserInfo) public userInfo;
 
     uint256 public totalReserveAmount = 0; // affected by reserveWithdraw and withdraw
-    uint256 public withdrawFeePeriod = 72 hours; // 3 days
-    uint256 public withdrawFee = 10; // 0.1% (10000 as denominator)
+    uint256 public withdrawFeePeriod = 7 days;
+    uint256 public withdrawFee = 500; // 5% (10000 as denominator)
 
     address public treasury;
 
     /* ----- Constant variables ----- */
 
-    uint256 public constant MAX_WITHDRAW_FEE_PERIOD = 72 hours; // 3 days
-    uint256 public constant MAX_WITHDRAW_FEE = 100; // 1% (10000 as denominator)
+    uint256 public constant MAX_WITHDRAW_FEE_PERIOD = 7 days;
+    uint256 public constant MAX_WITHDRAW_FEE = 500; // 5% (10000 as denominator)
 
     constructor(address initialStakedToken, address initialTreasury)
         public
         ERC20(
-            string(abi.encodePacked('Interest bearing ', ERC20(initialStakedToken).name())),
+            string(abi.encodePacked('Interest Bearing ', ERC20(initialStakedToken).name())),
             string(abi.encodePacked('x', ERC20(initialStakedToken).symbol()))
         )
     {
@@ -174,6 +181,17 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmountAfterFee);
 
         emit InstantWithdraw(msg.sender, withdrawAmount, fee);
+    }
+
+    function sendReward(uint256 amount) external whenNotPaused {
+        // only for reward, without mint xWOO
+        uint256 balanceBefore = balance();
+        uint256 sharePriceBefore = getPricePerFullShare();
+        TransferHelper.safeTransferFrom(address(stakedToken), msg.sender, address(this), amount);
+        uint256 balanceAfter = balance();
+        uint256 sharePriceAfter = getPricePerFullShare();
+
+        emit SendReward(msg.sender, balanceBefore, sharePriceBefore, balanceAfter, sharePriceAfter);
     }
 
     /* ----- Public Functions ----- */
