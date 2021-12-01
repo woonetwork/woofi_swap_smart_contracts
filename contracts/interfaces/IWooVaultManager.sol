@@ -35,28 +35,40 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-/// @title Contract to collect transaction fee of Woo private pool.
-interface IWooFeeManager {
-    /* ----- Events ----- */
+/// @title Vault reward manager interface for WooFi Swap.
+interface IWooVaultManager {
 
-    event FeeRateUpdated(address indexed token, uint256 newFeeRate);
-    event Withdraw(address indexed token, address indexed to, uint256 amount);
+    event VaultWeightUpdated(address indexed vaultAddr, uint256 weight);
+    event RewardDistributed(address indexed vaultAddr, uint256 amount);
 
-    /* ----- External Functions ----- */
+    /// @dev Gets the reward weight for the given vault.
+    /// @param vaultAddr the vault address
+    /// @return The weight of the given vault.
+    function vaultWeight(address vaultAddr) external view returns (uint256);
 
-    /// @dev fee rate for the given base token:
-    /// NOTE: fee rate decimal 18: 1e16 = 1%, 1e15 = 0.1%, 1e16 = 0.01%
-    /// @param token the base token
-    /// @return the fee rate
-    function feeRate(address token) external view returns (uint256);
+    /// @dev Sets the reward weight for the given vault.
+    /// @param vaultAddr the vault address
+    /// @param weight the vault weight
+    function setVaultWeight(address vaultAddr, uint256 weight) external;
 
-    /// @dev Sets the fee rate for the given token
-    /// @param token the base token
-    /// @param newFeeRate the new fee rate
-    function setFeeRate(address token, uint256 newFeeRate) external;
+    /// @dev Adds the reward quote amount.
+    /// Note: The reward will be stored in this manager contract for
+    ///       further weight adjusted distribution.
+    /// @param quoteAmount the reward amount in quote token.
+    function addReward(uint256 quoteAmount) external;
 
-    /// @dev Collects the swap fee to the given brokder address.
-    /// @param amount the swap fee amount
-    /// @param brokerAddr the broker address to rebate to
-    function collectFee(uint256 amount, address brokerAddr) external;
+    /// @dev Pending amount in quote token for the given vault.
+    /// @param vaultAddr the vault address
+    function pendingReward(address vaultAddr) external view returns (uint256);
+
+    /// @dev All pending amount in quote token.
+    /// @return the total pending reward
+    function pendingAllReward() external view returns (uint256);
+
+    /// @dev Distributes the reward to all the vaults based on the weights.
+    function distributeAllReward() external;
+
+    /// @dev All the vaults
+    /// @return the vault address array
+    function allVaults() external view returns (address[] memory);
 }
