@@ -46,7 +46,8 @@ const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 const BN_TEN = BigNumber.from(10)
 const BN_1e18 = BN_TEN.pow(18)
 const BN_ZERO = BigNumber.from(0)
-const WITHDRAW_FEE_PERIOD = BigNumber.from(86400).mul(3)
+const WITHDRAW_FEE = BigNumber.from(500)
+const WITHDRAW_FEE_PERIOD = BigNumber.from(86400).mul(7)
 
 describe('WooStakingVault Normal Accuracy', () => {
   let owner: SignerWithAddress
@@ -80,7 +81,7 @@ describe('WooStakingVault Normal Accuracy', () => {
 
     expect(await wooStakingVault.totalReserveAmount()).to.eq(BN_ZERO)
     expect(await wooStakingVault.withdrawFeePeriod()).to.eq(WITHDRAW_FEE_PERIOD)
-    expect(await wooStakingVault.withdrawFee()).to.eq(BN_TEN)
+    expect(await wooStakingVault.withdrawFee()).to.eq(WITHDRAW_FEE)
     expect(await wooStakingVault.treasury()).to.eq(treasury.address)
   })
 
@@ -145,7 +146,7 @@ describe('WooStakingVault Normal Accuracy', () => {
     expect(userWooBalance).to.eq(BN_1e18.mul(900))
     // continue by reserveWithdraw, user.reserveAmount: BN_1e18.mul(100)
     let [withdrawAmount] = await wooStakingVault.userInfo(user.address)
-    let currentWithdrawFee = withdrawAmount.mul(BN_TEN).div(BigNumber.from(10000))
+    let currentWithdrawFee = withdrawAmount.mul(WITHDRAW_FEE).div(BigNumber.from(10000))
     await wooStakingVault.connect(user).withdraw()
     // treasury will receive fee after withdraw during 3 days
     expect(await wooToken.balanceOf(treasury.address)).to.eq(currentWithdrawFee)
@@ -176,10 +177,10 @@ describe('WooStakingVault Normal Accuracy', () => {
     // instantWithdraw by charging fee
     let userWooBalanceBefore = await wooToken.balanceOf(user.address)
     let wooWithdraw = wooDeposit.div(2)
-    expect(await wooStakingVault.withdrawFee()).to.eq(BN_TEN)
+    expect(await wooStakingVault.withdrawFee()).to.eq(WITHDRAW_FEE)
     await wooStakingVault.connect(user).instantWithdraw(wooWithdraw)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooWithdraw)
-    let currentWithdrawFee = wooWithdraw.mul(BN_TEN).div(BigNumber.from(10000))
+    let currentWithdrawFee = wooWithdraw.mul(WITHDRAW_FEE).div(BigNumber.from(10000))
     let userWooBalanceAfter = await wooToken.balanceOf(user.address)
     expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooWithdraw).sub(currentWithdrawFee))
     // instantWithdraw no charging fee
@@ -189,6 +190,41 @@ describe('WooStakingVault Normal Accuracy', () => {
     await wooStakingVault.connect(user).instantWithdraw(wooWithdraw)
     userWooBalanceAfter = await wooToken.balanceOf(user.address)
     expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooWithdraw))
+  })
+
+  it('addReward', async () => {
+    // pre check
+    expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balance()).to.eq(BN_ZERO)
+    expect(await wooStakingVault.getPricePerFullShare()).to.eq(BN_1e18)
+    expect(await wooStakingVault.totalReserveAmount()).to.eq(BN_ZERO)
+    let [reserveAmount] = await wooStakingVault.userInfo(user.address)
+    expect(reserveAmount).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(BN_ZERO)
+    expect(await wooToken.balanceOf(owner.address)).to.eq(BN_ZERO)
+    // deposit 100 WOO into vault
+    let wooDeposit = BN_1e18.mul(100)
+    await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
+    await wooStakingVault.connect(user).deposit(wooDeposit)
+    expect(await wooToken.allowance(user.address, wooStakingVault.address)).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
+    // mint WOO to owner
+    await wooToken.mint(owner.address, wooDeposit)
+    expect(await wooToken.balanceOf(owner.address)).to.eq(wooDeposit)
+    // owner send reward and share price should increase
+    let balanceBefore = await wooStakingVault.balance()
+    let sharePriceBefore = await wooStakingVault.getPricePerFullShare()
+    let xTotalSupplyBefore = await wooStakingVault.totalSupply()
+    await wooToken.connect(owner).approve(wooStakingVault.address, wooDeposit)
+    await wooStakingVault.connect(owner).addReward(wooDeposit)
+    expect(await wooToken.balanceOf(owner.address)).to.eq(BN_ZERO)
+    let balanceAfter = await wooStakingVault.balance()
+    let sharePriceAfter = await wooStakingVault.getPricePerFullShare()
+    let xTotalSupplyAfter = await wooStakingVault.totalSupply()
+    expect(balanceAfter).to.eq(balanceBefore.add(wooDeposit))
+    expect(sharePriceAfter).to.gt(sharePriceBefore)
+    expect(xTotalSupplyAfter).to.eq(xTotalSupplyBefore)
+    expect(sharePriceAfter).to.eq(balanceAfter.mul(BN_1e18).div(xTotalSupplyBefore))
   })
 })
 
@@ -335,7 +371,7 @@ describe('WooStakingVault Complex Accuracy', () => {
     let totalRABeforeBigWithdraw = await wooStakingVault.totalReserveAmount()
 
     let [bigWithdrawAmount] = await wooStakingVault.userInfo(bigHolder.address)
-    let bigWithdrawFee = bigWithdrawAmount.mul(BN_TEN).div(BigNumber.from(10000))
+    let bigWithdrawFee = bigWithdrawAmount.mul(WITHDRAW_FEE).div(BigNumber.from(10000))
     await wooStakingVault.connect(bigHolder).withdraw()
     expect(await wooToken.balanceOf(treasury.address)).to.eq(bigWithdrawFee)
     expect(await wooToken.balanceOf(bigHolder.address)).to.eq(
@@ -362,7 +398,7 @@ describe('WooStakingVault Complex Accuracy', () => {
     expect(await wooToken.balanceOf(smallHolder.address)).to.eq(smallHolderBalance.add(smallWithdrawAmount))
 
     // 3.withdraw end with middle holder and set withdraw fee to origin, set withdrawFeePeriod to zero
-    let originWithdrawFee = BN_TEN
+    let originWithdrawFee = WITHDRAW_FEE
     await wooStakingVault.setWithdrawFee(originWithdrawFee)
     expect(await wooStakingVault.withdrawFee()).to.eq(originWithdrawFee)
     await wooStakingVault.setWithdrawFeePeriod(BN_ZERO)
@@ -583,7 +619,7 @@ describe('WooStakingVault Event', () => {
     expect(userWooBalance).to.eq(BN_1e18.mul(900))
     // continue by reserveWithdraw, user.reserveAmount: BN_1e18.mul(100)
     let [withdrawAmount] = await wooStakingVault.userInfo(user.address)
-    let currentWithdrawFee = withdrawAmount.mul(BN_TEN).div(BigNumber.from(10000))
+    let currentWithdrawFee = withdrawAmount.mul(WITHDRAW_FEE).div(BigNumber.from(10000))
 
     await expect(wooStakingVault.connect(user).withdraw())
       .to.emit(wooStakingVault, 'Withdraw')
@@ -615,5 +651,30 @@ describe('WooStakingVault Event', () => {
     await expect(wooStakingVault.connect(user).instantWithdraw(wooDeposit))
       .to.emit(wooStakingVault, 'InstantWithdraw')
       .withArgs(user.address, wooDeposit, wooDeposit.mul(feeRate).div(10000))
+  })
+
+  it('RewardAdded', async () => {
+    expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
+    let wooDeposit = BN_1e18.mul(100)
+    await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
+    await wooStakingVault.connect(user).deposit(wooDeposit)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
+    expect(await wooToken.balanceOf(owner.address)).to.eq(BN_ZERO)
+    // mint WOO to owner
+    await wooToken.mint(owner.address, wooDeposit)
+    expect(await wooToken.balanceOf(owner.address)).to.eq(wooDeposit)
+    // owner send reward and share price should increase
+    let balanceBefore = await wooStakingVault.balance()
+    let sharePriceBefore = await wooStakingVault.getPricePerFullShare()
+    let xTotalSupply = await wooStakingVault.totalSupply()
+    let calBalanceAfter = balanceBefore.add(wooDeposit)
+    let calSharePriceAfter = calBalanceAfter.mul(BN_1e18).div(xTotalSupply)
+    await wooToken.connect(owner).approve(wooStakingVault.address, wooDeposit)
+
+    await expect(wooStakingVault.connect(owner).addReward(wooDeposit))
+      .to.emit(wooStakingVault, 'RewardAdded')
+      .withArgs(owner.address, balanceBefore, sharePriceBefore, calBalanceAfter, calSharePriceAfter)
+    expect(await wooStakingVault.balance()).to.eq(calBalanceAfter)
+    expect(await wooStakingVault.getPricePerFullShare()).to.eq(calSharePriceAfter)
   })
 })
