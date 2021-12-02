@@ -192,7 +192,7 @@ describe('WooStakingVault Normal Accuracy', () => {
     expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooWithdraw))
   })
 
-  it('sendReward', async () => {
+  it('addReward', async () => {
     // pre check
     expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balance()).to.eq(BN_ZERO)
@@ -216,7 +216,7 @@ describe('WooStakingVault Normal Accuracy', () => {
     let sharePriceBefore = await wooStakingVault.getPricePerFullShare()
     let xTotalSupplyBefore = await wooStakingVault.totalSupply()
     await wooToken.connect(owner).approve(wooStakingVault.address, wooDeposit)
-    await wooStakingVault.connect(owner).sendReward(wooDeposit)
+    await wooStakingVault.connect(owner).addReward(wooDeposit)
     expect(await wooToken.balanceOf(owner.address)).to.eq(BN_ZERO)
     let balanceAfter = await wooStakingVault.balance()
     let sharePriceAfter = await wooStakingVault.getPricePerFullShare()
@@ -653,7 +653,7 @@ describe('WooStakingVault Event', () => {
       .withArgs(user.address, wooDeposit, wooDeposit.mul(feeRate).div(10000))
   })
 
-  it('SendReward', async () => {
+  it('RewardAdded', async () => {
     expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
     let wooDeposit = BN_1e18.mul(100)
     await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
@@ -671,8 +671,8 @@ describe('WooStakingVault Event', () => {
     let calSharePriceAfter = calBalanceAfter.mul(BN_1e18).div(xTotalSupply)
     await wooToken.connect(owner).approve(wooStakingVault.address, wooDeposit)
 
-    await expect(wooStakingVault.connect(owner).sendReward(wooDeposit))
-      .to.emit(wooStakingVault, 'SendReward')
+    await expect(wooStakingVault.connect(owner).addReward(wooDeposit))
+      .to.emit(wooStakingVault, 'RewardAdded')
       .withArgs(owner.address, balanceBefore, sharePriceBefore, calBalanceAfter, calSharePriceAfter)
     expect(await wooStakingVault.balance()).to.eq(calBalanceAfter)
     expect(await wooStakingVault.getPricePerFullShare()).to.eq(calSharePriceAfter)

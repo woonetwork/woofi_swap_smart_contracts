@@ -62,7 +62,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     event ReserveWithdraw(address indexed user, uint256 reserveAmount, uint256 burnShares);
     event Withdraw(address indexed user, uint256 withdrawAmount, uint256 withdrawFee);
     event InstantWithdraw(address indexed user, uint256 withdrawAmount, uint256 withdrawFee);
-    event SendReward(
+    event RewardAdded(
         address indexed sender,
         uint256 balanceBefore,
         uint256 sharePriceBefore,
@@ -183,7 +183,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         emit InstantWithdraw(msg.sender, withdrawAmount, fee);
     }
 
-    function sendReward(uint256 amount) external whenNotPaused {
+    function addReward(uint256 amount) external whenNotPaused {
         // only for reward, without mint xWOO
         uint256 balanceBefore = balance();
         uint256 sharePriceBefore = getPricePerFullShare();
@@ -191,7 +191,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         uint256 balanceAfter = balance();
         uint256 sharePriceAfter = getPricePerFullShare();
 
-        emit SendReward(msg.sender, balanceBefore, sharePriceBefore, balanceAfter, sharePriceAfter);
+        emit RewardAdded(msg.sender, balanceBefore, sharePriceBefore, balanceAfter, sharePriceAfter);
     }
 
     /* ----- Public Functions ----- */
