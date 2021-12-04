@@ -63,15 +63,20 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     mapping(address => uint256) public override feeRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
     uint256 private vaultRewardRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
 
-    address public wooPP;
     address immutable public quoteToken;
     IWooRebateManager public rebateManager;
     IWooVaultManager public vaultManager;
 
-    constructor(address newQuoteToken) public {
+    constructor(
+        address newQuoteToken,
+        address newRebateManager,
+        address newVaultManager
+    ) public {
         require(newQuoteToken != address(0), 'WooFeeManager: quoteToken_ZERO_ADDR');
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
+        rebateManager = IWooRebateManager(newRebateManager);
+        vaultManager = IWooVaultManager(newVaultManager);
         vaultRewardRate = 1e18;
     }
 

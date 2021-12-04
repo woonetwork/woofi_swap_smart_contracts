@@ -132,7 +132,7 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
 
     function distributeAllReward() public override onlyOwner {
         uint256 totalRewardInQuote = IERC20(quoteToken).balanceOf(address(this));
-        if (totalRewardInQuote == 0) {
+        if (totalRewardInQuote == 0 || totalWeight == 0) {
             return;
         }
 

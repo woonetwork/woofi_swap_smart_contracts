@@ -261,6 +261,16 @@ describe('WooVaultManager', () => {
         .to.be.revertedWith('WooVaultManager: vaultAddr_ZERO_ADDR')
     })
 
+    it('distributeAllReward acc0', async () => {
+      const rewardAmount = 100
+      await usdtToken.approve(vaultManager.address, rewardAmount)
+      await vaultManager.addReward(rewardAmount)
+
+      await vaultManager.distributeAllReward()
+
+      // Nothing happened since no weight (No exception should happen here)
+    })
+
     it('distributeAllReward acc1', async () => {
       await vaultManager.setVaultWeight(vault1.address, 20)
       await vaultManager.setVaultWeight(vault2.address, 80)
@@ -286,6 +296,8 @@ describe('WooVaultManager', () => {
     it('distributeAllReward revert1', async () => {
       await wooPP.mock.sellQuote.returns(utils.parseEther('1.2'))
 
+      await vaultManager.setVaultWeight(vault1.address, 20)
+
       const rewardAmount = 100
       await usdtToken.approve(vaultManager.address, rewardAmount)
       await vaultManager.addReward(rewardAmount)
@@ -297,6 +309,7 @@ describe('WooVaultManager', () => {
     })
 
     it('distributeAllReward event', async () => {
+      await wooPP.mock.sellQuote.returns(MOCK_REWARD_AMOUNT)
       await vaultManager.setVaultWeight(vault1.address, 20)
       await vaultManager.setVaultWeight(vault2.address, 80)
 

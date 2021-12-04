@@ -45,9 +45,9 @@ interface IWooRebateManager {
     event ClaimReward(address indexed brokerAddr, uint256 amount);
 
     /// @dev Gets the rebate rate for the given broker.
-    /// Note: decimal: 18;  1e16 = 1%, 1e15 = 0.1%, 1e16 = 0.01%
+    /// Note: decimal: 18;  1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
     /// @param brokerAddr the address for rebate
-    /// @return The rebate rate (decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e16 = 0.01%)
+    /// @return The rebate rate (decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%)
     function rebateRate(address brokerAddr) external view returns (uint256);
 
     /// @dev set the rebate rate
@@ -62,7 +62,7 @@ interface IWooRebateManager {
 
     /// @dev Pending amount in $woo.
     /// @param brokerAddr the address for rebate
-    function pendingRebateInWoo(address brokerAddr) external view returns (uint256);
+    function pendingRebateInWOO(address brokerAddr) external view returns (uint256);
 
     /// @dev Pending amount in $woo.
     /// @param brokerAddr the address for rebate

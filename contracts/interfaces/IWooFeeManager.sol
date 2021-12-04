@@ -45,7 +45,7 @@ interface IWooFeeManager {
     /* ----- External Functions ----- */
 
     /// @dev fee rate for the given base token:
-    /// NOTE: fee rate decimal 18: 1e16 = 1%, 1e15 = 0.1%, 1e16 = 0.01%
+    /// NOTE: fee rate decimal 18: 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
     /// @param token the base token
     /// @return the fee rate
     function feeRate(address token) external view returns (uint256);

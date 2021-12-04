@@ -209,20 +209,20 @@ describe('WooRebateManager', () => {
       expect(await rebateManager.pendingRebateInUSDT(broker.address)).to.equal(0)
     })
 
-    it('pendingRebateInWoo', async () => {
+    it('pendingRebateInWOO', async () => {
       expect(await rebateManager.pendingRebateInUSDT(broker.address)).to.equal(0)
 
       const rebateAmount = 300
       await usdtToken.approve(rebateManager.address, rebateAmount)
       await rebateManager.addRebate(broker.address, rebateAmount)
       expect(await rebateManager.pendingRebateInUSDT(broker.address)).to.equal(rebateAmount)
-      await rebateManager.pendingRebateInWoo(broker.address)
+      await rebateManager.pendingRebateInWOO(broker.address)
 
       const amount2 = 200
       await usdtToken.approve(rebateManager.address, amount2)
       await rebateManager.addRebate(broker.address, amount2)
       expect(await rebateManager.pendingRebateInUSDT(broker.address)).to.equal(rebateAmount + amount2)
-      await rebateManager.pendingRebateInWoo(broker.address)
+      await rebateManager.pendingRebateInWOO(broker.address)
     })
 
     it('claimRebate', async () => {

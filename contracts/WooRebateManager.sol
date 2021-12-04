@@ -56,7 +56,7 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
     using SafeERC20 for IERC20;
 
     // Note: this is the percent rate of the total swap fee (not the swap volume)
-    // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e16 = 0.01%
+    // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
     //
     // e.g. suppose:
     //   rebateRate = 1e17 (10%), so the rebate amount is total_swap_fee * 10%.
@@ -75,23 +75,23 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
         address newRewardToken
     ) public {
         require(newQuoteToken != address(0), 'WooRebateManager: INVALID_QUOTE');
-        require(newRewardToken != address(0), 'WooRebateManager: INVALID_RAWARD_TOKEN');
+        require(newRewardToken != address(0), 'WooRebateManager: INVALID_REWARD_TOKEN');
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
     }
 
-    function addRebate(address brokerAddr, uint256 amountInUSD) external override {
+    function addRebate(address brokerAddr, uint256 amountInUSDT) external override {
         if (brokerAddr == address(0)) {
             return;
         }
 
         uint256 balanceBefore = IERC20(quoteToken).balanceOf(address(this));
-        TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amountInUSD);
+        TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amountInUSDT);
         uint256 balanceAfter = IERC20(quoteToken).balanceOf(address(this));
-        require(balanceAfter.sub(balanceBefore) >= amountInUSD, "RebateManager: amount < balance delta");
+        require(balanceAfter.sub(balanceBefore) >= amountInUSDT, "RebateManager: amount < balance delta");
 
-        pendingRebate[brokerAddr] = amountInUSD.add(pendingRebate[brokerAddr]);
+        pendingRebate[brokerAddr] = amountInUSDT.add(pendingRebate[brokerAddr]);
     }
 
     function pendingRebateInUSDT(address brokerAddr) external view override returns (uint256) {
@@ -99,7 +99,7 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
         return pendingRebate[brokerAddr];
     }
 
-    function pendingRebateInWoo(address brokerAddr) external view override returns (uint256) {
+    function pendingRebateInWOO(address brokerAddr) external view override returns (uint256) {
         require(brokerAddr != address(0), 'WooRebateManager: zero_brokerAddr');
         return wooPP.querySellQuote(rewardToken, pendingRebate[brokerAddr]);
     }
