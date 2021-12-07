@@ -37,7 +37,6 @@ pragma experimental ABIEncoderV2;
 
 /// @title Vault reward manager interface for WooFi Swap.
 interface IWooVaultManager {
-
     event VaultWeightUpdated(address indexed vaultAddr, uint256 weight);
     event RewardDistributed(address indexed vaultAddr, uint256 amount);
 

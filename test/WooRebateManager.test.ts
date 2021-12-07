@@ -97,12 +97,11 @@ describe('WooRebateManager', () => {
   })
 
   describe('ctor, init & basic func', () => {
-
     beforeEach('Deploy WooRebateManager', async () => {
-      rebateManager = await deployContract(owner, WooRebateManagerArtifact, [
+      rebateManager = (await deployContract(owner, WooRebateManagerArtifact, [
         usdtToken.address,
-        wooToken.address
-      ]) as WooRebateManager
+        wooToken.address,
+      ])) as WooRebateManager
     })
 
     it('ctor', async () => {
@@ -121,13 +120,15 @@ describe('WooRebateManager', () => {
     })
 
     it('Set rebateRate revert1', async () => {
-      await expect(rebateManager.setRebateRate(ZERO_ADDR, REBATE_RATE1))
-        .to.be.revertedWith('WooRebateManager: brokerAddr_ZERO_ADDR')
+      await expect(rebateManager.setRebateRate(ZERO_ADDR, REBATE_RATE1)).to.be.revertedWith(
+        'WooRebateManager: brokerAddr_ZERO_ADDR'
+      )
     })
 
     it('Set rebateRate revert2', async () => {
-      await expect(rebateManager.setRebateRate(broker.address, utils.parseEther('1.000000001')))
-        .to.be.revertedWith('WooRebateManager: INVALID_USER_REWARD_RATE')
+      await expect(rebateManager.setRebateRate(broker.address, utils.parseEther('1.000000001'))).to.be.revertedWith(
+        'WooRebateManager: INVALID_USER_REWARD_RATE'
+      )
     })
 
     it('Set rebateRate event', async () => {
@@ -145,10 +146,10 @@ describe('WooRebateManager', () => {
     let quoteToken: Contract
 
     beforeEach('Deploy WooRebateManager', async () => {
-      rebateManager = await deployContract(owner, WooRebateManagerArtifact, [
+      rebateManager = (await deployContract(owner, WooRebateManagerArtifact, [
         usdtToken.address,
-        wooToken.address
-      ]) as WooRebateManager
+        wooToken.address,
+      ])) as WooRebateManager
 
       await rebateManager.setWooPP(wooPP.address)
       await usdtToken.mint(owner.address, 1000)
@@ -248,8 +249,9 @@ describe('WooRebateManager', () => {
 
       await wooPP.mock.sellQuote.returns(utils.parseEther('1'))
 
-      await expect(rebateManager.connect(broker).claimRebate()
-      ).to.be.revertedWith('WooRebateManager: woo amount INSUFF')
+      await expect(rebateManager.connect(broker).claimRebate()).to.be.revertedWith(
+        'WooRebateManager: woo amount INSUFF'
+      )
 
       await wooPP.mock.sellQuote.returns(MOCK_REWARD_AMOUNT)
     })
@@ -266,6 +268,5 @@ describe('WooRebateManager', () => {
         .to.emit(rebateManager, 'ClaimReward')
         .withArgs(broker.address, MOCK_REWARD_AMOUNT)
     })
-
   })
 })

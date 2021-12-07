@@ -47,9 +47,8 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
-import "@openzeppelin/contracts/utils/EnumerableSet.sol";
+import '@openzeppelin/contracts/utils/EnumerableSet.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
-
 
 contract WooVaultManager is InitializableOwnable, IWooVaultManager {
     using SafeMath for uint256;
@@ -67,10 +66,7 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
 
     EnumerableSet.AddressSet private vaultSet;
 
-    constructor(
-        address newQuoteToken,
-        address newRewardToken
-    ) public {
+    constructor(address newQuoteToken, address newRewardToken) public {
         require(newQuoteToken != address(0), 'WooVaultManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooVaultManager: INVALID_RAWARD_TOKEN');
         initOwner(msg.sender);

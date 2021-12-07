@@ -90,12 +90,13 @@ describe('WooFeeManager Info', () => {
   })
 
   describe('ctor, init & basic func', () => {
-
     beforeEach('Deploy WooFeeManager', async () => {
       wooPP = await deployMockContract(owner, IWooPP.abi)
-      feeManager = await deployContract(owner, WooFeeManagerArtifact, [
-        usdtToken.address, rebateManager.address, vaultManager.address
-      ]) as WooFeeManager
+      feeManager = (await deployContract(owner, WooFeeManagerArtifact, [
+        usdtToken.address,
+        rebateManager.address,
+        vaultManager.address,
+      ])) as WooFeeManager
     })
 
     it('ctor', async () => {
@@ -125,7 +126,9 @@ describe('WooFeeManager Info', () => {
 
       wooPP = await deployMockContract(owner, IWooPP.abi)
       feeManager = (await deployContract(owner, WooFeeManagerArtifact, [
-        usdtToken.address, rebateManager.address, vaultManager.address
+        usdtToken.address,
+        rebateManager.address,
+        vaultManager.address,
       ])) as WooFeeManager
 
       await quoteToken.mint(feeManager.address, 30000)
@@ -163,12 +166,13 @@ describe('WooFeeManager Info', () => {
   })
 
   describe('collectFee', () => {
-
     beforeEach('deploy WooFeeManager', async () => {
       wooPP = await deployMockContract(owner, IWooPP.abi)
 
       feeManager = (await deployContract(owner, WooFeeManagerArtifact, [
-        usdtToken.address, rebateManager.address, vaultManager.address
+        usdtToken.address,
+        rebateManager.address,
+        vaultManager.address,
       ])) as WooFeeManager
 
       feeManager.setRebateManager(rebateManager.address)
@@ -197,6 +201,5 @@ describe('WooFeeManager Info', () => {
       expect(await usdtToken.balanceOf(owner.address)).to.eq(ownerBalance.sub(100))
       expect(await usdtToken.balanceOf(feeManager.address)).to.eq(feeManagerBalance.add(100))
     })
-
   })
 })

@@ -49,7 +49,6 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-
 contract WooRebateManager is InitializableOwnable, IWooRebateManager {
     using SafeMath for uint256;
     using DecimalMath for uint256;
@@ -62,7 +61,7 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
     //   rebateRate = 1e17 (10%), so the rebate amount is total_swap_fee * 10%.
     mapping(address => uint256) public override rebateRate;
 
-     // pending rebate amount in quote token
+    // pending rebate amount in quote token
     mapping(address => uint256) public pendingRebate;
 
     IWooPP private wooPP;
@@ -70,10 +69,7 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
     address public immutable quoteToken; // USDT
     address public immutable rewardToken; // WOO
 
-    constructor(
-        address newQuoteToken,
-        address newRewardToken
-    ) public {
+    constructor(address newQuoteToken, address newRewardToken) public {
         require(newQuoteToken != address(0), 'WooRebateManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooRebateManager: INVALID_REWARD_TOKEN');
         initOwner(msg.sender);
@@ -89,7 +85,7 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
         uint256 balanceBefore = IERC20(quoteToken).balanceOf(address(this));
         TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amountInUSDT);
         uint256 balanceAfter = IERC20(quoteToken).balanceOf(address(this));
-        require(balanceAfter.sub(balanceBefore) >= amountInUSDT, "RebateManager: amount < balance delta");
+        require(balanceAfter.sub(balanceBefore) >= amountInUSDT, 'RebateManager: amount < balance delta');
 
         pendingRebate[brokerAddr] = amountInUSDT.add(pendingRebate[brokerAddr]);
     }

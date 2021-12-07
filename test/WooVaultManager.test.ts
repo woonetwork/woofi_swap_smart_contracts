@@ -99,12 +99,11 @@ describe('WooVaultManager', () => {
   })
 
   describe('ctor, init & basic func', () => {
-
     beforeEach('Deploy WooVaultManager', async () => {
-      vaultManager = await deployContract(owner, WooVaultManagerArtifact, [
+      vaultManager = (await deployContract(owner, WooVaultManagerArtifact, [
         usdtToken.address,
-        wooToken.address
-      ]) as WooVaultManager
+        wooToken.address,
+      ])) as WooVaultManager
 
       await vaultManager.setWooPP(wooPP.address)
     })
@@ -202,8 +201,9 @@ describe('WooVaultManager', () => {
     })
 
     it('Set rebateRate revert1', async () => {
-      await expect(vaultManager.setVaultWeight(ZERO_ADDR, 100))
-        .to.be.revertedWith('WooVaultManager: vaultAddr_ZERO_ADDR')
+      await expect(vaultManager.setVaultWeight(ZERO_ADDR, 100)).to.be.revertedWith(
+        'WooVaultManager: vaultAddr_ZERO_ADDR'
+      )
     })
 
     it('addReward acc1', async () => {
@@ -220,8 +220,8 @@ describe('WooVaultManager', () => {
       expect(await usdtToken.balanceOf(owner.address)).to.equal(10000 - rewardAmount)
       expect(await usdtToken.balanceOf(vaultManager.address)).to.equal(rewardAmount)
 
-      expect(await vaultManager.pendingReward(vault1.address)).to.equal(rewardAmount * 20 / 100)
-      expect(await vaultManager.pendingReward(vault2.address)).to.equal(rewardAmount * 80 / 100)
+      expect(await vaultManager.pendingReward(vault1.address)).to.equal((rewardAmount * 20) / 100)
+      expect(await vaultManager.pendingReward(vault2.address)).to.equal((rewardAmount * 80) / 100)
 
       const vaults = await vaultManager.allVaults()
       expect(vaults.length).to.eq(2)
@@ -252,13 +252,12 @@ describe('WooVaultManager', () => {
       await usdtToken.approve(vaultManager.address, rewardAmount)
       await vaultManager.addReward(rewardAmount)
 
-      expect(await vaultManager.pendingReward(vault1.address)).to.equal(rewardAmount * 20 / 100)
-      expect(await vaultManager.pendingReward(vault2.address)).to.equal(rewardAmount * 80 / 100)
+      expect(await vaultManager.pendingReward(vault1.address)).to.equal((rewardAmount * 20) / 100)
+      expect(await vaultManager.pendingReward(vault2.address)).to.equal((rewardAmount * 80) / 100)
     })
 
     it('pendingReward revert1', async () => {
-      await expect(vaultManager.pendingReward(ZERO_ADDR))
-        .to.be.revertedWith('WooVaultManager: vaultAddr_ZERO_ADDR')
+      await expect(vaultManager.pendingReward(ZERO_ADDR)).to.be.revertedWith('WooVaultManager: vaultAddr_ZERO_ADDR')
     })
 
     it('distributeAllReward acc0', async () => {
@@ -286,8 +285,8 @@ describe('WooVaultManager', () => {
       await usdtToken.approve(vaultManager.address, rewardAmount)
       await vaultManager.addReward(rewardAmount)
 
-      expect(await vaultManager.pendingReward(vault1.address)).to.equal(rewardAmount * 20 / 100)
-      expect(await vaultManager.pendingReward(vault2.address)).to.equal(rewardAmount * 80 / 100)
+      expect(await vaultManager.pendingReward(vault1.address)).to.equal((rewardAmount * 20) / 100)
+      expect(await vaultManager.pendingReward(vault2.address)).to.equal((rewardAmount * 80) / 100)
 
       await wooToken.mint(vaultManager.address, 1000)
       await vaultManager.distributeAllReward()
@@ -302,8 +301,7 @@ describe('WooVaultManager', () => {
       await usdtToken.approve(vaultManager.address, rewardAmount)
       await vaultManager.addReward(rewardAmount)
 
-      await expect(vaultManager.distributeAllReward())
-        .to.be.revertedWith('WooVaultManager: woo amount INSUFF')
+      await expect(vaultManager.distributeAllReward()).to.be.revertedWith('WooVaultManager: woo amount INSUFF')
 
       await wooPP.mock.sellQuote.returns(MOCK_REWARD_AMOUNT)
     })

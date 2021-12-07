@@ -63,7 +63,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     mapping(address => uint256) public override feeRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
     uint256 private vaultRewardRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
 
-    address immutable public quoteToken;
+    address public immutable quoteToken;
     IWooRebateManager public rebateManager;
     IWooVaultManager public vaultManager;
 

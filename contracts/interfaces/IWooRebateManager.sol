@@ -39,7 +39,6 @@ pragma experimental ABIEncoderV2;
 /// @notice this is for swap rebate or potential incentive program
 
 interface IWooRebateManager {
-
     event Withdraw(address indexed token, address indexed to, uint256 amount);
     event RebateRateUpdated(address indexed brokerAddr, uint256 rate);
     event ClaimReward(address indexed brokerAddr, uint256 amount);
