@@ -561,9 +561,7 @@ describe('WooStakingVault Access Control & Require Check', () => {
 
   it('Only owner able to addWhitelist', async () => {
     expect(await wooStakingVault.whitelist(user.address)).to.eq(false)
-    await expect(wooStakingVault.connect(user).addWhitelist(user.address)).to.be.revertedWith(
-      onlyOwnerRevertedMessage
-    )
+    await expect(wooStakingVault.connect(user).addWhitelist(user.address)).to.be.revertedWith(onlyOwnerRevertedMessage)
     await wooStakingVault.connect(owner).addWhitelist(user.address)
     expect(await wooStakingVault.whitelist(user.address)).to.eq(true)
   })
