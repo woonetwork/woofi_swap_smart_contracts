@@ -38,8 +38,9 @@ pragma experimental ABIEncoderV2;
 import './libraries/InitializableOwnable.sol';
 import './libraries/DecimalMath.sol';
 import './interfaces/IWooPP.sol';
-import './interfaces/IWooRewardManager.sol';
+import './interfaces/IWooRebateManager.sol';
 import './interfaces/IWooFeeManager.sol';
+import './interfaces/IWooVaultManager.sol';
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
@@ -59,87 +60,76 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
 
     /* ----- State variables ----- */
 
-    mapping(address => uint256) public override feeRate;
-    address public wooPP;
-    address public quoteToken;
-    address public rewardToken;
-    IWooRewardManager public rewardManager;
+    mapping(address => uint256) public override feeRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
+    uint256 private vaultRewardRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
 
-    constructor(address newQuoteToken, address newRewardManager) public {
-        initOwner(msg.sender);
+    address public immutable quoteToken;
+    IWooRebateManager public rebateManager;
+    IWooVaultManager public vaultManager;
+
+    constructor(
+        address newQuoteToken,
+        address newRebateManager,
+        address newVaultManager
+    ) public {
         require(newQuoteToken != address(0), 'WooFeeManager: quoteToken_ZERO_ADDR');
-        require(newRewardManager != address(0), 'WooFeeManager: rewardManager_ZERO_ADDR');
+        initOwner(msg.sender);
         quoteToken = newQuoteToken;
-        rewardManager = IWooRewardManager(newRewardManager);
+        rebateManager = IWooRebateManager(newRebateManager);
+        vaultManager = IWooVaultManager(newVaultManager);
+        vaultRewardRate = 1e18;
     }
 
     /* ----- Public Functions ----- */
 
-    function collectFee(uint256 amount, address broker) external override {
+    function collectFee(uint256 amount, address brokerAddr) external override {
         TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amount);
-        (uint256 userRewardRate, uint256 brokerRewardRate) = rewardManager.getRewardInfo(broker);
-        rewardManager.addReward(tx.origin, amount.mulFloor(userRewardRate));
-        rewardManager.addReward(broker, amount.mulFloor(brokerRewardRate));
+
+        // Step 1: distribute rebate if needed
+        uint256 rebateRate = rebateManager.rebateRate(brokerAddr);
+        uint256 rebateAmount = amount.mulFloor(rebateRate);
+        if (rebateAmount > 0) {
+            TransferHelper.safeApprove(quoteToken, address(rebateManager), rebateAmount);
+            rebateManager.addRebate(brokerAddr, rebateAmount);
+        }
+        uint256 feeAfterRebate = amount.sub(rebateAmount);
+
+        // Step 2: distribute to vault treasury
+        uint256 vaultRewardAmount = feeAfterRebate.mulFloor(vaultRewardRate);
+        if (vaultRewardAmount > 0) {
+            TransferHelper.safeApprove(quoteToken, address(vaultManager), vaultRewardAmount);
+            vaultManager.addReward(vaultRewardAmount);
+        }
     }
 
     /* ----- Admin Functions ----- */
 
-    /// @dev Set fee rate.
-    function setFeeRate(address token, uint256 newFeeRate) external onlyOwner {
+    function setFeeRate(address token, uint256 newFeeRate) external override onlyOwner {
         require(newFeeRate <= 1e16, 'WooFeeManager: FEE_RATE>1%');
         feeRate[token] = newFeeRate;
         emit FeeRateUpdated(token, newFeeRate);
     }
 
-    /// @dev Set WooPP.
-    function setWooPP(address newWooPP) external onlyOwner {
-        wooPP = newWooPP;
-    }
-
-    /// @dev Set reward token.
-    function setRewardToken(address newRewardToken) external onlyOwner {
-        rewardToken = newRewardToken;
-    }
-
-    /// @dev Swap quote token to reward token.
-    /// @param amount the amount of quote token to swap
-    function swap(uint256 amount) external onlyOwner {
-        _swap(amount);
-    }
-
-    /// @dev Withdraw the token.
-    /// @param token the token to withdraw
-    /// @param to the destination address
-    /// @param amount the amount to withdraw
-    function withdraw(
-        address token,
-        address to,
-        uint256 amount
-    ) public nonReentrant onlyOwner {
+    function emergencyWithdraw(address token, address to) external onlyOwner {
         require(token != address(0), 'WooFeeManager: token_ZERO_ADDR');
         require(to != address(0), 'WooFeeManager: to_ZERO_ADDR');
+        uint256 amount = IERC20(token).balanceOf(address(this));
         TransferHelper.safeTransfer(token, to, amount);
         emit Withdraw(token, to, amount);
     }
 
-    function withdrawAll(address token, address to) external onlyOwner {
-        withdraw(token, to, IERC20(token).balanceOf(address(this)));
+    function setRebateManager(address newRebateManager) external onlyOwner {
+        require(newRebateManager != address(0), 'WooFeeManager: rebateManager_ZERO_ADDR');
+        rebateManager = IWooRebateManager(newRebateManager);
     }
 
-    /// @dev Withdraw the token to the OWNER address
-    /// @param token the token
-    function withdrawAllToOwner(address token) external nonReentrant onlyOwner {
-        require(token != address(0), 'WooFeeManager: token_ZERO_ADDR');
-        uint256 amount = IERC20(token).balanceOf(address(this));
-        TransferHelper.safeTransfer(token, _OWNER_, amount);
-        emit Withdraw(token, _OWNER_, amount);
+    function setVaultManager(address newVaultManager) external onlyOwner {
+        require(newVaultManager != address(0), 'WooFeeManager: newVaultManager_ZERO_ADDR');
+        vaultManager = IWooVaultManager(newVaultManager);
     }
 
-    /* ----- Internal Functions ----- */
-
-    function _swap(uint256 amount) internal {
-        require(wooPP != address(0), 'WooFeeManager: wooPP_ZERO_ADDR');
-        TransferHelper.safeApprove(quoteToken, wooPP, amount);
-        IWooPP(wooPP).sellQuote(rewardToken, amount, 0, address(rewardManager), address(this));
+    function setVaultRewardRate(uint256 newVaultRewardRate) external onlyOwner {
+        require(newVaultRewardRate <= 1e18, 'WooFeeManager: vaultRewardRate_INVALID');
+        vaultRewardRate = newVaultRewardRate;
     }
 }

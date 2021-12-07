@@ -35,17 +35,38 @@ pragma experimental ABIEncoderV2;
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-/// @title Reward manager interface for WooFi Swap.
+/// @title Rebate manager interface for WooFi Swap.
 /// @notice this is for swap rebate or potential incentive program
-interface IWooRewardManager {
-    function getRewardInfo(address broker) external view returns (uint256 userRewardRate, uint256 brokerRewardRate);
+
+interface IWooRebateManager {
+    event Withdraw(address indexed token, address indexed to, uint256 amount);
+    event RebateRateUpdated(address indexed brokerAddr, uint256 rate);
+    event ClaimReward(address indexed brokerAddr, uint256 amount);
+
+    /// @dev Gets the rebate rate for the given broker.
+    /// Note: decimal: 18;  1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
+    /// @param brokerAddr the address for rebate
+    /// @return The rebate rate (decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%)
+    function rebateRate(address brokerAddr) external view returns (uint256);
+
+    /// @dev set the rebate rate
+    /// @param brokerAddr the rebate address
+    /// @param rate the rebate rate
+    function setRebateRate(address brokerAddr, uint256 rate) external;
 
     /// @dev adds the pending reward for the given user.
-    /// @param user the user
-    /// @param amount the pending reward amount
-    function addReward(address user, uint256 amount) external;
+    /// @param brokerAddr the address for rebate
+    /// @param amountInUSD the pending reward amount
+    function addRebate(address brokerAddr, uint256 amountInUSD) external;
 
-    /// @dev User claims the reward.
-    /// @param user the user
-    function claimReward(address user) external;
+    /// @dev Pending amount in $woo.
+    /// @param brokerAddr the address for rebate
+    function pendingRebateInWOO(address brokerAddr) external view returns (uint256);
+
+    /// @dev Pending amount in $woo.
+    /// @param brokerAddr the address for rebate
+    function pendingRebateInUSDT(address brokerAddr) external view returns (uint256);
+
+    /// @dev Claims the reward ($woo token will be distributed)
+    function claimRebate() external;
 }
