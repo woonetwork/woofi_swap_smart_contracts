@@ -47,7 +47,6 @@ import './libraries/DecimalMath.sol';
 
 contract WooStakingVault is ERC20, Ownable, Pausable {
     using SafeERC20 for IERC20;
-    using Address for address;
     using SafeMath for uint256;
     using DecimalMath for uint256;
 
@@ -69,12 +68,15 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         uint256 balanceAfter,
         uint256 sharePriceAfter
     );
+    event AddWhitelist(address indexed newVault);
+    event RemoveWhitelist(address indexed existVault);
 
     /* ----- State variables ----- */
 
     IERC20 public stakedToken;
     mapping(address => uint256) public costSharePrice;
     mapping(address => UserInfo) public userInfo;
+    mapping(address => bool) public whitelist;
 
     uint256 public totalReserveAmount = 0; // affected by reserveWithdraw and withdraw
     uint256 public withdrawFeePeriod = 7 days;
@@ -152,10 +154,10 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
             }
         }
         uint256 withdrawAmountAfterFee = withdrawAmount.sub(fee);
-        TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmountAfterFee);
 
         user.reserveAmount = 0;
         totalReserveAmount = totalReserveAmount.sub(withdrawAmount);
+        TransferHelper.safeTransfer(address(stakedToken), msg.sender, withdrawAmountAfterFee);
 
         emit Withdraw(msg.sender, withdrawAmount, fee);
     }
@@ -172,7 +174,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
         _burn(msg.sender, shares);
 
-        uint256 fee = withdrawAmount.mul(withdrawFee).div(10000);
+        uint256 fee = whitelist[msg.sender] ? 0 : withdrawAmount.mul(withdrawFee).div(10000);
         if (fee > 0) {
             TransferHelper.safeTransfer(address(stakedToken), treasury, fee);
         }
@@ -240,6 +242,20 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     /// @dev Only callable by the contract owner.
     function setTreasury(address newTreasury) external onlyOwner {
         treasury = newTreasury;
+    }
+
+    function addWhitelist(address newVault) external onlyOwner {
+        if (!whitelist[newVault]) {
+            whitelist[newVault] = true;
+            emit AddWhitelist(newVault);
+        }
+    }
+
+    function removeWhitelist(address existVault) external onlyOwner {
+        if (whitelist[existVault]) {
+            whitelist[existVault] = false;
+            emit RemoveWhitelist(existVault);
+        }
     }
 
     /// @notice Pause the contract.
