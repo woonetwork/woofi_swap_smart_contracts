@@ -609,7 +609,7 @@ describe('WooStakingVault Access Control & Require Check', () => {
     // add vault to whitelist to test strategist
     await wooStakingVault.connect(owner).setWhitelist(vault.address, true)
     expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
-    // set strategist to add vault to whitelist
+    // remove vault from whitelist by strategist
     expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(true)
     await wooStakingVault.connect(strategist).setWhitelist(vault.address, false)
     expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
