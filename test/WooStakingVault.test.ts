@@ -210,7 +210,7 @@ describe('WooStakingVault Normal Accuracy', () => {
     expect(await wooToken.allowance(user.address, wooStakingVault.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
     // set user to whitelist
-    await wooStakingVault.connect(owner).addWhitelist(user.address)
+    await wooStakingVault.connect(owner).setWhitelist(user.address, true)
     expect(await wooStakingVault.whitelist(user.address)).to.eq(true)
     // instantWithdraw by charging fee
     let userWooBalanceBefore = await wooToken.balanceOf(user.address)
@@ -452,6 +452,8 @@ describe('WooStakingVault Access Control & Require Check', () => {
   let user: SignerWithAddress
   let treasury: SignerWithAddress
   let newTreasury: SignerWithAddress
+  let strategist: SignerWithAddress
+  let vault: SignerWithAddress
 
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
@@ -464,9 +466,10 @@ describe('WooStakingVault Access Control & Require Check', () => {
   let setWithdrawFeeExceedMessage: string
   let whenNotPausedRevertedMessage: string
   let whenPausedRevertedMessage: string
+  let onlyStrategistRevertedMessage: string
 
   before(async () => {
-    ;[owner, user, treasury, newTreasury] = await ethers.getSigners()
+    ;[owner, user, treasury, newTreasury, strategist, vault] = await ethers.getSigners()
     wooToken = (await deployContract(owner, TestTokenArtifact, [])) as TestToken
     // 1.mint woo token to user
     // 2.make sure user woo balance start with 0
@@ -487,6 +490,7 @@ describe('WooStakingVault Access Control & Require Check', () => {
     setWithdrawFeeExceedMessage = 'WooStakingVault: newWithdrawFee>MAX_WITHDRAW_FEE'
     whenNotPausedRevertedMessage = 'Pausable: paused'
     whenPausedRevertedMessage = 'Pausable: not paused'
+    onlyStrategistRevertedMessage = 'WooStakingVault: NOT_STRATEGIST'
   })
 
   it('Initial staked token can not be zero address', async () => {
@@ -559,20 +563,56 @@ describe('WooStakingVault Access Control & Require Check', () => {
     expect(await wooStakingVault.treasury()).to.eq(newTreasury.address)
   })
 
-  it('Only owner able to addWhitelist', async () => {
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(false)
-    await expect(wooStakingVault.connect(user).addWhitelist(user.address)).to.be.revertedWith(onlyOwnerRevertedMessage)
-    await wooStakingVault.connect(owner).addWhitelist(user.address)
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(true)
-  })
-
-  it('Only owner able to removeWhitelist', async () => {
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(true)
-    await expect(wooStakingVault.connect(user).removeWhitelist(user.address)).to.be.revertedWith(
+  it('Only owner able to add strategist', async () => {
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(false)
+    await expect(wooStakingVault.connect(user).setStrategist(strategist.address, true)).to.be.revertedWith(
       onlyOwnerRevertedMessage
     )
-    await wooStakingVault.connect(owner).removeWhitelist(user.address)
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(false)
+    await wooStakingVault.connect(owner).setStrategist(strategist.address, true)
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(true)
+  })
+
+  it('Only owner able to remove strategist', async () => {
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(true)
+    await expect(wooStakingVault.connect(user).setStrategist(strategist.address, false)).to.be.revertedWith(
+      onlyOwnerRevertedMessage
+    )
+    await wooStakingVault.connect(owner).setStrategist(strategist.address, false)
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(false)
+  })
+
+  it('Only owner or strategist able to add vault to whitelist', async () => {
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
+    await expect(wooStakingVault.connect(user).setWhitelist(vault.address, true)).to.be.revertedWith(
+      onlyStrategistRevertedMessage
+    )
+    await wooStakingVault.connect(owner).setWhitelist(vault.address, true)
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
+    // remove vault from whitelist to test strategist
+    await wooStakingVault.connect(owner).setWhitelist(vault.address, false)
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
+    // set strategist to add vault to whitelist
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(false)
+    await wooStakingVault.connect(owner).setStrategist(strategist.address, true)
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(true)
+    await wooStakingVault.connect(strategist).setWhitelist(vault.address, true)
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
+  })
+
+  it('Only owner or strategist able to remove vault to whitelist', async () => {
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
+    await expect(wooStakingVault.connect(user).setWhitelist(vault.address, false)).to.be.revertedWith(
+      onlyStrategistRevertedMessage
+    )
+    await wooStakingVault.connect(owner).setWhitelist(vault.address, false)
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
+    // add vault to whitelist to test strategist
+    await wooStakingVault.connect(owner).setWhitelist(vault.address, true)
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
+    // set strategist to add vault to whitelist
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(true)
+    await wooStakingVault.connect(strategist).setWhitelist(vault.address, false)
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
   })
 
   it('Only owner able to pause', async () => {
@@ -611,12 +651,14 @@ describe('WooStakingVault Event', () => {
   let owner: SignerWithAddress
   let user: SignerWithAddress
   let treasury: SignerWithAddress
+  let strategist: SignerWithAddress
+  let vault: SignerWithAddress
 
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
 
   before(async () => {
-    ;[owner, user, treasury] = await ethers.getSigners()
+    ;[owner, user, treasury, strategist, vault] = await ethers.getSigners()
     wooToken = (await deployContract(owner, TestTokenArtifact, [])) as TestToken
     // 1.mint woo token to user
     // 2.make sure user woo balance start with 0
@@ -711,13 +753,13 @@ describe('WooStakingVault Event', () => {
 
     await wooStakingVault.connect(owner).setWithdrawFee(WITHDRAW_FEE)
     expect(await wooStakingVault.withdrawFee()).to.eq(WITHDRAW_FEE)
-    await wooStakingVault.connect(owner).addWhitelist(user.address)
+    await wooStakingVault.connect(owner).setWhitelist(user.address, true)
     expect(await wooStakingVault.whitelist(user.address)).to.eq(true)
     await expect(wooStakingVault.connect(user).instantWithdraw(wooDeposit))
       .to.emit(wooStakingVault, 'InstantWithdraw')
       .withArgs(user.address, wooDeposit, BN_ZERO)
 
-    await wooStakingVault.connect(owner).removeWhitelist(user.address)
+    await wooStakingVault.connect(owner).setWhitelist(user.address, false)
     expect(await wooStakingVault.whitelist(user.address)).to.eq(false)
   })
 
@@ -746,19 +788,35 @@ describe('WooStakingVault Event', () => {
     expect(await wooStakingVault.getPricePerFullShare()).to.eq(calSharePriceAfter)
   })
 
-  it('AddWhitelist', async () => {
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(false)
-    await expect(wooStakingVault.connect(owner).addWhitelist(user.address))
-      .to.emit(wooStakingVault, 'AddWhitelist')
-      .withArgs(user.address)
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(true)
+  it('StrategistUpdated: Add strategist', async () => {
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(false)
+    await expect(wooStakingVault.connect(owner).setStrategist(strategist.address, true))
+      .to.emit(wooStakingVault, 'StrategistUpdated')
+      .withArgs(strategist.address, true)
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(true)
   })
 
-  it('removeWhitelist', async () => {
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(true)
-    await expect(wooStakingVault.connect(owner).removeWhitelist(user.address))
-      .to.emit(wooStakingVault, 'RemoveWhitelist')
-      .withArgs(user.address)
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(false)
+  it('StrategistUpdated: Remove strategist', async () => {
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(true)
+    await expect(wooStakingVault.connect(owner).setStrategist(strategist.address, false))
+      .to.emit(wooStakingVault, 'StrategistUpdated')
+      .withArgs(strategist.address, false)
+    expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(false)
+  })
+
+  it('WhitelistUpdated: Add vault to whitelist', async () => {
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
+    await expect(wooStakingVault.connect(owner).setWhitelist(vault.address, true))
+      .to.emit(wooStakingVault, 'WhitelistUpdated')
+      .withArgs(vault.address, true)
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
+  })
+
+  it('WhitelistUpdated: Remove vault from whitelist', async () => {
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
+    await expect(wooStakingVault.connect(owner).setWhitelist(vault.address, false))
+      .to.emit(wooStakingVault, 'WhitelistUpdated')
+      .withArgs(vault.address, false)
+    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
   })
 })

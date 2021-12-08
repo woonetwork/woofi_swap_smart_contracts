@@ -68,14 +68,15 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         uint256 balanceAfter,
         uint256 sharePriceAfter
     );
-    event AddWhitelist(address indexed newVault);
-    event RemoveWhitelist(address indexed existVault);
+    event StrategistUpdated(address indexed strategist, bool flag);
+    event WhitelistUpdated(address indexed vault, bool flag);
 
     /* ----- State variables ----- */
 
     IERC20 public stakedToken;
     mapping(address => uint256) public costSharePrice;
     mapping(address => UserInfo) public userInfo;
+    mapping(address => bool) public isStrategist;
     mapping(address => bool) public whitelist;
 
     uint256 public totalReserveAmount = 0; // affected by reserveWithdraw and withdraw
@@ -88,6 +89,13 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     uint256 public constant MAX_WITHDRAW_FEE_PERIOD = 7 days;
     uint256 public constant MAX_WITHDRAW_FEE = 500; // 5% (10000 as denominator)
+
+    /* ----- Modifiers ----- */
+
+    modifier onlyStrategist() {
+        require(msg.sender == owner() || isStrategist[msg.sender], 'WooStakingVault: NOT_STRATEGIST');
+        _;
+    }
 
     constructor(address initialStakedToken, address initialTreasury)
         public
@@ -244,18 +252,20 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         treasury = newTreasury;
     }
 
-    function addWhitelist(address newVault) external onlyOwner {
-        if (!whitelist[newVault]) {
-            whitelist[newVault] = true;
-            emit AddWhitelist(newVault);
-        }
+    /// @notice Sets strategist
+    /// @dev Only callable by the contract owner.
+    function setStrategist(address strategist, bool flag) external onlyOwner {
+        require(strategist != address(0), 'WooStakingVault: strategist_ZERO_ADDR');
+        isStrategist[strategist] = flag;
+        emit StrategistUpdated(strategist, flag);
     }
 
-    function removeWhitelist(address existVault) external onlyOwner {
-        if (whitelist[existVault]) {
-            whitelist[existVault] = false;
-            emit RemoveWhitelist(existVault);
-        }
+    /// @notice Sets whitelist
+    /// @dev Only callable by the contract strategist.
+    function setWhitelist(address vault, bool flag) external onlyStrategist {
+        require(vault != address(0), 'WooStakingVault: vault_ZERO_ADDR');
+        whitelist[vault] = flag;
+        emit WhitelistUpdated(vault, flag);
     }
 
     /// @notice Pause the contract.
