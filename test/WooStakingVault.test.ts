@@ -178,8 +178,8 @@ describe('WooStakingVault Normal Accuracy', () => {
     let userWooBalanceBefore = await wooToken.balanceOf(user.address)
     let wooWithdraw = wooDeposit.div(2)
     expect(await wooStakingVault.withdrawFee()).to.eq(WITHDRAW_FEE)
-    // user not in whitelist
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(false)
+    // pretend user as vault here, user not in zeroFeeVault
+    expect(await wooStakingVault.zeroFeeVault(user.address)).to.eq(false)
     await wooStakingVault.connect(user).instantWithdraw(wooWithdraw)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooWithdraw)
     let currentWithdrawFee = wooWithdraw.mul(WITHDRAW_FEE).div(BigNumber.from(10000))
@@ -194,7 +194,7 @@ describe('WooStakingVault Normal Accuracy', () => {
     expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooWithdraw))
   })
 
-  it('instantWithdraw in whitelist without charging fee', async () => {
+  it('instantWithdraw by zeroFeeVault without charging fee', async () => {
     // pre check
     expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balance()).to.eq(BN_ZERO)
@@ -209,18 +209,18 @@ describe('WooStakingVault Normal Accuracy', () => {
     await wooStakingVault.connect(user).deposit(wooDeposit)
     expect(await wooToken.allowance(user.address, wooStakingVault.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
-    // set user to whitelist
-    await wooStakingVault.connect(owner).setWhitelist(user.address, true)
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(true)
+    // pretend user as vault, set user to zeroFeeVault
+    await wooStakingVault.connect(owner).setZeroFeeVault(user.address, true)
+    expect(await wooStakingVault.zeroFeeVault(user.address)).to.eq(true)
     // instantWithdraw by charging fee
     let userWooBalanceBefore = await wooToken.balanceOf(user.address)
     await wooStakingVault.setWithdrawFee(WITHDRAW_FEE)
     expect(await wooStakingVault.withdrawFee()).to.eq(WITHDRAW_FEE)
     await wooStakingVault.connect(user).instantWithdraw(wooDeposit)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(BN_ZERO)
-    let whitelistWithdrawFee = BN_ZERO
+    let zeroFeeVaultWithdrawFee = BN_ZERO
     let userWooBalanceAfter = await wooToken.balanceOf(user.address)
-    expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooDeposit).sub(whitelistWithdrawFee))
+    expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooDeposit).sub(zeroFeeVaultWithdrawFee))
   })
 
   it('addReward', async () => {
@@ -581,38 +581,38 @@ describe('WooStakingVault Access Control & Require Check', () => {
     expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(false)
   })
 
-  it('Only owner or strategist able to add vault to whitelist', async () => {
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
-    await expect(wooStakingVault.connect(user).setWhitelist(vault.address, true)).to.be.revertedWith(
+  it('Only owner or strategist able to add vault to zeroFeeVault', async () => {
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(false)
+    await expect(wooStakingVault.connect(user).setZeroFeeVault(vault.address, true)).to.be.revertedWith(
       onlyStrategistRevertedMessage
     )
-    await wooStakingVault.connect(owner).setWhitelist(vault.address, true)
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
-    // remove vault from whitelist to test strategist
-    await wooStakingVault.connect(owner).setWhitelist(vault.address, false)
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
-    // set strategist to add vault to whitelist
+    await wooStakingVault.connect(owner).setZeroFeeVault(vault.address, true)
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(true)
+    // cancel vault from zeroFeeVault to test strategist
+    await wooStakingVault.connect(owner).setZeroFeeVault(vault.address, false)
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(false)
+    // set strategist to add vault to zeroFeeVault
     expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(false)
     await wooStakingVault.connect(owner).setStrategist(strategist.address, true)
     expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(true)
-    await wooStakingVault.connect(strategist).setWhitelist(vault.address, true)
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
+    await wooStakingVault.connect(strategist).setZeroFeeVault(vault.address, true)
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(true)
   })
 
-  it('Only owner or strategist able to remove vault to whitelist', async () => {
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
-    await expect(wooStakingVault.connect(user).setWhitelist(vault.address, false)).to.be.revertedWith(
+  it('Only owner or strategist able to cancel vault from zeroFeeVault', async () => {
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(true)
+    await expect(wooStakingVault.connect(user).setZeroFeeVault(vault.address, false)).to.be.revertedWith(
       onlyStrategistRevertedMessage
     )
-    await wooStakingVault.connect(owner).setWhitelist(vault.address, false)
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
-    // add vault to whitelist to test strategist
-    await wooStakingVault.connect(owner).setWhitelist(vault.address, true)
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
-    // remove vault from whitelist by strategist
+    await wooStakingVault.connect(owner).setZeroFeeVault(vault.address, false)
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(false)
+    // add vault to zeroFeeVault to test strategist
+    await wooStakingVault.connect(owner).setZeroFeeVault(vault.address, true)
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(true)
+    // cancel vault from zeroFeeVault by strategist
     expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(true)
-    await wooStakingVault.connect(strategist).setWhitelist(vault.address, false)
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
+    await wooStakingVault.connect(strategist).setZeroFeeVault(vault.address, false)
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(false)
   })
 
   it('Only owner able to pause', async () => {
@@ -738,13 +738,13 @@ describe('WooStakingVault Event', () => {
     let feeRate = BigNumber.from(100)
     await wooStakingVault.connect(owner).setWithdrawFee(feeRate)
     expect(await wooStakingVault.withdrawFee()).to.eq(feeRate)
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(false)
+    expect(await wooStakingVault.zeroFeeVault(user.address)).to.eq(false)
     await expect(wooStakingVault.connect(user).instantWithdraw(wooDeposit))
       .to.emit(wooStakingVault, 'InstantWithdraw')
       .withArgs(user.address, wooDeposit, wooDeposit.mul(feeRate).div(10000))
   })
 
-  it('InstantWithdraw with zero fee in whitelist even withdrawFee not equal to zero', async () => {
+  it('InstantWithdraw with zero fee by zeroFeeVault even withdrawFee not equal to zero', async () => {
     expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
     let wooDeposit = BN_1e18.mul(100)
     await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
@@ -753,14 +753,14 @@ describe('WooStakingVault Event', () => {
 
     await wooStakingVault.connect(owner).setWithdrawFee(WITHDRAW_FEE)
     expect(await wooStakingVault.withdrawFee()).to.eq(WITHDRAW_FEE)
-    await wooStakingVault.connect(owner).setWhitelist(user.address, true)
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(true)
+    await wooStakingVault.connect(owner).setZeroFeeVault(user.address, true)
+    expect(await wooStakingVault.zeroFeeVault(user.address)).to.eq(true)
     await expect(wooStakingVault.connect(user).instantWithdraw(wooDeposit))
       .to.emit(wooStakingVault, 'InstantWithdraw')
       .withArgs(user.address, wooDeposit, BN_ZERO)
 
-    await wooStakingVault.connect(owner).setWhitelist(user.address, false)
-    expect(await wooStakingVault.whitelist(user.address)).to.eq(false)
+    await wooStakingVault.connect(owner).setZeroFeeVault(user.address, false)
+    expect(await wooStakingVault.zeroFeeVault(user.address)).to.eq(false)
   })
 
   it('RewardAdded', async () => {
@@ -804,19 +804,19 @@ describe('WooStakingVault Event', () => {
     expect(await wooStakingVault.isStrategist(strategist.address)).to.eq(false)
   })
 
-  it('WhitelistUpdated: Add vault to whitelist', async () => {
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
-    await expect(wooStakingVault.connect(owner).setWhitelist(vault.address, true))
-      .to.emit(wooStakingVault, 'WhitelistUpdated')
+  it('ZeroFeeVaultUpdated: Add vault to zeroFeeVault', async () => {
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(false)
+    await expect(wooStakingVault.connect(owner).setZeroFeeVault(vault.address, true))
+      .to.emit(wooStakingVault, 'ZeroFeeVaultUpdated')
       .withArgs(vault.address, true)
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(true)
   })
 
-  it('WhitelistUpdated: Remove vault from whitelist', async () => {
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(true)
-    await expect(wooStakingVault.connect(owner).setWhitelist(vault.address, false))
-      .to.emit(wooStakingVault, 'WhitelistUpdated')
+  it('ZeroFeeVaultUpdated: Cancel vault from zeroFeeVault', async () => {
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(true)
+    await expect(wooStakingVault.connect(owner).setZeroFeeVault(vault.address, false))
+      .to.emit(wooStakingVault, 'ZeroFeeVaultUpdated')
       .withArgs(vault.address, false)
-    expect(await wooStakingVault.whitelist(vault.address)).to.eq(false)
+    expect(await wooStakingVault.zeroFeeVault(vault.address)).to.eq(false)
   })
 })

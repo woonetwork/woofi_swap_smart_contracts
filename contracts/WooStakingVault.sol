@@ -38,8 +38,8 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/utils/Address.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
@@ -69,7 +69,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         uint256 sharePriceAfter
     );
     event StrategistUpdated(address indexed strategist, bool flag);
-    event WhitelistUpdated(address indexed vault, bool flag);
+    event ZeroFeeVaultUpdated(address indexed vault, bool flag);
 
     /* ----- State variables ----- */
 
@@ -77,7 +77,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     mapping(address => uint256) public costSharePrice;
     mapping(address => UserInfo) public userInfo;
     mapping(address => bool) public isStrategist;
-    mapping(address => bool) public whitelist;
+    mapping(address => bool) public zeroFeeVault;
 
     uint256 public totalReserveAmount = 0; // affected by reserveWithdraw and withdraw
     uint256 public withdrawFeePeriod = 7 days;
@@ -182,7 +182,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
         _burn(msg.sender, shares);
 
-        uint256 fee = whitelist[msg.sender] ? 0 : withdrawAmount.mul(withdrawFee).div(10000);
+        uint256 fee = zeroFeeVault[msg.sender] ? 0 : withdrawAmount.mul(withdrawFee).div(10000);
         if (fee > 0) {
             TransferHelper.safeTransfer(address(stakedToken), treasury, fee);
         }
@@ -260,12 +260,12 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         emit StrategistUpdated(strategist, flag);
     }
 
-    /// @notice Sets whitelist
+    /// @notice Sets zeroFeeVault
     /// @dev Only callable by the contract strategist.
-    function setWhitelist(address vault, bool flag) external onlyStrategist {
+    function setZeroFeeVault(address vault, bool flag) external onlyStrategist {
         require(vault != address(0), 'WooStakingVault: vault_ZERO_ADDR');
-        whitelist[vault] = flag;
-        emit WhitelistUpdated(vault, flag);
+        zeroFeeVault[vault] = flag;
+        emit ZeroFeeVaultUpdated(vault, flag);
     }
 
     /// @notice Pause the contract.
