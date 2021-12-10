@@ -178,6 +178,8 @@ describe('WooStakingVault Normal Accuracy', () => {
     await wooStakingVault.connect(user).deposit(wooDeposit)
     expect(await wooToken.allowance(user.address, wooStakingVault.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
+    // pretend user as vault, user not in zeroFeeVault, need to be charging fee
+    expect(await wooAccessManager.zeroFeeVault(user.address)).to.eq(false)
     // instantWithdraw by charging fee
     let userWooBalanceBefore = await wooToken.balanceOf(user.address)
     let wooWithdraw = wooDeposit.div(2)
@@ -464,6 +466,7 @@ describe('WooStakingVault Access Control & Require Check', () => {
   let newTreasury: SignerWithAddress
 
   let wooAccessManager: WooAccessManager
+  let newWooAccessManager: WooAccessManager
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
 
@@ -487,6 +490,7 @@ describe('WooStakingVault Access Control & Require Check', () => {
     expect(await wooToken.balanceOf(user.address)).to.eq(mintWooBalance)
 
     wooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
+    newWooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
     wooStakingVault = (await deployContract(owner, WooStakingVaultArtifact, [
       wooToken.address,
       treasury.address,
@@ -578,6 +582,14 @@ describe('WooStakingVault Access Control & Require Check', () => {
     )
     await wooStakingVault.connect(owner).setTreasury(newTreasury.address)
     expect(await wooStakingVault.treasury()).to.eq(newTreasury.address)
+  })
+
+  it('Only owner able to setWooAccessManager', async () => {
+    await expect(wooStakingVault.connect(user).setWooAccessManager(newWooAccessManager.address)).to.be.revertedWith(
+      onlyOwnerRevertedMessage
+    )
+    await wooStakingVault.connect(owner).setWooAccessManager(newWooAccessManager.address)
+    expect(await wooStakingVault.wooAccessManager()).to.eq(newWooAccessManager.address)
   })
 
   it('Only owner able to pause', async () => {

@@ -88,8 +88,6 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     uint256 public constant MAX_WITHDRAW_FEE_PERIOD = 7 days;
     uint256 public constant MAX_WITHDRAW_FEE = 500; // 5% (10000 as denominator)
 
-    /* ----- Modifiers ----- */
-
     constructor(
         address initialStakedToken,
         address initialTreasury,
