@@ -44,6 +44,7 @@ import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 import './libraries/DecimalMath.sol';
+import "./interfaces/IWooAccessManager.sol";
 
 contract WooStakingVault is ERC20, Ownable, Pausable {
     using SafeERC20 for IERC20;
@@ -68,22 +69,19 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         uint256 balanceAfter,
         uint256 sharePriceAfter
     );
-    event StrategistUpdated(address indexed strategist, bool flag);
-    event ZeroFeeVaultUpdated(address indexed vault, bool flag);
 
     /* ----- State variables ----- */
 
     IERC20 public stakedToken;
     mapping(address => uint256) public costSharePrice;
     mapping(address => UserInfo) public userInfo;
-    mapping(address => bool) public isStrategist;
-    mapping(address => bool) public zeroFeeVault;
 
     uint256 public totalReserveAmount = 0; // affected by reserveWithdraw and withdraw
     uint256 public withdrawFeePeriod = 7 days;
     uint256 public withdrawFee = 500; // 5% (10000 as denominator)
 
     address public treasury;
+    IWooAccessManager public wooAccessManager;
 
     /* ----- Constant variables ----- */
 
@@ -92,12 +90,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     /* ----- Modifiers ----- */
 
-    modifier onlyStrategist() {
-        require(msg.sender == owner() || isStrategist[msg.sender], 'WooStakingVault: NOT_STRATEGIST');
-        _;
-    }
-
-    constructor(address initialStakedToken, address initialTreasury)
+    constructor(address initialStakedToken, address initialTreasury, address initialWooAccessManager)
         public
         ERC20(
             string(abi.encodePacked('Interest Bearing ', ERC20(initialStakedToken).name())),
@@ -106,9 +99,11 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     {
         require(initialStakedToken != address(0), 'WooStakingVault: initialStakedToken_ZERO_ADDR');
         require(initialTreasury != address(0), 'WooStakingVault: initialTreasury_ZERO_ADDR');
+        require(initialWooAccessManager != address(0), 'WooStakingVault: initialWooAccessManager_ZERO_ADDR');
 
         stakedToken = IERC20(initialStakedToken);
         treasury = initialTreasury;
+        wooAccessManager = IWooAccessManager(initialWooAccessManager);
     }
 
     /* ----- External Functions ----- */
@@ -182,7 +177,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
         _burn(msg.sender, shares);
 
-        uint256 fee = zeroFeeVault[msg.sender] ? 0 : withdrawAmount.mul(withdrawFee).div(10000);
+        uint256 fee = wooAccessManager.zeroFeeVault(msg.sender) ? 0 : withdrawAmount.mul(withdrawFee).div(10000);
         if (fee > 0) {
             TransferHelper.safeTransfer(address(stakedToken), treasury, fee);
         }
@@ -252,20 +247,10 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         treasury = newTreasury;
     }
 
-    /// @notice Sets strategist
+    /// @notice Sets WooAccessManager
     /// @dev Only callable by the contract owner.
-    function setStrategist(address strategist, bool flag) external onlyOwner {
-        require(strategist != address(0), 'WooStakingVault: strategist_ZERO_ADDR');
-        isStrategist[strategist] = flag;
-        emit StrategistUpdated(strategist, flag);
-    }
-
-    /// @notice Sets zeroFeeVault
-    /// @dev Only callable by the contract strategist.
-    function setZeroFeeVault(address vault, bool flag) external onlyStrategist {
-        require(vault != address(0), 'WooStakingVault: vault_ZERO_ADDR');
-        zeroFeeVault[vault] = flag;
-        emit ZeroFeeVaultUpdated(vault, flag);
+    function setWooAccessManager(address newWooAccessManager) external onlyOwner {
+        wooAccessManager = IWooAccessManager(newWooAccessManager);
     }
 
     /// @notice Pause the contract.
