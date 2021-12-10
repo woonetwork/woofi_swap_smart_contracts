@@ -38,7 +38,6 @@ pragma experimental ABIEncoderV2;
 /// @title Reward manager interface for WooFi Swap.
 /// @notice this is for swap rebate or potential incentive program
 interface IWooAccessManager {
-
     /* ----- Events ----- */
 
     event RewardAdminUpdated(address indexed rewardAdmin, bool flag);
@@ -49,6 +48,7 @@ interface IWooAccessManager {
     /* ----- External Functions ----- */
 
     function isRewardAdmin(address rewardAdmin) external returns (bool);
+
     function zeroFeeVault(address vault) external returns (bool);
 
     /* ----- Admin Functions ----- */

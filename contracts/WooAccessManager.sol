@@ -36,10 +36,9 @@ pragma solidity 0.6.12;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
-import "./interfaces/IWooAccessManager.sol";
+import './interfaces/IWooAccessManager.sol';
 
 contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
-
     /* ----- State variables ----- */
 
     mapping(address => bool) public override isRewardAdmin;
@@ -55,7 +54,12 @@ contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
     }
 
     /// @inheritdoc IWooAccessManager
-    function batchSetRewardAdmin(address[] calldata rewardAdmins, bool[] calldata flags) external override onlyOwner whenNotPaused {
+    function batchSetRewardAdmin(address[] calldata rewardAdmins, bool[] calldata flags)
+        external
+        override
+        onlyOwner
+        whenNotPaused
+    {
         require(rewardAdmins.length == flags.length, 'WooAccessManager: length_INVALID');
 
         for (uint256 i = 0; i < rewardAdmins.length; i++) {
@@ -73,7 +77,12 @@ contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
     }
 
     /// @inheritdoc IWooAccessManager
-    function batchSetZeroFeeVault(address[] calldata vaults, bool[] calldata flags) external override onlyOwner whenNotPaused {
+    function batchSetZeroFeeVault(address[] calldata vaults, bool[] calldata flags)
+        external
+        override
+        onlyOwner
+        whenNotPaused
+    {
         require(vaults.length == flags.length, 'WooAccessManager: length_INVALID');
 
         for (uint256 i = 0; i < vaults.length; i++) {

@@ -36,10 +36,10 @@ import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import { deployContract, solidity } from 'ethereum-waffle'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import {WooStakingVault, TestToken, WooAccessManager} from '../typechain'
+import { WooStakingVault, TestToken, WooAccessManager } from '../typechain'
 import WooStakingVaultArtifact from '../artifacts/contracts/WooStakingVault.sol/WooStakingVault.json'
 import TestTokenArtifact from '../artifacts/contracts/test/TestErc20Token.sol/TestToken.json'
-import WooAccessManagerArtifact from "../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json";
+import WooAccessManagerArtifact from '../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json'
 
 use(solidity)
 
@@ -72,7 +72,7 @@ describe('WooStakingVault Normal Accuracy', () => {
     wooStakingVault = (await deployContract(owner, WooStakingVaultArtifact, [
       wooToken.address,
       treasury.address,
-      wooAccessManager.address
+      wooAccessManager.address,
     ])) as WooStakingVault
   })
 
@@ -291,7 +291,7 @@ describe('WooStakingVault Complex Accuracy', () => {
     wooStakingVault = (await deployContract(owner, WooStakingVaultArtifact, [
       wooToken.address,
       treasury.address,
-      wooAccessManager.address
+      wooAccessManager.address,
     ])) as WooStakingVault
 
     // mint 10000000 to owner as interest preparation
@@ -490,7 +490,7 @@ describe('WooStakingVault Access Control & Require Check', () => {
     wooStakingVault = (await deployContract(owner, WooStakingVaultArtifact, [
       wooToken.address,
       treasury.address,
-      wooAccessManager.address
+      wooAccessManager.address,
     ])) as WooStakingVault
 
     initialTreasuryZeroAddressMessage = 'WooStakingVault: initialTreasury_ZERO_ADDR'
@@ -505,21 +505,21 @@ describe('WooStakingVault Access Control & Require Check', () => {
   })
 
   it('Initial staked token can not be zero address', async () => {
-    await expect(deployContract(owner, WooStakingVaultArtifact, [ZERO_ADDRESS, treasury.address, wooAccessManager.address])).to.be.revertedWith(
-      nonContractAccountMessage
-    )
+    await expect(
+      deployContract(owner, WooStakingVaultArtifact, [ZERO_ADDRESS, treasury.address, wooAccessManager.address])
+    ).to.be.revertedWith(nonContractAccountMessage)
   })
 
   it('Initial treasury can not be zero address', async () => {
-    await expect(deployContract(owner, WooStakingVaultArtifact, [wooToken.address, ZERO_ADDRESS, wooAccessManager.address])).to.be.revertedWith(
-      initialTreasuryZeroAddressMessage
-    )
+    await expect(
+      deployContract(owner, WooStakingVaultArtifact, [wooToken.address, ZERO_ADDRESS, wooAccessManager.address])
+    ).to.be.revertedWith(initialTreasuryZeroAddressMessage)
   })
 
   it('Initial wooAccessManager can not be zero address', async () => {
-    await expect(deployContract(owner, WooStakingVaultArtifact, [wooToken.address, treasury.address, ZERO_ADDRESS])).to.be.revertedWith(
-      initialWooAccessManagerZeroAddressMessage
-    )
+    await expect(
+      deployContract(owner, WooStakingVaultArtifact, [wooToken.address, treasury.address, ZERO_ADDRESS])
+    ).to.be.revertedWith(initialWooAccessManagerZeroAddressMessage)
   })
 
   it('reserveWithdraw shares exceed balance will be reverted', async () => {
@@ -634,7 +634,7 @@ describe('WooStakingVault Event', () => {
     wooStakingVault = (await deployContract(owner, WooStakingVaultArtifact, [
       wooToken.address,
       treasury.address,
-      wooAccessManager.address
+      wooAccessManager.address,
     ])) as WooStakingVault
   })
 

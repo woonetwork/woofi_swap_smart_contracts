@@ -44,7 +44,7 @@ import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 import './libraries/DecimalMath.sol';
-import "./interfaces/IWooAccessManager.sol";
+import './interfaces/IWooAccessManager.sol';
 
 contract WooStakingVault is ERC20, Ownable, Pausable {
     using SafeERC20 for IERC20;
@@ -90,7 +90,11 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     /* ----- Modifiers ----- */
 
-    constructor(address initialStakedToken, address initialTreasury, address initialWooAccessManager)
+    constructor(
+        address initialStakedToken,
+        address initialTreasury,
+        address initialWooAccessManager
+    )
         public
         ERC20(
             string(abi.encodePacked('Interest Bearing ', ERC20(initialStakedToken).name())),
