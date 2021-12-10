@@ -179,7 +179,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
         _burn(msg.sender, shares);
 
-        uint256 fee = wooAccessManager.zeroFeeVault(msg.sender) ? 0 : withdrawAmount.mul(withdrawFee).div(10000);
+        uint256 fee = wooAccessManager.isZeroFeeVault(msg.sender) ? 0 : withdrawAmount.mul(withdrawFee).div(10000);
         if (fee > 0) {
             TransferHelper.safeTransfer(address(stakedToken), treasury, fee);
         }

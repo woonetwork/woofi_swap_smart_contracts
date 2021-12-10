@@ -179,7 +179,7 @@ describe('WooStakingVault Normal Accuracy', () => {
     expect(await wooToken.allowance(user.address, wooStakingVault.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
     // pretend user as vault, user not in zeroFeeVault, need to be charging fee
-    expect(await wooAccessManager.zeroFeeVault(user.address)).to.eq(false)
+    expect(await wooAccessManager.isZeroFeeVault(user.address)).to.eq(false)
     // instantWithdraw by charging fee
     let userWooBalanceBefore = await wooToken.balanceOf(user.address)
     let wooWithdraw = wooDeposit.div(2)
@@ -214,9 +214,9 @@ describe('WooStakingVault Normal Accuracy', () => {
     expect(await wooToken.allowance(user.address, wooStakingVault.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
     // pretend user as vault, set user to zeroFeeVault, remove it at the last of this test case
-    expect(await wooAccessManager.zeroFeeVault(user.address)).to.eq(false)
+    expect(await wooAccessManager.isZeroFeeVault(user.address)).to.eq(false)
     await wooAccessManager.connect(owner).setZeroFeeVault(user.address, true)
-    expect(await wooAccessManager.zeroFeeVault(user.address)).to.eq(true)
+    expect(await wooAccessManager.isZeroFeeVault(user.address)).to.eq(true)
     // withdrawFee exist, but instantWithdraw without charging fee by zeroFeeVault
     let userWooBalanceBefore = await wooToken.balanceOf(user.address)
     await wooStakingVault.setWithdrawFee(WITHDRAW_FEE)
@@ -228,7 +228,7 @@ describe('WooStakingVault Normal Accuracy', () => {
     expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooDeposit).sub(zeroFeeVaultWithdrawFee))
     // cancel user from zeroFeeVault
     await wooAccessManager.connect(owner).setZeroFeeVault(user.address, false)
-    expect(await wooAccessManager.zeroFeeVault(user.address)).to.eq(false)
+    expect(await wooAccessManager.isZeroFeeVault(user.address)).to.eq(false)
   })
 
   it('addReward', async () => {

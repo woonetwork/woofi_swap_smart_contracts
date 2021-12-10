@@ -42,7 +42,7 @@ contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
     /* ----- State variables ----- */
 
     mapping(address => bool) public override isRewardAdmin;
-    mapping(address => bool) public override zeroFeeVault;
+    mapping(address => bool) public override isZeroFeeVault;
 
     /* ----- Admin Functions ----- */
 
@@ -72,7 +72,7 @@ contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
     /// @inheritdoc IWooAccessManager
     function setZeroFeeVault(address vault, bool flag) external override onlyOwner whenNotPaused {
         require(vault != address(0), 'WooAccessManager: vault_ZERO_ADDR');
-        zeroFeeVault[vault] = flag;
+        isZeroFeeVault[vault] = flag;
         emit ZeroFeeVaultUpdated(vault, flag);
     }
 
@@ -87,7 +87,7 @@ contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
 
         for (uint256 i = 0; i < vaults.length; i++) {
             require(vaults[i] != address(0), 'WooAccessManager: vault_ZERO_ADDR');
-            zeroFeeVault[vaults[i]] = flags[i];
+            isZeroFeeVault[vaults[i]] = flags[i];
         }
         emit BatchZeroFeeVaultUpdated(vaults, flags);
     }

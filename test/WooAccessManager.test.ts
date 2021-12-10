@@ -40,7 +40,7 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
   it('Check state variables after contract initialized', async () => {
     expect(await wooAccessManager.owner()).to.eq(owner.address)
     expect(await wooAccessManager.isRewardAdmin(rewardAdmin.address)).to.eq(false)
-    expect(await wooAccessManager.zeroFeeVault(vault.address)).to.eq(false)
+    expect(await wooAccessManager.isZeroFeeVault(vault.address)).to.eq(false)
   })
 
   it('Only owner able to setRewardAdmin', async () => {
@@ -107,7 +107,7 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
   })
 
   it('Only owner able to setZeroFeeVault', async () => {
-    expect(await wooAccessManager.zeroFeeVault(vault.address)).to.eq(false)
+    expect(await wooAccessManager.isZeroFeeVault(vault.address)).to.eq(false)
     await expect(wooAccessManager.connect(user).setZeroFeeVault(vault.address, true)).to.be.revertedWith(
       onlyOwnerRevertedMessage
     )
@@ -115,15 +115,15 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
     await expect(wooAccessManager.connect(owner).setZeroFeeVault(vault.address, true))
       .to.emit(wooAccessManager, 'ZeroFeeVaultUpdated')
       .withArgs(vault.address, true)
-    expect(await wooAccessManager.zeroFeeVault(vault.address)).to.eq(true)
+    expect(await wooAccessManager.isZeroFeeVault(vault.address)).to.eq(true)
   })
 
   it('SetZeroFeeVault from zero address will be reverted', async () => {
-    expect(await wooAccessManager.zeroFeeVault(ZERO_ADDRESS)).to.eq(false)
+    expect(await wooAccessManager.isZeroFeeVault(ZERO_ADDRESS)).to.eq(false)
     await expect(wooAccessManager.connect(owner).setZeroFeeVault(ZERO_ADDRESS, true)).to.be.revertedWith(
       zeroFeeVaultZeroAddressMessage
     )
-    expect(await wooAccessManager.zeroFeeVault(ZERO_ADDRESS)).to.eq(false)
+    expect(await wooAccessManager.isZeroFeeVault(ZERO_ADDRESS)).to.eq(false)
   })
 
   it('Only owner able to batchSetZeroFeeVault', async () => {
@@ -131,9 +131,9 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
     let flags = [true, true]
     // pre check
     for (let i = 0; i < vaults.length; i++) {
-      if (await wooAccessManager.zeroFeeVault(vaults[i])) {
+      if (await wooAccessManager.isZeroFeeVault(vaults[i])) {
         await wooAccessManager.setZeroFeeVault(vaults[i], false)
-        expect(await wooAccessManager.zeroFeeVault(vaults[i])).to.eq(false)
+        expect(await wooAccessManager.isZeroFeeVault(vaults[i])).to.eq(false)
       }
     }
     // main
@@ -145,7 +145,7 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
       .withArgs(vaults, flags)
     // check result
     for (let i = 0; i < vaults.length; i++) {
-      expect(await wooAccessManager.zeroFeeVault(vaults[i])).to.eq(true)
+      expect(await wooAccessManager.isZeroFeeVault(vaults[i])).to.eq(true)
     }
   })
 
@@ -154,9 +154,9 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
     let flags = [true, true]
     // pre check
     for (let i = 0; i < vaults.length; i++) {
-      if (await wooAccessManager.zeroFeeVault(vaults[i])) {
+      if (await wooAccessManager.isZeroFeeVault(vaults[i])) {
         await wooAccessManager.setZeroFeeVault(vaults[i], false)
-        expect(await wooAccessManager.zeroFeeVault(vaults[i])).to.eq(false)
+        expect(await wooAccessManager.isZeroFeeVault(vaults[i])).to.eq(false)
       }
     }
     // main
@@ -165,7 +165,7 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
     )
     // check result
     for (let i = 0; i < vaults.length; i++) {
-      expect(await wooAccessManager.zeroFeeVault(vaults[i])).to.eq(false)
+      expect(await wooAccessManager.isZeroFeeVault(vaults[i])).to.eq(false)
     }
   })
 
@@ -176,10 +176,10 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
     }
     expect(await wooAccessManager.isRewardAdmin(rewardAdmin.address)).to.eq(false)
 
-    if (await wooAccessManager.zeroFeeVault(vault.address)) {
+    if (await wooAccessManager.isZeroFeeVault(vault.address)) {
       await wooAccessManager.connect(owner).setZeroFeeVault(vault.address, false)
     }
-    expect(await wooAccessManager.zeroFeeVault(vault.address)).to.eq(false)
+    expect(await wooAccessManager.isZeroFeeVault(vault.address)).to.eq(false)
 
     await expect(wooAccessManager.connect(user).pause()).to.be.revertedWith(onlyOwnerRevertedMessage)
     await wooAccessManager.connect(owner).pause()
@@ -199,6 +199,6 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
     await wooAccessManager.setRewardAdmin(rewardAdmin.address, true)
     await wooAccessManager.setZeroFeeVault(vault.address, true)
     expect(await wooAccessManager.isRewardAdmin(rewardAdmin.address)).to.eq(true)
-    expect(await wooAccessManager.zeroFeeVault(vault.address)).to.eq(true)
+    expect(await wooAccessManager.isZeroFeeVault(vault.address)).to.eq(true)
   })
 })

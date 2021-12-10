@@ -49,7 +49,7 @@ interface IWooAccessManager {
 
     function isRewardAdmin(address rewardAdmin) external returns (bool);
 
-    function zeroFeeVault(address vault) external returns (bool);
+    function isZeroFeeVault(address vault) external returns (bool);
 
     /* ----- Admin Functions ----- */
 
