@@ -36,9 +36,10 @@ import { BigNumber } from 'ethers'
 import { ethers } from 'hardhat'
 import { deployContract, solidity } from 'ethereum-waffle'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { WooStakingVault, TestToken } from '../typechain'
+import { WooStakingVault, TestToken, WooAccessManager } from '../typechain'
 import WooStakingVaultArtifact from '../artifacts/contracts/WooStakingVault.sol/WooStakingVault.json'
 import TestTokenArtifact from '../artifacts/contracts/test/TestErc20Token.sol/TestToken.json'
+import WooAccessManagerArtifact from '../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json'
 
 use(solidity)
 
@@ -54,6 +55,7 @@ describe('WooStakingVault Normal Accuracy', () => {
   let user: SignerWithAddress
   let treasury: SignerWithAddress
 
+  let wooAccessManager: WooAccessManager
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
 
@@ -66,9 +68,11 @@ describe('WooStakingVault Normal Accuracy', () => {
     await wooToken.mint(user.address, mintWooBalance)
     expect(await wooToken.balanceOf(user.address)).to.eq(mintWooBalance)
 
+    wooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
     wooStakingVault = (await deployContract(owner, WooStakingVaultArtifact, [
       wooToken.address,
       treasury.address,
+      wooAccessManager.address,
     ])) as WooStakingVault
   })
 
@@ -174,6 +178,8 @@ describe('WooStakingVault Normal Accuracy', () => {
     await wooStakingVault.connect(user).deposit(wooDeposit)
     expect(await wooToken.allowance(user.address, wooStakingVault.address)).to.eq(BN_ZERO)
     expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
+    // pretend user as vault, user not in zeroFeeVault, need to be charging fee
+    expect(await wooAccessManager.isZeroFeeVault(user.address)).to.eq(false)
     // instantWithdraw by charging fee
     let userWooBalanceBefore = await wooToken.balanceOf(user.address)
     let wooWithdraw = wooDeposit.div(2)
@@ -190,6 +196,39 @@ describe('WooStakingVault Normal Accuracy', () => {
     await wooStakingVault.connect(user).instantWithdraw(wooWithdraw)
     userWooBalanceAfter = await wooToken.balanceOf(user.address)
     expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooWithdraw))
+  })
+
+  it('instantWithdraw by zeroFeeVault from WooAccessManager without charging fee', async () => {
+    // pre check
+    expect(await wooToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balance()).to.eq(BN_ZERO)
+    expect(await wooStakingVault.getPricePerFullShare()).to.eq(BN_1e18)
+    expect(await wooStakingVault.totalReserveAmount()).to.eq(BN_ZERO)
+    let [reserveAmount] = await wooStakingVault.userInfo(user.address)
+    expect(reserveAmount).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(BN_ZERO)
+    // deposit 100 WOO into vault
+    let wooDeposit = BN_1e18.mul(100)
+    await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
+    await wooStakingVault.connect(user).deposit(wooDeposit)
+    expect(await wooToken.allowance(user.address, wooStakingVault.address)).to.eq(BN_ZERO)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(wooDeposit)
+    // pretend user as vault, set user to zeroFeeVault, remove it at the last of this test case
+    expect(await wooAccessManager.isZeroFeeVault(user.address)).to.eq(false)
+    await wooAccessManager.connect(owner).setZeroFeeVault(user.address, true)
+    expect(await wooAccessManager.isZeroFeeVault(user.address)).to.eq(true)
+    // withdrawFee exist, but instantWithdraw without charging fee by zeroFeeVault
+    let userWooBalanceBefore = await wooToken.balanceOf(user.address)
+    await wooStakingVault.setWithdrawFee(WITHDRAW_FEE)
+    expect(await wooStakingVault.withdrawFee()).to.eq(WITHDRAW_FEE)
+    await wooStakingVault.connect(user).instantWithdraw(wooDeposit)
+    expect(await wooStakingVault.balanceOf(user.address)).to.eq(BN_ZERO)
+    let zeroFeeVaultWithdrawFee = BN_ZERO
+    let userWooBalanceAfter = await wooToken.balanceOf(user.address)
+    expect(userWooBalanceAfter).to.eq(userWooBalanceBefore.add(wooDeposit).sub(zeroFeeVaultWithdrawFee))
+    // cancel user from zeroFeeVault
+    await wooAccessManager.connect(owner).setZeroFeeVault(user.address, false)
+    expect(await wooAccessManager.isZeroFeeVault(user.address)).to.eq(false)
   })
 
   it('addReward', async () => {
@@ -238,6 +277,7 @@ describe('WooStakingVault Complex Accuracy', () => {
 
   let holders: Array<SignerWithAddress>
 
+  let wooAccessManager: WooAccessManager
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
 
@@ -248,9 +288,12 @@ describe('WooStakingVault Complex Accuracy', () => {
     ;[owner, smallHolder, middleHolder, bigHolder, treasury, newTreasury] = await ethers.getSigners()
     holders = [smallHolder, middleHolder, bigHolder]
     wooToken = (await deployContract(owner, TestTokenArtifact, [])) as TestToken
+
+    wooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
     wooStakingVault = (await deployContract(owner, WooStakingVaultArtifact, [
       wooToken.address,
       treasury.address,
+      wooAccessManager.address,
     ])) as WooStakingVault
 
     // mint 10000000 to owner as interest preparation
@@ -422,10 +465,13 @@ describe('WooStakingVault Access Control & Require Check', () => {
   let treasury: SignerWithAddress
   let newTreasury: SignerWithAddress
 
+  let wooAccessManager: WooAccessManager
+  let newWooAccessManager: WooAccessManager
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
 
   let initialTreasuryZeroAddressMessage: string
+  let initialWooAccessManagerZeroAddressMessage: string
   let sharesExceedBalanceMessage: string
   let nonContractAccountMessage: string
   let onlyOwnerRevertedMessage: string
@@ -443,12 +489,16 @@ describe('WooStakingVault Access Control & Require Check', () => {
     await wooToken.mint(user.address, mintWooBalance)
     expect(await wooToken.balanceOf(user.address)).to.eq(mintWooBalance)
 
+    wooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
+    newWooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
     wooStakingVault = (await deployContract(owner, WooStakingVaultArtifact, [
       wooToken.address,
       treasury.address,
+      wooAccessManager.address,
     ])) as WooStakingVault
 
     initialTreasuryZeroAddressMessage = 'WooStakingVault: initialTreasury_ZERO_ADDR'
+    initialWooAccessManagerZeroAddressMessage = 'WooStakingVault: initialWooAccessManager_ZERO_ADDR'
     sharesExceedBalanceMessage = 'WooStakingVault: shares exceed balance'
     nonContractAccountMessage = 'function call to a non-contract account'
     onlyOwnerRevertedMessage = 'Ownable: caller is not the owner'
@@ -459,15 +509,21 @@ describe('WooStakingVault Access Control & Require Check', () => {
   })
 
   it('Initial staked token can not be zero address', async () => {
-    await expect(deployContract(owner, WooStakingVaultArtifact, [ZERO_ADDRESS, treasury.address])).to.be.revertedWith(
-      nonContractAccountMessage
-    )
+    await expect(
+      deployContract(owner, WooStakingVaultArtifact, [ZERO_ADDRESS, treasury.address, wooAccessManager.address])
+    ).to.be.revertedWith(nonContractAccountMessage)
   })
 
   it('Initial treasury can not be zero address', async () => {
-    await expect(deployContract(owner, WooStakingVaultArtifact, [wooToken.address, ZERO_ADDRESS])).to.be.revertedWith(
-      initialTreasuryZeroAddressMessage
-    )
+    await expect(
+      deployContract(owner, WooStakingVaultArtifact, [wooToken.address, ZERO_ADDRESS, wooAccessManager.address])
+    ).to.be.revertedWith(initialTreasuryZeroAddressMessage)
+  })
+
+  it('Initial wooAccessManager can not be zero address', async () => {
+    await expect(
+      deployContract(owner, WooStakingVaultArtifact, [wooToken.address, treasury.address, ZERO_ADDRESS])
+    ).to.be.revertedWith(initialWooAccessManagerZeroAddressMessage)
   })
 
   it('reserveWithdraw shares exceed balance will be reverted', async () => {
@@ -528,6 +584,14 @@ describe('WooStakingVault Access Control & Require Check', () => {
     expect(await wooStakingVault.treasury()).to.eq(newTreasury.address)
   })
 
+  it('Only owner able to setWooAccessManager', async () => {
+    await expect(wooStakingVault.connect(user).setWooAccessManager(newWooAccessManager.address)).to.be.revertedWith(
+      onlyOwnerRevertedMessage
+    )
+    await wooStakingVault.connect(owner).setWooAccessManager(newWooAccessManager.address)
+    expect(await wooStakingVault.wooAccessManager()).to.eq(newWooAccessManager.address)
+  })
+
   it('Only owner able to pause', async () => {
     await expect(wooStakingVault.connect(user).pause()).to.be.revertedWith(onlyOwnerRevertedMessage)
     await wooStakingVault.connect(owner).pause()
@@ -565,6 +629,7 @@ describe('WooStakingVault Event', () => {
   let user: SignerWithAddress
   let treasury: SignerWithAddress
 
+  let wooAccessManager: WooAccessManager
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
 
@@ -577,9 +642,11 @@ describe('WooStakingVault Event', () => {
     await wooToken.mint(user.address, mintWooBalance)
     expect(await wooToken.balanceOf(user.address)).to.eq(mintWooBalance)
 
+    wooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
     wooStakingVault = (await deployContract(owner, WooStakingVaultArtifact, [
       wooToken.address,
       treasury.address,
+      wooAccessManager.address,
     ])) as WooStakingVault
   })
 
