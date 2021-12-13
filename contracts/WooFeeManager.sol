@@ -41,6 +41,7 @@ import './interfaces/IWooPP.sol';
 import './interfaces/IWooRebateManager.sol';
 import './interfaces/IWooFeeManager.sol';
 import './interfaces/IWooVaultManager.sol';
+import "./interfaces/IWooAccessManager.sol";
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
@@ -66,11 +67,20 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     address public immutable quoteToken;
     IWooRebateManager public rebateManager;
     IWooVaultManager public vaultManager;
+    IWooAccessManager public wooAccessManager;
+
+    /* ----- Modifiers ----- */
+
+    modifier onlyAdmin() {
+        require(msg.sender == _OWNER_ || wooAccessManager.isFeeAdmin(msg.sender), 'WooFeeManager: NOT_ADMIN');
+        _;
+    }
 
     constructor(
         address newQuoteToken,
         address newRebateManager,
-        address newVaultManager
+        address newVaultManager,
+        address newWooAccessManager
     ) public {
         require(newQuoteToken != address(0), 'WooFeeManager: quoteToken_ZERO_ADDR');
         initOwner(msg.sender);
@@ -78,6 +88,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         rebateManager = IWooRebateManager(newRebateManager);
         vaultManager = IWooVaultManager(newVaultManager);
         vaultRewardRate = 1e18;
+        wooAccessManager = IWooAccessManager(newWooAccessManager);
     }
 
     /* ----- Public Functions ----- */
@@ -104,7 +115,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
 
     /* ----- Admin Functions ----- */
 
-    function setFeeRate(address token, uint256 newFeeRate) external override onlyOwner {
+    function setFeeRate(address token, uint256 newFeeRate) external override onlyAdmin {
         require(newFeeRate <= 1e16, 'WooFeeManager: FEE_RATE>1%');
         feeRate[token] = newFeeRate;
         emit FeeRateUpdated(token, newFeeRate);
@@ -118,18 +129,23 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         emit Withdraw(token, to, amount);
     }
 
-    function setRebateManager(address newRebateManager) external onlyOwner {
+    function setRebateManager(address newRebateManager) external onlyAdmin {
         require(newRebateManager != address(0), 'WooFeeManager: rebateManager_ZERO_ADDR');
         rebateManager = IWooRebateManager(newRebateManager);
     }
 
-    function setVaultManager(address newVaultManager) external onlyOwner {
+    function setVaultManager(address newVaultManager) external onlyAdmin {
         require(newVaultManager != address(0), 'WooFeeManager: newVaultManager_ZERO_ADDR');
         vaultManager = IWooVaultManager(newVaultManager);
     }
 
-    function setVaultRewardRate(uint256 newVaultRewardRate) external onlyOwner {
+    function setVaultRewardRate(uint256 newVaultRewardRate) external onlyAdmin {
         require(newVaultRewardRate <= 1e18, 'WooFeeManager: vaultRewardRate_INVALID');
         vaultRewardRate = newVaultRewardRate;
+    }
+
+    function setWooAccessManager(address newWooAccessManager) external onlyOwner {
+        require(newWooAccessManager != address(0), 'WooFeeManager: newWooAccessManager_ZERO_ADDR');
+        wooAccessManager = IWooAccessManager(newWooAccessManager);
     }
 }

@@ -246,12 +246,14 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     /// @notice Sets treasury address
     /// @dev Only callable by the contract owner.
     function setTreasury(address newTreasury) external onlyOwner {
+        require(newTreasury != address(0), 'WooStakingVault: newTreasury_ZERO_ADDR');
         treasury = newTreasury;
     }
 
     /// @notice Sets WooAccessManager
     /// @dev Only callable by the contract owner.
     function setWooAccessManager(address newWooAccessManager) external onlyOwner {
+        require(newWooAccessManager != address(0), 'WooStakingVault: newWooAccessManager_ZERO_ADDR');
         wooAccessManager = IWooAccessManager(newWooAccessManager);
     }
 
