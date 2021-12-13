@@ -87,6 +87,7 @@ describe('WooRouter tests', () => {
     feeManager = await deployMockContract(owner, IWooFeeManager.abi)
     await feeManager.mock.feeRate.returns(0)
     await feeManager.mock.collectFee.returns()
+    await feeManager.mock.quoteToken.returns(quoteToken.address)
 
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
@@ -145,10 +146,16 @@ describe('WooRouter tests', () => {
 
     it('setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
+
+      const feeManager2 = await deployMockContract(owner, IWooFeeManager.abi)
+      await feeManager2.mock.feeRate.returns(0)
+      await feeManager2.mock.collectFee.returns()
+      await feeManager2.mock.quoteToken.returns(anotherQuoteToken.address)
+
       let anotherWooPP = await deployContract(owner, WooPP, [
         anotherQuoteToken.address,
         wooracle.address,
-        feeManager.address,
+        feeManager2.address,
         wooGuardian.address,
       ])
       await wooRouter.setPool(anotherWooPP.address)
@@ -168,10 +175,14 @@ describe('WooRouter tests', () => {
 
     it('Emit WooPoolChanged when setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
+      const feeManager2 = await deployMockContract(owner, IWooFeeManager.abi)
+      await feeManager2.mock.feeRate.returns(0)
+      await feeManager2.mock.collectFee.returns()
+      await feeManager2.mock.quoteToken.returns(anotherQuoteToken.address)
       let anotherWooPP = await deployContract(owner, WooPP, [
         anotherQuoteToken.address,
         wooracle.address,
-        feeManager.address,
+        feeManager2.address,
         wooGuardian.address,
       ])
       await wooRouter.setPool(anotherWooPP.address)
@@ -182,10 +193,14 @@ describe('WooRouter tests', () => {
 
     it('Prevents non-owners from setPool', async () => {
       let anotherQuoteToken = await deployMockContract(owner, IERC20.abi)
+      const feeManager2 = await deployMockContract(owner, IWooFeeManager.abi)
+      await feeManager2.mock.feeRate.returns(0)
+      await feeManager2.mock.collectFee.returns()
+      await feeManager2.mock.quoteToken.returns(anotherQuoteToken.address)
       let anotherWooPP = await deployContract(owner, WooPP, [
         anotherQuoteToken.address,
         wooracle.address,
-        feeManager.address,
+        feeManager2.address,
         wooGuardian.address,
       ])
       await expect(wooRouter.connect(user).setPool(anotherWooPP.address)).to.be.revertedWith(
@@ -335,6 +350,7 @@ describe('WooRouter tests', () => {
 
       await feeManager.mock.feeRate.withArgs(btcToken.address).returns(0)
       await feeManager.mock.feeRate.withArgs(wooToken.address).returns(0)
+      await feeManager.mock.quoteToken.returns(usdtToken.address)
     })
 
     beforeEach('Deploy WooRouter', async () => {
@@ -496,6 +512,7 @@ describe('WooRouter tests', () => {
     let wooRouter: WooRouter
 
     beforeEach('Deploy WooRouter', async () => {
+      await feeManager.mock.quoteToken.returns(quoteToken.address)
       wooPP = await deployContract(owner, WooPP, [
         quoteToken.address,
         wooracle.address,

@@ -80,6 +80,7 @@ describe('WooPP Test Suite 1', () => {
     baseToken1 = await deployMockContract(owner, IERC20.abi)
     baseToken2 = await deployMockContract(owner, IERC20.abi)
     feeManager = await deployMockContract(owner, IWooFeeManager.abi)
+    await feeManager.mock.quoteToken.returns(quoteToken.address)
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
   })
 
@@ -359,6 +360,7 @@ describe('WooPP Test Suite 1', () => {
     })
 
     beforeEach('deploy WooPP', async () => {
+      await feeManager.mock.quoteToken.returns(quoteToken.address)
       wooPP = (await deployContract(owner, WooPPArtifact, [
         quoteToken.address,
         wooracle.address,
@@ -419,6 +421,7 @@ describe('WooPP Test Suite 1', () => {
       quoteToken = await deployContract(owner, TestToken, [])
       baseToken1 = await deployContract(owner, TestToken, [])
 
+      await feeManager.mock.quoteToken.returns(quoteToken.address)
       wooPP = (await deployContract(owner, WooPPArtifact, [
         quoteToken.address,
         wooOracle1.address,
@@ -505,6 +508,7 @@ describe('WooPP Test Suite 1', () => {
       quoteToken = await deployContract(owner, TestToken, [])
       baseToken1 = await deployContract(owner, TestToken, [])
 
+      await feeManager.mock.quoteToken.returns(quoteToken.address)
       wooPP = (await deployContract(owner, WooPPArtifact, [
         quoteToken.address,
         wooOracle1.address,

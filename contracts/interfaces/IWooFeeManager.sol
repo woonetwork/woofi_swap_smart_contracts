@@ -59,4 +59,8 @@ interface IWooFeeManager {
     /// @param amount the swap fee amount
     /// @param brokerAddr the broker address to rebate to
     function collectFee(uint256 amount, address brokerAddr) external;
+
+    /// @dev get the quote token address
+    /// @return address of quote token
+    function quoteToken() external view returns (address);
 }

@@ -67,7 +67,8 @@ interface IWooPP {
         uint256 fromAmount,
         uint256 toAmount,
         address from,
-        address indexed to
+        address indexed to,
+        address rebateTo
     );
 
     /* ----- External Functions ----- */

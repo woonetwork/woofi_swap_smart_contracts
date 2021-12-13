@@ -99,6 +99,7 @@ describe('WooRouter trading accuracy', () => {
     feeManager = await deployMockContract(owner, IWooFeeManager.abi)
     await feeManager.mock.feeRate.returns(0)
     await feeManager.mock.collectFee.returns()
+    await feeManager.mock.quoteToken.returns(usdtToken.address)
 
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
