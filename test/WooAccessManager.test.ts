@@ -32,7 +32,18 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
   let whenPausedRevertedMessage: string
 
   before(async () => {
-    ;[owner, user, feeAdmin, secondFeeAdmin, vaultAdmin, secondVaultAdmin, rebateAdmin, secondRebateAdmin, vault, secondVault] = await ethers.getSigners()
+    ;[
+      owner,
+      user,
+      feeAdmin,
+      secondFeeAdmin,
+      vaultAdmin,
+      secondVaultAdmin,
+      rebateAdmin,
+      secondRebateAdmin,
+      vault,
+      secondVault,
+    ] = await ethers.getSigners()
 
     wooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
 

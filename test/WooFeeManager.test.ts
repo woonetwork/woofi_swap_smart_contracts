@@ -44,9 +44,9 @@ import { WSAECONNABORTED } from 'constants'
 import { BigNumberish } from '@ethersproject/bignumber'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
-import {WooFeeManager, IERC20, WooRebateManager, WooAccessManager} from '../typechain'
+import { WooFeeManager, IERC20, WooRebateManager, WooAccessManager } from '../typechain'
 import WooFeeManagerArtifact from '../artifacts/contracts/WooFeeManager.sol/WooFeeManager.json'
-import WooAccessManagerArtifact from "../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json";
+import WooAccessManagerArtifact from '../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json'
 
 use(solidity)
 
@@ -180,7 +180,7 @@ describe('WooFeeManager Info', () => {
         usdtToken.address,
         rebateManager.address,
         vaultManager.address,
-        wooAccessManager.address
+        wooAccessManager.address,
       ])) as WooFeeManager
 
       feeManager.setRebateManager(rebateManager.address)
@@ -239,7 +239,10 @@ describe('WooFeeManager Access Control', () => {
     newWooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
 
     wooFeeManager = (await deployContract(owner, WooFeeManagerArtifact, [
-      token.address, rebateManager.address, vaultManager.address, wooAccessManager.address
+      token.address,
+      rebateManager.address,
+      vaultManager.address,
+      wooAccessManager.address,
     ])) as WooFeeManager
 
     await token.mint(wooFeeManager.address, mintToken)
