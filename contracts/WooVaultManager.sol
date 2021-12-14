@@ -62,7 +62,7 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
 
     IWooPP private wooPP;
 
-    address public immutable quoteToken; // USDT
+    address public immutable override quoteToken; // USDT
     address public immutable rewardToken; // WOO
 
     EnumerableSet.AddressSet private vaultSet;

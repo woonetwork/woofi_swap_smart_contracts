@@ -70,4 +70,8 @@ interface IWooVaultManager {
     /// @dev All the vaults
     /// @return the vault address array
     function allVaults() external view returns (address[] memory);
+
+    /// @dev get the quote token address
+    /// @return address of quote token
+    function quoteToken() external view returns (address);
 }

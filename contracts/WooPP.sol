@@ -69,7 +69,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     address public immutable override quoteToken;
     address public wooracle;
     IWooGuardian public wooGuardian;
-    address public feeManager;
+    IWooFeeManager public feeManager;
     string public pairsInfo; // e.g. BNB/ETH/BTCB/WOO-USDT
 
     /* ----- Modifiers ----- */
@@ -93,7 +93,8 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
         wooracle = newWooracle;
-        feeManager = newFeeManager;
+        feeManager = IWooFeeManager(newFeeManager);
+        require(feeManager.quoteToken() == newQuoteToken, 'WooPP: feeManager_quoteToken_INVALID');
         wooGuardian = IWooGuardian(newWooGuardian);
 
         TokenInfo storage quoteInfo = tokenInfo[newQuoteToken];
@@ -120,7 +121,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         _autoUpdate(baseToken, baseInfo, quoteInfo);
 
         quoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
-        uint256 lpFee = quoteAmount.mulCeil(IWooFeeManager(feeManager).feeRate(baseToken));
+        uint256 lpFee = quoteAmount.mulCeil(feeManager.feeRate(baseToken));
         quoteAmount = quoteAmount.sub(lpFee);
 
         require(quoteAmount <= IERC20(quoteToken).balanceOf(address(this)), 'WooPP: INSUFF_QUOTE');
@@ -143,7 +144,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         TokenInfo memory quoteInfo = tokenInfo[quoteToken];
         _autoUpdate(baseToken, baseInfo, quoteInfo);
 
-        uint256 lpFee = quoteAmount.mulCeil(IWooFeeManager(feeManager).feeRate(baseToken));
+        uint256 lpFee = quoteAmount.mulCeil(feeManager.feeRate(baseToken));
         quoteAmount = quoteAmount.sub(lpFee);
         baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
 
@@ -174,12 +175,12 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         quoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
         wooGuardian.checkSwapAmount(baseToken, quoteToken, baseAmount, quoteAmount);
 
-        uint256 lpFee = quoteAmount.mulCeil(IWooFeeManager(feeManager).feeRate(baseToken));
+        uint256 lpFee = quoteAmount.mulCeil(feeManager.feeRate(baseToken));
         quoteAmount = quoteAmount.sub(lpFee);
         require(quoteAmount >= minQuoteAmount, 'WooPP: quoteAmount<minQuoteAmount');
 
-        TransferHelper.safeApprove(quoteToken, feeManager, lpFee);
-        IWooFeeManager(feeManager).collectFee(lpFee, rebateTo);
+        TransferHelper.safeApprove(quoteToken, address(feeManager), lpFee);
+        feeManager.collectFee(lpFee, rebateTo);
 
         uint256 balanceBefore = IERC20(quoteToken).balanceOf(to);
         TransferHelper.safeTransfer(quoteToken, to, quoteAmount);
@@ -190,7 +191,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         tokenInfo[baseToken] = baseInfo;
         tokenInfo[quoteToken] = quoteInfo;
 
-        emit WooSwap(baseToken, quoteToken, baseAmount, quoteAmount, from, to);
+        emit WooSwap(baseToken, quoteToken, baseAmount, quoteAmount, from, to, rebateTo);
     }
 
     /// @inheritdoc IWooPP
@@ -214,13 +215,13 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
 
         TransferHelper.safeTransferFrom(quoteToken, from, address(this), quoteAmount);
 
-        uint256 lpFee = quoteAmount.mulCeil(IWooFeeManager(feeManager).feeRate(baseToken));
+        uint256 lpFee = quoteAmount.mulCeil(feeManager.feeRate(baseToken));
         quoteAmount = quoteAmount.sub(lpFee);
         baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
         require(baseAmount >= minBaseAmount, 'WooPP: baseAmount<minBaseAmount');
 
-        TransferHelper.safeApprove(quoteToken, feeManager, lpFee);
-        IWooFeeManager(feeManager).collectFee(lpFee, rebateTo);
+        TransferHelper.safeApprove(quoteToken, address(feeManager), lpFee);
+        feeManager.collectFee(lpFee, rebateTo);
 
         wooGuardian.checkSwapAmount(quoteToken, baseToken, quoteAmount, baseAmount);
 
@@ -233,7 +234,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         tokenInfo[baseToken] = baseInfo;
         tokenInfo[quoteToken] = quoteInfo;
 
-        emit WooSwap(quoteToken, baseToken, quoteAmount.add(lpFee), baseAmount, from, to);
+        emit WooSwap(quoteToken, baseToken, quoteAmount.add(lpFee), baseAmount, from, to, rebateTo);
     }
 
     /// @dev Set the pairsInfo
@@ -267,7 +268,9 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
     /// @dev Set the feeManager.
     /// @param newFeeManager the fee manager
     function setFeeManager(address newFeeManager) external nonReentrant onlyStrategist {
-        feeManager = newFeeManager;
+        require(newFeeManager != address(0), 'WooPP: newFeeManager_ZERO_ADDR');
+        feeManager = IWooFeeManager(newFeeManager);
+        require(feeManager.quoteToken() == quoteToken, 'WooPP: feeManager_quoteToken_INVALID');
         emit FeeManagerUpdated(newFeeManager);
     }
 

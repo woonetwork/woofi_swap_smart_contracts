@@ -154,7 +154,8 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
             fromAmount,
             realToAmount,
             msg.sender,
-            to
+            to,
+            rebateTo
         );
     }
 
@@ -186,7 +187,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
             _generalTransfer(toToken, to, swapBalance);
         }
 
-        emit WooRouterSwap(SwapType.DodoSwap, fromToken, toToken, fromAmount, swapBalance, msg.sender, to);
+        emit WooRouterSwap(SwapType.DodoSwap, fromToken, toToken, fromAmount, swapBalance, msg.sender, to, address(0));
     }
 
     /* ----- External Functions ---- */
@@ -230,7 +231,16 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         TransferHelper.safeTransferFrom(baseToken, msg.sender, address(this), baseAmount);
         TransferHelper.safeApprove(baseToken, address(wooPool), baseAmount);
         realQuoteAmount = wooPool.sellBase(baseToken, baseAmount, minQuoteAmount, to, rebateTo);
-        emit WooRouterSwap(SwapType.WooSwap, baseToken, quoteToken, baseAmount, realQuoteAmount, msg.sender, to);
+        emit WooRouterSwap(
+            SwapType.WooSwap,
+            baseToken,
+            quoteToken,
+            baseAmount,
+            realQuoteAmount,
+            msg.sender,
+            to,
+            rebateTo
+        );
     }
 
     /// @dev swap quoteToken -> baseToken
@@ -252,7 +262,16 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), quoteAmount);
         TransferHelper.safeApprove(quoteToken, address(wooPool), quoteAmount);
         realBaseAmount = wooPool.sellQuote(baseToken, quoteAmount, minBaseAmount, to, rebateTo);
-        emit WooRouterSwap(SwapType.WooSwap, quoteToken, baseToken, quoteAmount, realBaseAmount, msg.sender, to);
+        emit WooRouterSwap(
+            SwapType.WooSwap,
+            quoteToken,
+            baseToken,
+            quoteAmount,
+            realBaseAmount,
+            msg.sender,
+            to,
+            rebateTo
+        );
     }
 
     /* ----- Admin functions ----- */

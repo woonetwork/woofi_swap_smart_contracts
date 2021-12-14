@@ -69,4 +69,8 @@ interface IWooRebateManager {
 
     /// @dev Claims the reward ($woo token will be distributed)
     function claimRebate() external;
+
+    /// @dev get the quote token address
+    /// @return address of quote token
+    function quoteToken() external view returns (address);
 }

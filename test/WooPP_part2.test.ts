@@ -93,6 +93,7 @@ describe('WooPP Test Suite 2', () => {
     feeManager = await deployMockContract(owner, IWooFeeManager.abi)
     await feeManager.mock.feeRate.returns(0)
     await feeManager.mock.collectFee.returns()
+    await feeManager.mock.quoteToken.returns(usdtToken.address)
 
     wooGuardian = await deployMockContract(owner, IWooGuardian.abi)
     await wooGuardian.mock.checkSwapPrice.returns()
@@ -424,7 +425,7 @@ describe('WooPP Test Suite 2', () => {
         wooPP.connect(user1).sellBase(btcToken.address, baseAmount, minQuoteAmount, user1.address, ZERO_ADDR)
       )
         .to.emit(wooPP, 'WooSwap')
-        .withArgs(btcToken.address, usdtToken.address, baseAmount, quoteAmount, user1.address, user1.address)
+        .withArgs(btcToken.address, usdtToken.address, baseAmount, quoteAmount, user1.address, user1.address, ZERO_ADDR)
     })
 
     it('sellQuote reverted with zero addr', async () => {
@@ -485,7 +486,7 @@ describe('WooPP Test Suite 2', () => {
         wooPP.connect(user1).sellQuote(btcToken.address, quoteAmount, minBaseAmount, user1.address, ZERO_ADDR)
       )
         .to.emit(wooPP, 'WooSwap')
-        .withArgs(usdtToken.address, btcToken.address, quoteAmount, baseAmount, user1.address, user1.address)
+        .withArgs(usdtToken.address, btcToken.address, quoteAmount, baseAmount, user1.address, user1.address, ZERO_ADDR)
     })
   })
 
@@ -512,6 +513,8 @@ describe('WooPP Test Suite 2', () => {
           BigNumber.from(10).pow(9).mul(2),
           true
         )
+
+      await feeManager.mock.quoteToken.returns(usdtToken.address)
     })
 
     beforeEach('deploy WooPP & Tokens', async () => {
@@ -658,8 +661,13 @@ describe('WooPP Test Suite 2', () => {
     })
 
     it('setFeeManager', async () => {
-      await wooPP.connect(user1).setFeeManager(user2.address)
-      expect(await wooPP.feeManager()).to.be.equal(user2.address)
+      const feeManager2 = await deployMockContract(owner, IWooFeeManager.abi)
+      await feeManager2.mock.feeRate.returns(0)
+      await feeManager2.mock.collectFee.returns()
+      await feeManager2.mock.quoteToken.returns(usdtToken.address)
+
+      await wooPP.connect(user1).setFeeManager(feeManager2.address)
+      expect(await wooPP.feeManager()).to.be.equal(feeManager2.address)
     })
 
     it('Prevents non-strategists from setFeeManager', async () => {
@@ -667,9 +675,13 @@ describe('WooPP Test Suite 2', () => {
     })
 
     it('setFeeManager emit FeeManagerUpdated event', async () => {
-      await expect(wooPP.connect(user1).setFeeManager(user2.address))
+      const feeManager2 = await deployMockContract(owner, IWooFeeManager.abi)
+      await feeManager2.mock.feeRate.returns(0)
+      await feeManager2.mock.collectFee.returns()
+      await feeManager2.mock.quoteToken.returns(usdtToken.address)
+      await expect(wooPP.connect(user1).setFeeManager(feeManager2.address))
         .to.emit(wooPP, 'FeeManagerUpdated')
-        .withArgs(user2.address)
+        .withArgs(feeManager2.address)
     })
 
     it('setWooGuardian', async () => {
