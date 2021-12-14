@@ -79,7 +79,11 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
         _;
     }
 
-    constructor(address newQuoteToken, address newRewardToken, address newWooAccessManager) public {
+    constructor(
+        address newQuoteToken,
+        address newRewardToken,
+        address newWooAccessManager
+    ) public {
         require(newQuoteToken != address(0), 'WooRebateManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooRebateManager: INVALID_REWARD_TOKEN');
         initOwner(msg.sender);

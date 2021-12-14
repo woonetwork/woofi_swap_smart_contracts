@@ -76,7 +76,11 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
         _;
     }
 
-    constructor(address newQuoteToken, address newRewardToken, address newWooAccessManager) public {
+    constructor(
+        address newQuoteToken,
+        address newRewardToken,
+        address newWooAccessManager
+    ) public {
         require(newQuoteToken != address(0), 'WooVaultManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooVaultManager: INVALID_RAWARD_TOKEN');
         initOwner(msg.sender);

@@ -42,9 +42,9 @@ import { WSAECONNABORTED } from 'constants'
 import { BigNumberish } from '@ethersproject/bignumber'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
-import {WooFeeManager, IERC20, WooVaultManager, WooAccessManager} from '../typechain'
+import { WooFeeManager, IERC20, WooVaultManager, WooAccessManager } from '../typechain'
 import WooVaultManagerArtifact from '../artifacts/contracts/WooVaultManager.sol/WooVaultManager.json'
-import WooAccessManagerArtifact from "../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json";
+import WooAccessManagerArtifact from '../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json'
 
 use(solidity)
 
@@ -107,7 +107,7 @@ describe('WooVaultManager', () => {
       vaultManager = (await deployContract(owner, WooVaultManagerArtifact, [
         usdtToken.address,
         wooToken.address,
-        wooAccessManager.address
+        wooAccessManager.address,
       ])) as WooVaultManager
 
       await vaultManager.setWooPP(wooPP.address)
@@ -368,10 +368,10 @@ describe('WooVaultManager Access Control', () => {
     await newWooPP.mock.quoteToken.returns(usdtToken.address)
 
     wooVaultManager = (await deployContract(owner, WooVaultManagerArtifact, [
-        usdtToken.address,
-        wooToken.address,
-        wooAccessManager.address
-      ])) as WooVaultManager
+      usdtToken.address,
+      wooToken.address,
+      wooAccessManager.address,
+    ])) as WooVaultManager
 
     await usdtToken.mint(owner.address, mintUSDT)
 
@@ -380,7 +380,7 @@ describe('WooVaultManager Access Control', () => {
   })
 
   it('Only admin able to setVaultWeight', async () => {
-    let weight = BigNumber.from(100);
+    let weight = BigNumber.from(100)
     expect(await wooAccessManager.isVaultAdmin(user.address)).to.eq(false)
     await expect(wooVaultManager.connect(user).setVaultWeight(vault.address, weight)).to.be.revertedWith(
       onlyAdminRevertedMessage
@@ -404,9 +404,7 @@ describe('WooVaultManager Access Control', () => {
     expect(await usdtToken.balanceOf(wooVaultManager.address)).to.eq(rewardAmount)
 
     expect(await wooAccessManager.isVaultAdmin(user.address)).to.eq(false)
-    await expect(wooVaultManager.connect(user).distributeAllReward()).to.be.revertedWith(
-      onlyAdminRevertedMessage
-    )
+    await expect(wooVaultManager.connect(user).distributeAllReward()).to.be.revertedWith(onlyAdminRevertedMessage)
 
     expect(await wooAccessManager.isVaultAdmin(admin.address)).to.eq(true)
     await wooVaultManager.connect(admin).distributeAllReward()
@@ -420,9 +418,7 @@ describe('WooVaultManager Access Control', () => {
 
   it('Only admin able to setWooPP', async () => {
     expect(await wooAccessManager.isVaultAdmin(user.address)).to.eq(false)
-    await expect(wooVaultManager.connect(user).setWooPP(newWooPP.address)).to.be.revertedWith(
-      onlyAdminRevertedMessage
-    )
+    await expect(wooVaultManager.connect(user).setWooPP(newWooPP.address)).to.be.revertedWith(onlyAdminRevertedMessage)
 
     expect(await wooAccessManager.isVaultAdmin(admin.address)).to.eq(true)
     await wooVaultManager.connect(admin).setWooPP(newWooPP.address)

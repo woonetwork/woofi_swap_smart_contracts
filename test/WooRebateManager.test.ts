@@ -43,9 +43,9 @@ import { WSAECONNABORTED } from 'constants'
 import { BigNumberish } from '@ethersproject/bignumber'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
-import {WooFeeManager, IERC20, WooRebateManager, WooAccessManager} from '../typechain'
+import { WooFeeManager, IERC20, WooRebateManager, WooAccessManager } from '../typechain'
 import WooRebateManagerArtifact from '../artifacts/contracts/WooRebateManager.sol/WooRebateManager.json'
-import WooAccessManagerArtifact from "../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json";
+import WooAccessManagerArtifact from '../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json'
 
 use(solidity)
 
@@ -105,7 +105,7 @@ describe('WooRebateManager', () => {
       rebateManager = (await deployContract(owner, WooRebateManagerArtifact, [
         usdtToken.address,
         wooToken.address,
-        wooAccessManager.address
+        wooAccessManager.address,
       ])) as WooRebateManager
     })
 
@@ -154,7 +154,7 @@ describe('WooRebateManager', () => {
       rebateManager = (await deployContract(owner, WooRebateManagerArtifact, [
         usdtToken.address,
         wooToken.address,
-        wooAccessManager.address
+        wooAccessManager.address,
       ])) as WooRebateManager
 
       await rebateManager.setWooPP(wooPP.address)
@@ -314,7 +314,7 @@ describe('WooRebateManager Access Control', () => {
     wooRebateManager = (await deployContract(owner, WooRebateManagerArtifact, [
       usdtToken.address,
       wooToken.address,
-      wooAccessManager.address
+      wooAccessManager.address,
     ])) as WooRebateManager
 
     await usdtToken.mint(wooRebateManager.address, mintUSDT)
@@ -343,9 +343,7 @@ describe('WooRebateManager Access Control', () => {
 
   it('Only admin able to setWooPP', async () => {
     expect(await wooAccessManager.isRebateAdmin(user.address)).to.eq(false)
-    await expect(wooRebateManager.connect(user).setWooPP(newWooPP.address)).to.be.revertedWith(
-      onlyAdminRevertedMessage
-    )
+    await expect(wooRebateManager.connect(user).setWooPP(newWooPP.address)).to.be.revertedWith(onlyAdminRevertedMessage)
 
     expect(await wooAccessManager.isRebateAdmin(admin.address)).to.eq(true)
     await wooRebateManager.connect(admin).setWooPP(newWooPP.address)
@@ -372,9 +370,9 @@ describe('WooRebateManager Access Control', () => {
       onlyOwnerRevertedMessage
     )
 
-    await expect(wooRebateManager.connect(admin).emergencyWithdraw(usdtToken.address, admin.address)).to.be.revertedWith(
-      onlyOwnerRevertedMessage
-    )
+    await expect(
+      wooRebateManager.connect(admin).emergencyWithdraw(usdtToken.address, admin.address)
+    ).to.be.revertedWith(onlyOwnerRevertedMessage)
 
     expect(await usdtToken.balanceOf(owner.address)).to.eq(BigNumber.from(0))
     await wooRebateManager.connect(owner).emergencyWithdraw(usdtToken.address, owner.address)
