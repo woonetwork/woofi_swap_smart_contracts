@@ -32,7 +32,7 @@ pragma experimental ABIEncoderV2;
 * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 import './libraries/InitializableOwnable.sol';
@@ -41,6 +41,7 @@ import './interfaces/IWooracle.sol';
 import './interfaces/IWooVaultManager.sol';
 import './interfaces/IWooGuardian.sol';
 import './interfaces/AggregatorV3Interface.sol';
+import './interfaces/IWooAccessManager.sol';
 
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
@@ -66,12 +67,26 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
 
     EnumerableSet.AddressSet private vaultSet;
 
-    constructor(address newQuoteToken, address newRewardToken) public {
+    IWooAccessManager public accessManager;
+
+    /* ----- Modifiers ----- */
+
+    modifier onlyAdmin() {
+        require(msg.sender == _OWNER_ || accessManager.isVaultAdmin(msg.sender), 'WooVaultManager: NOT_ADMIN');
+        _;
+    }
+
+    constructor(
+        address newQuoteToken,
+        address newRewardToken,
+        address newAccessManager
+    ) public {
         require(newQuoteToken != address(0), 'WooVaultManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooVaultManager: INVALID_RAWARD_TOKEN');
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
+        accessManager = IWooAccessManager(newAccessManager);
     }
 
     function allVaults() external view override returns (address[] memory) {
@@ -105,7 +120,7 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
 
     // ----------- Admin Functions ------------- //
 
-    function setVaultWeight(address vaultAddr, uint256 weight) external override onlyOwner {
+    function setVaultWeight(address vaultAddr, uint256 weight) external override onlyAdmin {
         require(vaultAddr != address(0), 'WooVaultManager: vaultAddr_ZERO_ADDR');
 
         // NOTE: First clear all the pending reward if > 100u to keep the things fair
@@ -126,7 +141,7 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
         emit VaultWeightUpdated(vaultAddr, weight);
     }
 
-    function distributeAllReward() public override onlyOwner {
+    function distributeAllReward() public override onlyAdmin {
         uint256 totalRewardInQuote = IERC20(quoteToken).balanceOf(address(this));
         if (totalRewardInQuote == 0 || totalWeight == 0) {
             return;
@@ -148,10 +163,15 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
         }
     }
 
-    function setWooPP(address newWooPP) external onlyOwner {
+    function setWooPP(address newWooPP) external onlyAdmin {
         require(newWooPP != address(0), 'WooVaultManager: newWooPP_ZERO_ADDR');
         wooPP = IWooPP(newWooPP);
         require(wooPP.quoteToken() == quoteToken, 'WooVaultManager: wooPP_quote_token_INVALID');
+    }
+
+    function setAccessManager(address newAccessManager) external onlyOwner {
+        require(newAccessManager != address(0), 'WooVaultManager: newAccessManager_ZERO_ADDR');
+        accessManager = IWooAccessManager(newAccessManager);
     }
 
     function emergencyWithdraw(address token, address to) public onlyOwner {

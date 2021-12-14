@@ -38,13 +38,15 @@ import { deployContract, deployMockContract, MockProvider, solidity } from 'ethe
 import IWooPP from '../build/IWooPP.json'
 import IWooRebateManager from '../build/IWooRebateManager.json'
 import IWooVaultManager from '../build/IWooVaultManager.json'
+import IWooFeeManager from '../build/IWooFeeManager.json'
 import TestToken from '../build/TestToken.json'
 import { WSAECONNABORTED } from 'constants'
 import { BigNumberish } from '@ethersproject/bignumber'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
-import { WooFeeManager, IERC20, WooRebateManager } from '../typechain'
+import { WooFeeManager, IERC20, WooRebateManager, WooAccessManager } from '../typechain'
 import WooFeeManagerArtifact from '../artifacts/contracts/WooFeeManager.sol/WooFeeManager.json'
+import WooAccessManagerArtifact from '../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json'
 
 use(solidity)
 
@@ -75,6 +77,7 @@ describe('WooFeeManager Info', () => {
   let wooPP: Contract
   let rebateManager: Contract
   let vaultManager: Contract
+  let wooAccessManager: Contract
 
   before('Deploy ERC20', async () => {
     ;[owner, user1, broker] = await ethers.getSigners()
@@ -87,6 +90,8 @@ describe('WooFeeManager Info', () => {
 
     vaultManager = await deployMockContract(owner, IWooVaultManager.abi)
     await vaultManager.mock.addReward.returns()
+
+    wooAccessManager = await deployMockContract(owner, IWooFeeManager.abi)
   })
 
   describe('ctor, init & basic func', () => {
@@ -96,6 +101,7 @@ describe('WooFeeManager Info', () => {
         usdtToken.address,
         rebateManager.address,
         vaultManager.address,
+        wooAccessManager.address,
       ])) as WooFeeManager
     })
 
@@ -129,6 +135,7 @@ describe('WooFeeManager Info', () => {
         usdtToken.address,
         rebateManager.address,
         vaultManager.address,
+        wooAccessManager.address,
       ])) as WooFeeManager
 
       await quoteToken.mint(feeManager.address, 30000)
@@ -173,6 +180,7 @@ describe('WooFeeManager Info', () => {
         usdtToken.address,
         rebateManager.address,
         vaultManager.address,
+        wooAccessManager.address,
       ])) as WooFeeManager
 
       feeManager.setRebateManager(rebateManager.address)
@@ -201,5 +209,127 @@ describe('WooFeeManager Info', () => {
       expect(await usdtToken.balanceOf(owner.address)).to.eq(ownerBalance.sub(100))
       expect(await usdtToken.balanceOf(feeManager.address)).to.eq(feeManagerBalance.add(100))
     })
+  })
+})
+
+describe('WooFeeManager Access Control', () => {
+  let owner: SignerWithAddress
+  let admin: SignerWithAddress
+  let user: SignerWithAddress
+
+  let wooFeeManager: WooFeeManager
+  let token: Contract
+  let rebateManager: SignerWithAddress
+  let newRebateManager: SignerWithAddress
+  let vaultManager: SignerWithAddress
+  let newVaultManager: SignerWithAddress
+  let wooAccessManager: WooAccessManager
+  let newWooAccessManager: WooAccessManager
+
+  let onlyOwnerRevertedMessage: string
+  let onlyAdminRevertedMessage: string
+
+  let mintToken = BigNumber.from(30000)
+
+  before(async () => {
+    ;[owner, admin, user, rebateManager, newRebateManager, vaultManager, newVaultManager] = await ethers.getSigners()
+    token = await deployContract(owner, TestToken, [])
+    wooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
+    await wooAccessManager.setFeeAdmin(admin.address, true)
+    newWooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
+
+    wooFeeManager = (await deployContract(owner, WooFeeManagerArtifact, [
+      token.address,
+      rebateManager.address,
+      vaultManager.address,
+      wooAccessManager.address,
+    ])) as WooFeeManager
+
+    await token.mint(wooFeeManager.address, mintToken)
+
+    onlyOwnerRevertedMessage = 'InitializableOwnable: NOT_OWNER'
+    onlyAdminRevertedMessage = 'WooFeeManager: NOT_ADMIN'
+  })
+
+  it('Only admin able to setFeeRate', async () => {
+    expect(await wooFeeManager.feeRate(token.address)).to.eq(BigNumber.from(0))
+    let newFeeRate = ONE.div(BigNumber.from(100))
+    expect(await wooAccessManager.isFeeAdmin(user.address)).to.eq(false)
+    await expect(wooFeeManager.connect(user).setFeeRate(token.address, newFeeRate)).to.be.revertedWith(
+      onlyAdminRevertedMessage
+    )
+    expect(await wooAccessManager.isFeeAdmin(admin.address)).to.eq(true)
+    await wooFeeManager.connect(admin).setFeeRate(token.address, newFeeRate)
+    expect(await wooFeeManager.feeRate(token.address)).to.eq(newFeeRate)
+
+    newFeeRate = newFeeRate.div(BigNumber.from(10))
+    await wooFeeManager.connect(owner).setFeeRate(token.address, newFeeRate)
+    expect(await wooFeeManager.feeRate(token.address)).to.eq(newFeeRate)
+  })
+
+  it('Only admin able to setRebateManager', async () => {
+    expect(await wooFeeManager.rebateManager()).to.eq(rebateManager.address)
+    await expect(wooFeeManager.connect(user).setRebateManager(newRebateManager.address)).to.be.revertedWith(
+      onlyAdminRevertedMessage
+    )
+    await wooFeeManager.connect(admin).setRebateManager(newRebateManager.address)
+    expect(await wooFeeManager.rebateManager()).to.eq(newRebateManager.address)
+
+    await wooFeeManager.connect(owner).setRebateManager(rebateManager.address)
+    expect(await wooFeeManager.rebateManager()).to.eq(rebateManager.address)
+  })
+
+  it('Only admin able to setVaultManager', async () => {
+    expect(await wooFeeManager.vaultManager()).to.eq(vaultManager.address)
+    await expect(wooFeeManager.connect(user).setVaultManager(newVaultManager.address)).to.be.revertedWith(
+      onlyAdminRevertedMessage
+    )
+    await wooFeeManager.connect(admin).setVaultManager(newVaultManager.address)
+    expect(await wooFeeManager.vaultManager()).to.eq(newVaultManager.address)
+
+    await wooFeeManager.connect(owner).setVaultManager(vaultManager.address)
+    expect(await wooFeeManager.vaultManager()).to.eq(vaultManager.address)
+  })
+
+  it('Only admin able to setVaultRewardRate', async () => {
+    let newVaultRewardRate = ONE.div(BigNumber.from(10))
+    await expect(wooFeeManager.connect(user).setVaultRewardRate(newVaultRewardRate)).to.be.revertedWith(
+      onlyAdminRevertedMessage
+    )
+
+    await wooFeeManager.connect(admin).setVaultRewardRate(newVaultRewardRate)
+
+    newVaultRewardRate = newVaultRewardRate.div(BigNumber.from(10))
+    await wooFeeManager.connect(owner).setVaultRewardRate(newVaultRewardRate)
+  })
+
+  it('Only owner able to emergencyWithdraw', async () => {
+    expect(await token.balanceOf(user.address)).to.eq(BigNumber.from(0))
+    await expect(wooFeeManager.connect(user).emergencyWithdraw(token.address, user.address)).to.be.revertedWith(
+      onlyOwnerRevertedMessage
+    )
+    expect(await token.balanceOf(user.address)).to.eq(BigNumber.from(0))
+
+    expect(await token.balanceOf(admin.address)).to.eq(BigNumber.from(0))
+    await expect(wooFeeManager.connect(admin).emergencyWithdraw(token.address, admin.address)).to.be.revertedWith(
+      onlyOwnerRevertedMessage
+    )
+    expect(await token.balanceOf(admin.address)).to.eq(BigNumber.from(0))
+
+    expect(await token.balanceOf(owner.address)).to.eq(BigNumber.from(0))
+    await wooFeeManager.connect(owner).emergencyWithdraw(token.address, owner.address)
+    expect(await token.balanceOf(owner.address)).to.eq(mintToken)
+  })
+
+  it('Only owner able to setAccessManager', async () => {
+    expect(await wooFeeManager.accessManager()).to.eq(wooAccessManager.address)
+    await expect(wooFeeManager.connect(user).setAccessManager(newWooAccessManager.address)).to.be.revertedWith(
+      onlyOwnerRevertedMessage
+    )
+    await expect(wooFeeManager.connect(admin).setAccessManager(newWooAccessManager.address)).to.be.revertedWith(
+      onlyOwnerRevertedMessage
+    )
+    await wooFeeManager.connect(owner).setAccessManager(newWooAccessManager.address)
+    expect(await wooFeeManager.accessManager()).to.eq(newWooAccessManager.address)
   })
 })

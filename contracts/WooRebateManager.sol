@@ -32,7 +32,7 @@ pragma experimental ABIEncoderV2;
 * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 import './libraries/InitializableOwnable.sol';
@@ -41,6 +41,7 @@ import './interfaces/IWooracle.sol';
 import './interfaces/IWooRebateManager.sol';
 import './interfaces/IWooGuardian.sol';
 import './interfaces/AggregatorV3Interface.sol';
+import './interfaces/IWooAccessManager.sol';
 
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
@@ -69,12 +70,26 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
     address public immutable quoteToken; // USDT
     address public immutable rewardToken; // WOO
 
-    constructor(address newQuoteToken, address newRewardToken) public {
+    IWooAccessManager public accessManager;
+
+    /* ----- Modifiers ----- */
+
+    modifier onlyAdmin() {
+        require(msg.sender == _OWNER_ || accessManager.isRebateAdmin(msg.sender), 'WooRebateManager: NOT_ADMIN');
+        _;
+    }
+
+    constructor(
+        address newQuoteToken,
+        address newRewardToken,
+        address newAccessManager
+    ) public {
         require(newQuoteToken != address(0), 'WooRebateManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooRebateManager: INVALID_REWARD_TOKEN');
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
+        accessManager = IWooAccessManager(newAccessManager);
     }
 
     function addRebate(address brokerAddr, uint256 amountInUSDT) external override {
@@ -119,17 +134,22 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
 
     /* ----- Admin Functions ----- */
 
-    function setRebateRate(address brokerAddr, uint256 rate) external override onlyOwner {
+    function setRebateRate(address brokerAddr, uint256 rate) external override onlyAdmin {
         require(brokerAddr != address(0), 'WooRebateManager: brokerAddr_ZERO_ADDR');
         require(rate <= 1e18, 'WooRebateManager: INVALID_USER_REWARD_RATE'); // rate <= 100%
         rebateRate[brokerAddr] = rate;
         emit RebateRateUpdated(brokerAddr, rate);
     }
 
-    function setWooPP(address newWooPP) external onlyOwner {
+    function setWooPP(address newWooPP) external onlyAdmin {
         require(newWooPP != address(0), 'WooRebateManager: wooPP_ZERO_ADDR');
         wooPP = IWooPP(newWooPP);
         require(wooPP.quoteToken() == quoteToken, 'WooRebateManager: wooPP_quote_token_INVALID');
+    }
+
+    function setAccessManager(address newAccessManager) external onlyOwner {
+        require(newAccessManager != address(0), 'WooRebateManager: newAccessManager_ZERO_ADDR');
+        accessManager = IWooAccessManager(newAccessManager);
     }
 
     function emergencyWithdraw(address token, address to) public onlyOwner {

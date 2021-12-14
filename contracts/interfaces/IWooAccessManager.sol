@@ -40,24 +40,43 @@ pragma experimental ABIEncoderV2;
 interface IWooAccessManager {
     /* ----- Events ----- */
 
-    event RewardAdminUpdated(address indexed rewardAdmin, bool flag);
-    event BatchRewardAdminUpdated(address[] rewardAdmins, bool[] flags);
+    event FeeAdminUpdated(address indexed feeAdmin, bool flag);
+
+    event VaultAdminUpdated(address indexed vaultAdmin, bool flag);
+
+    event RebateAdminUpdated(address indexed rebateAdmin, bool flag);
+
     event ZeroFeeVaultUpdated(address indexed vault, bool flag);
-    event BatchZeroFeeVaultUpdated(address[] vaults, bool[] flags);
 
     /* ----- External Functions ----- */
 
-    function isRewardAdmin(address rewardAdmin) external returns (bool);
+    function isFeeAdmin(address feeAdmin) external returns (bool);
+
+    function isVaultAdmin(address vaultAdmin) external returns (bool);
+
+    function isRebateAdmin(address rebateAdmin) external returns (bool);
 
     function isZeroFeeVault(address vault) external returns (bool);
 
     /* ----- Admin Functions ----- */
 
-    /// @notice Sets rewardAdmin
-    function setRewardAdmin(address rewardAdmin, bool flag) external;
+    /// @notice Sets feeAdmin
+    function setFeeAdmin(address feeAdmin, bool flag) external;
 
-    /// @notice Batch sets rewardAdmin
-    function batchSetRewardAdmin(address[] calldata rewardAdmins, bool[] calldata flags) external;
+    /// @notice Batch sets feeAdmin
+    function batchSetFeeAdmin(address[] calldata feeAdmins, bool[] calldata flags) external;
+
+    /// @notice Sets vaultAdmin
+    function setVaultAdmin(address vaultAdmin, bool flag) external;
+
+    /// @notice Batch sets vaultAdmin
+    function batchSetVaultAdmin(address[] calldata vaultAdmins, bool[] calldata flags) external;
+
+    /// @notice Sets rebateAdmin
+    function setRebateAdmin(address rebateAdmin, bool flag) external;
+
+    /// @notice Batch sets rebateAdmin
+    function batchSetRebateAdmin(address[] calldata rebateAdmins, bool[] calldata flags) external;
 
     /// @notice Sets zeroFeeVault
     function setZeroFeeVault(address vault, bool flag) external;

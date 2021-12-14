@@ -41,32 +41,80 @@ import './interfaces/IWooAccessManager.sol';
 contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
     /* ----- State variables ----- */
 
-    mapping(address => bool) public override isRewardAdmin;
+    mapping(address => bool) public override isFeeAdmin;
+    mapping(address => bool) public override isVaultAdmin;
+    mapping(address => bool) public override isRebateAdmin;
     mapping(address => bool) public override isZeroFeeVault;
 
     /* ----- Admin Functions ----- */
 
     /// @inheritdoc IWooAccessManager
-    function setRewardAdmin(address rewardAdmin, bool flag) external override onlyOwner whenNotPaused {
-        require(rewardAdmin != address(0), 'WooAccessManager: rewardAdmin_ZERO_ADDR');
-        isRewardAdmin[rewardAdmin] = flag;
-        emit RewardAdminUpdated(rewardAdmin, flag);
+    function setFeeAdmin(address feeAdmin, bool flag) external override onlyOwner whenNotPaused {
+        require(feeAdmin != address(0), 'WooAccessManager: feeAdmin_ZERO_ADDR');
+        isFeeAdmin[feeAdmin] = flag;
+        emit FeeAdminUpdated(feeAdmin, flag);
     }
 
     /// @inheritdoc IWooAccessManager
-    function batchSetRewardAdmin(address[] calldata rewardAdmins, bool[] calldata flags)
+    function batchSetFeeAdmin(address[] calldata feeAdmins, bool[] calldata flags)
         external
         override
         onlyOwner
         whenNotPaused
     {
-        require(rewardAdmins.length == flags.length, 'WooAccessManager: length_INVALID');
+        require(feeAdmins.length == flags.length, 'WooAccessManager: length_INVALID');
 
-        for (uint256 i = 0; i < rewardAdmins.length; i++) {
-            require(rewardAdmins[i] != address(0), 'WooAccessManager: rewardAdmin_ZERO_ADDR');
-            isRewardAdmin[rewardAdmins[i]] = flags[i];
+        for (uint256 i = 0; i < feeAdmins.length; i++) {
+            require(feeAdmins[i] != address(0), 'WooAccessManager: feeAdmin_ZERO_ADDR');
+            isFeeAdmin[feeAdmins[i]] = flags[i];
+            emit FeeAdminUpdated(feeAdmins[i], flags[i]);
         }
-        emit BatchRewardAdminUpdated(rewardAdmins, flags);
+    }
+
+    /// @inheritdoc IWooAccessManager
+    function setVaultAdmin(address vaultAdmin, bool flag) external override onlyOwner whenNotPaused {
+        require(vaultAdmin != address(0), 'WooAccessManager: vaultAdmin_ZERO_ADDR');
+        isVaultAdmin[vaultAdmin] = flag;
+        emit VaultAdminUpdated(vaultAdmin, flag);
+    }
+
+    /// @inheritdoc IWooAccessManager
+    function batchSetVaultAdmin(address[] calldata vaultAdmins, bool[] calldata flags)
+        external
+        override
+        onlyOwner
+        whenNotPaused
+    {
+        require(vaultAdmins.length == flags.length, 'WooAccessManager: length_INVALID');
+
+        for (uint256 i = 0; i < vaultAdmins.length; i++) {
+            require(vaultAdmins[i] != address(0), 'WooAccessManager: vaultAdmin_ZERO_ADDR');
+            isVaultAdmin[vaultAdmins[i]] = flags[i];
+            emit VaultAdminUpdated(vaultAdmins[i], flags[i]);
+        }
+    }
+
+    /// @inheritdoc IWooAccessManager
+    function setRebateAdmin(address rebateAdmin, bool flag) external override onlyOwner whenNotPaused {
+        require(rebateAdmin != address(0), 'WooAccessManager: rebateAdmin_ZERO_ADDR');
+        isRebateAdmin[rebateAdmin] = flag;
+        emit RebateAdminUpdated(rebateAdmin, flag);
+    }
+
+    /// @inheritdoc IWooAccessManager
+    function batchSetRebateAdmin(address[] calldata rebateAdmins, bool[] calldata flags)
+        external
+        override
+        onlyOwner
+        whenNotPaused
+    {
+        require(rebateAdmins.length == flags.length, 'WooAccessManager: length_INVALID');
+
+        for (uint256 i = 0; i < rebateAdmins.length; i++) {
+            require(rebateAdmins[i] != address(0), 'WooAccessManager: rebateAdmin_ZERO_ADDR');
+            isRebateAdmin[rebateAdmins[i]] = flags[i];
+            emit RebateAdminUpdated(rebateAdmins[i], flags[i]);
+        }
     }
 
     /// @inheritdoc IWooAccessManager
@@ -88,8 +136,8 @@ contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
         for (uint256 i = 0; i < vaults.length; i++) {
             require(vaults[i] != address(0), 'WooAccessManager: vault_ZERO_ADDR');
             isZeroFeeVault[vaults[i]] = flags[i];
+            emit ZeroFeeVaultUpdated(vaults[i], flags[i]);
         }
-        emit BatchZeroFeeVaultUpdated(vaults, flags);
     }
 
     /// @notice Pause the contract.

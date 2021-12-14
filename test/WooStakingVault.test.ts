@@ -471,7 +471,9 @@ describe('WooStakingVault Access Control & Require Check', () => {
   let wooToken: TestToken
 
   let initialTreasuryZeroAddressMessage: string
+  let newTreasuryZeroAddressMessage: string
   let initialWooAccessManagerZeroAddressMessage: string
+  let newWooAccessManagerZeroAddressMessage: string
   let sharesExceedBalanceMessage: string
   let nonContractAccountMessage: string
   let onlyOwnerRevertedMessage: string
@@ -498,7 +500,9 @@ describe('WooStakingVault Access Control & Require Check', () => {
     ])) as WooStakingVault
 
     initialTreasuryZeroAddressMessage = 'WooStakingVault: initialTreasury_ZERO_ADDR'
+    newTreasuryZeroAddressMessage = 'WooStakingVault: newTreasury_ZERO_ADDR'
     initialWooAccessManagerZeroAddressMessage = 'WooStakingVault: initialWooAccessManager_ZERO_ADDR'
+    newWooAccessManagerZeroAddressMessage = 'WooStakingVault: newWooAccessManager_ZERO_ADDR'
     sharesExceedBalanceMessage = 'WooStakingVault: shares exceed balance'
     nonContractAccountMessage = 'function call to a non-contract account'
     onlyOwnerRevertedMessage = 'Ownable: caller is not the owner'
@@ -584,12 +588,24 @@ describe('WooStakingVault Access Control & Require Check', () => {
     expect(await wooStakingVault.treasury()).to.eq(newTreasury.address)
   })
 
+  it('New treasury can not be zero address', async () => {
+    await expect(wooStakingVault.connect(owner).setTreasury(ZERO_ADDRESS)).to.be.revertedWith(
+      newTreasuryZeroAddressMessage
+    )
+  })
+
   it('Only owner able to setWooAccessManager', async () => {
     await expect(wooStakingVault.connect(user).setWooAccessManager(newWooAccessManager.address)).to.be.revertedWith(
       onlyOwnerRevertedMessage
     )
     await wooStakingVault.connect(owner).setWooAccessManager(newWooAccessManager.address)
     expect(await wooStakingVault.wooAccessManager()).to.eq(newWooAccessManager.address)
+  })
+
+  it('New wooAccessManager can not be zero address', async () => {
+    await expect(wooStakingVault.connect(owner).setWooAccessManager(ZERO_ADDRESS)).to.be.revertedWith(
+      newWooAccessManagerZeroAddressMessage
+    )
   })
 
   it('Only owner able to pause', async () => {
