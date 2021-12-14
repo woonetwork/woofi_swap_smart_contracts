@@ -260,7 +260,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     /// @notice Rescues random funds stuck
     function inCaseTokensGetStuck(address stuckToken) external onlyOwner {
         require(stuckToken != address(0), 'WooStakingVault: stuckToken_ZERO_ADDR');
-        require(stuckToken != address(stakedToken), "WooStakingVault: stuckToken_CAN_NOT_BE_stakedToken");
+        require(stuckToken != address(stakedToken), 'WooStakingVault: stuckToken_CAN_NOT_BE_stakedToken');
 
         uint256 amount = IERC20(stuckToken).balanceOf(address(this));
         TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
