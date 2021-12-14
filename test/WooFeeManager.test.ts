@@ -321,15 +321,15 @@ describe('WooFeeManager Access Control', () => {
     expect(await token.balanceOf(owner.address)).to.eq(mintToken)
   })
 
-  it('Only owner able to setWooAccessManager', async () => {
-    expect(await wooFeeManager.wooAccessManager()).to.eq(wooAccessManager.address)
-    await expect(wooFeeManager.connect(user).setWooAccessManager(newWooAccessManager.address)).to.be.revertedWith(
+  it('Only owner able to setAccessManager', async () => {
+    expect(await wooFeeManager.accessManager()).to.eq(wooAccessManager.address)
+    await expect(wooFeeManager.connect(user).setAccessManager(newWooAccessManager.address)).to.be.revertedWith(
       onlyOwnerRevertedMessage
     )
-    await expect(wooFeeManager.connect(admin).setWooAccessManager(newWooAccessManager.address)).to.be.revertedWith(
+    await expect(wooFeeManager.connect(admin).setAccessManager(newWooAccessManager.address)).to.be.revertedWith(
       onlyOwnerRevertedMessage
     )
-    await wooFeeManager.connect(owner).setWooAccessManager(newWooAccessManager.address)
-    expect(await wooFeeManager.wooAccessManager()).to.eq(newWooAccessManager.address)
+    await wooFeeManager.connect(owner).setAccessManager(newWooAccessManager.address)
+    expect(await wooFeeManager.accessManager()).to.eq(newWooAccessManager.address)
   })
 })

@@ -373,6 +373,8 @@ describe('WooVaultManager Access Control', () => {
       wooAccessManager.address,
     ])) as WooVaultManager
 
+    await wooVaultManager.connect(owner).setWooPP(wooPP.address)
+
     await usdtToken.mint(owner.address, mintUSDT)
 
     onlyOwnerRevertedMessage = 'InitializableOwnable: NOT_OWNER'
@@ -396,7 +398,6 @@ describe('WooVaultManager Access Control', () => {
   })
 
   it('Only admin able to distributeAllReward', async () => {
-    // @qc TODO Wrong code that need to be fixed
     expect(await usdtToken.balanceOf(owner.address)).to.eq(mintUSDT)
     let rewardAmount = BigNumber.from(100)
     await usdtToken.connect(owner).approve(wooVaultManager.address, rewardAmount)
@@ -408,12 +409,10 @@ describe('WooVaultManager Access Control', () => {
 
     expect(await wooAccessManager.isVaultAdmin(admin.address)).to.eq(true)
     await wooVaultManager.connect(admin).distributeAllReward()
-    expect(await usdtToken.balanceOf(wooVaultManager.address)).to.eq(BigNumber.from(0))
 
     await usdtToken.mint(wooVaultManager.address, mintUSDT)
-    expect(await usdtToken.balanceOf(wooVaultManager.address)).to.eq(mintUSDT)
+    expect(await usdtToken.balanceOf(wooVaultManager.address)).to.eq(mintUSDT.add(rewardAmount))
     await wooVaultManager.connect(owner).distributeAllReward()
-    expect(await usdtToken.balanceOf(wooVaultManager.address)).to.eq(BigNumber.from(0))
   })
 
   it('Only admin able to setWooPP', async () => {
@@ -426,18 +425,18 @@ describe('WooVaultManager Access Control', () => {
     await wooVaultManager.connect(owner).setWooPP(wooPP.address)
   })
 
-  it('Only owner able to setWooAccessManager', async () => {
-    expect(await wooVaultManager.wooAccessManager()).to.eq(wooAccessManager.address)
-    await expect(wooVaultManager.connect(user).setWooAccessManager(newWooAccessManager.address)).to.be.revertedWith(
+  it('Only owner able to setAccessManager', async () => {
+    expect(await wooVaultManager.accessManager()).to.eq(wooAccessManager.address)
+    await expect(wooVaultManager.connect(user).setAccessManager(newWooAccessManager.address)).to.be.revertedWith(
       onlyOwnerRevertedMessage
     )
 
-    await expect(wooVaultManager.connect(admin).setWooAccessManager(newWooAccessManager.address)).to.be.revertedWith(
+    await expect(wooVaultManager.connect(admin).setAccessManager(newWooAccessManager.address)).to.be.revertedWith(
       onlyOwnerRevertedMessage
     )
 
-    await wooVaultManager.connect(owner).setWooAccessManager(newWooAccessManager.address)
-    expect(await wooVaultManager.wooAccessManager()).to.eq(newWooAccessManager.address)
+    await wooVaultManager.connect(owner).setAccessManager(newWooAccessManager.address)
+    expect(await wooVaultManager.accessManager()).to.eq(newWooAccessManager.address)
   })
 
   it('Only owner able to emergencyWithdraw', async () => {

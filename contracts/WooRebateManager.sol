@@ -70,12 +70,12 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
     address public immutable quoteToken; // USDT
     address public immutable rewardToken; // WOO
 
-    IWooAccessManager public wooAccessManager;
+    IWooAccessManager public accessManager;
 
     /* ----- Modifiers ----- */
 
     modifier onlyAdmin() {
-        require(msg.sender == _OWNER_ || wooAccessManager.isRebateAdmin(msg.sender), 'WooRebateManager: NOT_ADMIN');
+        require(msg.sender == _OWNER_ || accessManager.isRebateAdmin(msg.sender), 'WooRebateManager: NOT_ADMIN');
         _;
     }
 
@@ -89,7 +89,7 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
-        wooAccessManager = IWooAccessManager(newWooAccessManager);
+        accessManager = IWooAccessManager(newWooAccessManager);
     }
 
     function addRebate(address brokerAddr, uint256 amountInUSDT) external override {
@@ -147,9 +147,9 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
         require(wooPP.quoteToken() == quoteToken, 'WooRebateManager: wooPP_quote_token_INVALID');
     }
 
-    function setWooAccessManager(address newWooAccessManager) external onlyOwner {
-        require(newWooAccessManager != address(0), 'WooRebateManager: newWooAccessManager_ZERO_ADDR');
-        wooAccessManager = IWooAccessManager(newWooAccessManager);
+    function setAccessManager(address newAccessManager) external onlyOwner {
+        require(newAccessManager != address(0), 'WooRebateManager: newAccessManager_ZERO_ADDR');
+        accessManager = IWooAccessManager(newAccessManager);
     }
 
     function emergencyWithdraw(address token, address to) public onlyOwner {

@@ -67,12 +67,12 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
 
     EnumerableSet.AddressSet private vaultSet;
 
-    IWooAccessManager public wooAccessManager;
+    IWooAccessManager public accessManager;
 
     /* ----- Modifiers ----- */
 
     modifier onlyAdmin() {
-        require(msg.sender == _OWNER_ || wooAccessManager.isVaultAdmin(msg.sender), 'WooVaultManager: NOT_ADMIN');
+        require(msg.sender == _OWNER_ || accessManager.isVaultAdmin(msg.sender), 'WooVaultManager: NOT_ADMIN');
         _;
     }
 
@@ -86,7 +86,7 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
-        wooAccessManager = IWooAccessManager(newWooAccessManager);
+        accessManager = IWooAccessManager(newWooAccessManager);
     }
 
     function allVaults() external view override returns (address[] memory) {
@@ -169,9 +169,9 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
         require(wooPP.quoteToken() == quoteToken, 'WooVaultManager: wooPP_quote_token_INVALID');
     }
 
-    function setWooAccessManager(address newWooAccessManager) external onlyOwner {
-        require(newWooAccessManager != address(0), 'WooVaultManager: newWooAccessManager_ZERO_ADDR');
-        wooAccessManager = IWooAccessManager(newWooAccessManager);
+    function setAccessManager(address newAccessManager) external onlyOwner {
+        require(newAccessManager != address(0), 'WooVaultManager: newAccessManager_ZERO_ADDR');
+        accessManager = IWooAccessManager(newAccessManager);
     }
 
     function emergencyWithdraw(address token, address to) public onlyOwner {

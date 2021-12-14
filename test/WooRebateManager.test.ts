@@ -351,18 +351,18 @@ describe('WooRebateManager Access Control', () => {
     await wooRebateManager.connect(owner).setWooPP(wooPP.address)
   })
 
-  it('Only owner able to setWooAccessManager', async () => {
-    expect(await wooRebateManager.wooAccessManager()).to.eq(wooAccessManager.address)
-    await expect(wooRebateManager.connect(user).setWooAccessManager(newWooAccessManager.address)).to.be.revertedWith(
+  it('Only owner able to setAccessManager', async () => {
+    expect(await wooRebateManager.accessManager()).to.eq(wooAccessManager.address)
+    await expect(wooRebateManager.connect(user).setAccessManager(newWooAccessManager.address)).to.be.revertedWith(
       onlyOwnerRevertedMessage
     )
 
-    await expect(wooRebateManager.connect(admin).setWooAccessManager(newWooAccessManager.address)).to.be.revertedWith(
+    await expect(wooRebateManager.connect(admin).setAccessManager(newWooAccessManager.address)).to.be.revertedWith(
       onlyOwnerRevertedMessage
     )
 
-    await wooRebateManager.connect(owner).setWooAccessManager(newWooAccessManager.address)
-    expect(await wooRebateManager.wooAccessManager()).to.eq(newWooAccessManager.address)
+    await wooRebateManager.connect(owner).setAccessManager(newWooAccessManager.address)
+    expect(await wooRebateManager.accessManager()).to.eq(newWooAccessManager.address)
   })
 
   it('Only owner able to emergencyWithdraw', async () => {

@@ -67,12 +67,12 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     address public immutable quoteToken;
     IWooRebateManager public rebateManager;
     IWooVaultManager public vaultManager;
-    IWooAccessManager public wooAccessManager;
+    IWooAccessManager public accessManager;
 
     /* ----- Modifiers ----- */
 
     modifier onlyAdmin() {
-        require(msg.sender == _OWNER_ || wooAccessManager.isFeeAdmin(msg.sender), 'WooFeeManager: NOT_ADMIN');
+        require(msg.sender == _OWNER_ || accessManager.isFeeAdmin(msg.sender), 'WooFeeManager: NOT_ADMIN');
         _;
     }
 
@@ -88,7 +88,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         rebateManager = IWooRebateManager(newRebateManager);
         vaultManager = IWooVaultManager(newVaultManager);
         vaultRewardRate = 1e18;
-        wooAccessManager = IWooAccessManager(newWooAccessManager);
+        accessManager = IWooAccessManager(newWooAccessManager);
     }
 
     /* ----- Public Functions ----- */
@@ -144,8 +144,8 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         vaultRewardRate = newVaultRewardRate;
     }
 
-    function setWooAccessManager(address newWooAccessManager) external onlyOwner {
-        require(newWooAccessManager != address(0), 'WooFeeManager: newWooAccessManager_ZERO_ADDR');
-        wooAccessManager = IWooAccessManager(newWooAccessManager);
+    function setAccessManager(address newAccessManager) external onlyOwner {
+        require(newAccessManager != address(0), 'WooFeeManager: newAccessManager_ZERO_ADDR');
+        accessManager = IWooAccessManager(newAccessManager);
     }
 }
