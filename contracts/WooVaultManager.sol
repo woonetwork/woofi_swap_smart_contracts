@@ -79,14 +79,14 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
     constructor(
         address newQuoteToken,
         address newRewardToken,
-        address newWooAccessManager
+        address newAccessManager
     ) public {
         require(newQuoteToken != address(0), 'WooVaultManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooVaultManager: INVALID_RAWARD_TOKEN');
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
-        accessManager = IWooAccessManager(newWooAccessManager);
+        accessManager = IWooAccessManager(newAccessManager);
     }
 
     function allVaults() external view override returns (address[] memory) {

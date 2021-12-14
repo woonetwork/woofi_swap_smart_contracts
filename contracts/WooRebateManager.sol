@@ -82,14 +82,14 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
     constructor(
         address newQuoteToken,
         address newRewardToken,
-        address newWooAccessManager
+        address newAccessManager
     ) public {
         require(newQuoteToken != address(0), 'WooRebateManager: INVALID_QUOTE');
         require(newRewardToken != address(0), 'WooRebateManager: INVALID_REWARD_TOKEN');
         initOwner(msg.sender);
         quoteToken = newQuoteToken;
         rewardToken = newRewardToken;
-        accessManager = IWooAccessManager(newWooAccessManager);
+        accessManager = IWooAccessManager(newAccessManager);
     }
 
     function addRebate(address brokerAddr, uint256 amountInUSDT) external override {

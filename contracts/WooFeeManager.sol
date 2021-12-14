@@ -80,7 +80,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         address newQuoteToken,
         address newRebateManager,
         address newVaultManager,
-        address newWooAccessManager
+        address newAccessManager
     ) public {
         require(newQuoteToken != address(0), 'WooFeeManager: quoteToken_ZERO_ADDR');
         initOwner(msg.sender);
@@ -88,7 +88,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         rebateManager = IWooRebateManager(newRebateManager);
         vaultManager = IWooVaultManager(newVaultManager);
         vaultRewardRate = 1e18;
-        accessManager = IWooAccessManager(newWooAccessManager);
+        accessManager = IWooAccessManager(newAccessManager);
     }
 
     /* ----- Public Functions ----- */

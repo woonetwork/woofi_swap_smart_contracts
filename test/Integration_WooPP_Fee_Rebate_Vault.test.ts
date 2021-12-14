@@ -43,7 +43,7 @@ import TestToken from '../build/TestToken.json'
 import { WSAECONNABORTED } from 'constants'
 import { BigNumberish } from '@ethersproject/bignumber'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { WooFeeManager, WooRouter, WooPP, WooVaultManager, WooRebateManager } from '../typechain'
+import {WooFeeManager, WooRouter, WooPP, WooVaultManager, WooRebateManager, WooAccessManager} from '../typechain'
 import WooRouterArtifact from '../artifacts/contracts/WooRouter.sol/WooRouter.json'
 import WooPPArtifact from '../artifacts/contracts/WooPP.sol/WooPP.json'
 import WooFeeManagerArtifact from '../artifacts/contracts/WooFeeManager.sol/WooFeeManager.json'
@@ -51,6 +51,7 @@ import WooRebateManagerArtifact from '../artifacts/contracts/WooRebateManager.so
 import WooVaultManagerArtifact from '../artifacts/contracts/WooVaultManager.sol/WooVaultManager.json'
 import { _nameprepTableB2 } from '@ethersproject/strings/lib/idna'
 import DecimalMath from '../artifacts/contracts/libraries/DecimalMath.sol/DecimalMath.json'
+import WooAccessManagerArtifact from "../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json";
 
 use(solidity)
 
@@ -96,12 +97,15 @@ describe('Rebate Fee Vault Integration Test', () => {
   let feeManager: WooFeeManager
   let rebateManager: WooRebateManager
   let vaultManager: WooVaultManager
+  let accessManager: WooAccessManager
 
   before('Deploy ERC20', async () => {
     ;[owner, user, broker1, broker2, vault1, vault2] = await ethers.getSigners()
     btcToken = await deployContract(owner, TestToken, [])
     wooToken = await deployContract(owner, TestToken, [])
     usdtToken = await deployContract(owner, TestToken, [])
+
+    accessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
 
     wooracle = await deployMockContract(owner, IWooracle.abi)
     await wooracle.mock.timestamp.returns(BigNumber.from(1634180070))
@@ -127,17 +131,20 @@ describe('Rebate Fee Vault Integration Test', () => {
     rebateManager = (await deployContract(owner, WooRebateManagerArtifact, [
       usdtToken.address,
       wooToken.address,
+      accessManager.address
     ])) as WooRebateManager
 
     vaultManager = (await deployContract(owner, WooVaultManagerArtifact, [
       usdtToken.address,
       wooToken.address,
+      accessManager.address
     ])) as WooVaultManager
 
     feeManager = (await deployContract(owner, WooFeeManagerArtifact, [
       usdtToken.address,
       rebateManager.address,
       vaultManager.address,
+      accessManager.address
     ])) as WooFeeManager
 
     wooPP = (await deployContract(owner, WooPPArtifact, [
