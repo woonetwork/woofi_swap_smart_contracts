@@ -616,16 +616,6 @@ describe('WooStakingVault Access Control & Require Check', () => {
     await wooToken.connect(user).approve(wooStakingVault.address, wooDeposit)
     // deposit will be reverted when contract is paused
     await expect(wooStakingVault.connect(user).deposit(wooDeposit)).to.be.revertedWith(whenNotPausedRevertedMessage)
-    // reserveWithdraw will be reverted when contract is paused
-    await expect(wooStakingVault.connect(user).reserveWithdraw(BN_ZERO)).to.be.revertedWith(
-      whenNotPausedRevertedMessage
-    )
-    // withdraw will be reverted when contract is paused
-    await expect(wooStakingVault.connect(user).withdraw()).to.be.revertedWith(whenNotPausedRevertedMessage)
-    // getPricePerFullShare will be reverted when contract is paused
-    await expect(wooStakingVault.getPricePerFullShare()).to.be.revertedWith(whenNotPausedRevertedMessage)
-    // balance will be reverted when contract is paused
-    await expect(wooStakingVault.balance()).to.be.revertedWith(whenNotPausedRevertedMessage)
   })
 
   it('Only owner able to unpause', async () => {

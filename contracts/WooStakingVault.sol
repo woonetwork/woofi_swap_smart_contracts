@@ -127,7 +127,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         emit Deposit(msg.sender, amount, shares);
     }
 
-    function reserveWithdraw(uint256 shares) external whenNotPaused {
+    function reserveWithdraw(uint256 shares) external {
         require(shares <= balanceOf(msg.sender), 'WooStakingVault: shares exceed balance');
 
         uint256 currentReserveAmount = shares.mulFloor(getPricePerFullShare()); // calculate reserveAmount before _burn
@@ -147,7 +147,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         emit ReserveWithdraw(msg.sender, currentReserveAmount, shares);
     }
 
-    function withdraw() external whenNotPaused {
+    function withdraw() external {
         UserInfo storage user = userInfo[msg.sender];
 
         uint256 withdrawAmount = user.reserveAmount;
@@ -167,7 +167,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         emit Withdraw(msg.sender, withdrawAmount, fee);
     }
 
-    function instantWithdraw(uint256 shares) external whenNotPaused {
+    function instantWithdraw(uint256 shares) external {
         require(shares <= balanceOf(msg.sender), 'WooStakingVault: shares exceed balance');
 
         uint256 withdrawAmount = shares.mulFloor(getPricePerFullShare());
@@ -203,14 +203,14 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     /* ----- Public Functions ----- */
 
-    function getPricePerFullShare() public view whenNotPaused returns (uint256) {
+    function getPricePerFullShare() public view returns (uint256) {
         if (totalSupply() == 0) {
             return 1e18;
         }
         return balance().divFloor(totalSupply());
     }
 
-    function balance() public view whenNotPaused returns (uint256) {
+    function balance() public view returns (uint256) {
         return stakedToken.balanceOf(address(this)).sub(totalReserveAmount);
     }
 
