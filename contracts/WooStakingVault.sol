@@ -257,7 +257,11 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         wooAccessManager = IWooAccessManager(newWooAccessManager);
     }
 
-    /// @notice Rescues random funds stuck
+    /**
+        @notice Rescues random funds stuck.
+        This method only saves the irrelevant tokens just in case users deposited in mistake.
+        It cannot transfer any of user staked tokens.
+    */
     function inCaseTokensGetStuck(address stuckToken) external onlyOwner {
         require(stuckToken != address(0), 'WooStakingVault: stuckToken_ZERO_ADDR');
         require(stuckToken != address(stakedToken), 'WooStakingVault: stuckToken_CAN_NOT_BE_stakedToken');
