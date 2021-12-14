@@ -300,7 +300,7 @@ describe('WooFeeManager Access Control', () => {
     await wooFeeManager.connect(admin).setVaultRewardRate(newVaultRewardRate)
 
     newVaultRewardRate = newVaultRewardRate.div(BigNumber.from(10))
-    await wooFeeManager.connect(admin).setVaultRewardRate(newVaultRewardRate)
+    await wooFeeManager.connect(owner).setVaultRewardRate(newVaultRewardRate)
   })
 
   it('Only owner able to emergencyWithdraw', async () => {

@@ -41,16 +41,12 @@ interface IWooAccessManager {
     /* ----- Events ----- */
 
     event FeeAdminUpdated(address indexed feeAdmin, bool flag);
-    event BatchFeeAdminUpdated(address[] feeAdmins, bool[] flags);
 
     event VaultAdminUpdated(address indexed vaultAdmin, bool flag);
-    event BatchVaultAdminUpdated(address[] vaultAdmins, bool[] flags);
 
     event RebateAdminUpdated(address indexed rebateAdmin, bool flag);
-    event BatchRebateAdminUpdated(address[] rebateAdmins, bool[] flags);
 
     event ZeroFeeVaultUpdated(address indexed vault, bool flag);
-    event BatchZeroFeeVaultUpdated(address[] vaults, bool[] flags);
 
     /* ----- External Functions ----- */
 

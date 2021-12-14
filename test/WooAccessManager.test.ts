@@ -1,3 +1,36 @@
+/*
+
+░██╗░░░░░░░██╗░█████╗░░█████╗░░░░░░░███████╗██╗
+░██║░░██╗░░██║██╔══██╗██╔══██╗░░░░░░██╔════╝██║
+░╚██╗████╗██╔╝██║░░██║██║░░██║█████╗█████╗░░██║
+░░████╔═████║░██║░░██║██║░░██║╚════╝██╔══╝░░██║
+░░╚██╔╝░╚██╔╝░╚█████╔╝╚█████╔╝░░░░░░██║░░░░░██║
+░░░╚═╝░░░╚═╝░░░╚════╝░░╚════╝░░░░░░░╚═╝░░░░░╚═╝
+
+*
+* MIT License
+* ===========
+*
+* Copyright (c) 2020 WooTrade
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { TestToken, WooAccessManager, WooStakingVault } from '../typechain'
 import { ethers } from 'hardhat'
@@ -99,8 +132,10 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
       onlyOwnerRevertedMessage
     )
     await expect(wooAccessManager.connect(owner).batchSetFeeAdmin(feeAdmins, flags))
-      .to.emit(wooAccessManager, 'BatchFeeAdminUpdated')
-      .withArgs(feeAdmins, flags)
+      .to.emit(wooAccessManager, 'FeeAdminUpdated')
+      .withArgs(feeAdmins[0], flags[0])
+      .to.emit(wooAccessManager, 'FeeAdminUpdated')
+      .withArgs(feeAdmins[1], flags[1])
     // check result
     for (let i = 0; i < feeAdmins.length; i++) {
       expect(await wooAccessManager.isFeeAdmin(feeAdmins[i])).to.eq(true)
@@ -162,8 +197,10 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
       onlyOwnerRevertedMessage
     )
     await expect(wooAccessManager.connect(owner).batchSetVaultAdmin(vaultAdmins, flags))
-      .to.emit(wooAccessManager, 'BatchVaultAdminUpdated')
-      .withArgs(vaultAdmins, flags)
+      .to.emit(wooAccessManager, 'VaultAdminUpdated')
+      .withArgs(vaultAdmins[0], flags[0])
+      .to.emit(wooAccessManager, 'VaultAdminUpdated')
+      .withArgs(vaultAdmins[1], flags[1])
     // check result
     for (let i = 0; i < vaultAdmins.length; i++) {
       expect(await wooAccessManager.isVaultAdmin(vaultAdmins[i])).to.eq(true)
@@ -225,8 +262,10 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
       onlyOwnerRevertedMessage
     )
     await expect(wooAccessManager.connect(owner).batchSetRebateAdmin(rebateAdmins, flags))
-      .to.emit(wooAccessManager, 'BatchRebateAdminUpdated')
-      .withArgs(rebateAdmins, flags)
+      .to.emit(wooAccessManager, 'RebateAdminUpdated')
+      .withArgs(rebateAdmins[0], flags[0])
+      .to.emit(wooAccessManager, 'RebateAdminUpdated')
+      .withArgs(rebateAdmins[1], flags[1])
     // check result
     for (let i = 0; i < rebateAdmins.length; i++) {
       expect(await wooAccessManager.isRebateAdmin(rebateAdmins[i])).to.eq(true)
@@ -288,8 +327,10 @@ describe('WooAccessManager Accuracy & Access Control & Require Check', () => {
       onlyOwnerRevertedMessage
     )
     await expect(wooAccessManager.connect(owner).batchSetZeroFeeVault(vaults, flags))
-      .to.emit(wooAccessManager, 'BatchZeroFeeVaultUpdated')
-      .withArgs(vaults, flags)
+      .to.emit(wooAccessManager, 'ZeroFeeVaultUpdated')
+      .withArgs(vaults[0], flags[0])
+      .to.emit(wooAccessManager, 'ZeroFeeVaultUpdated')
+      .withArgs(vaults[1], flags[1])
     // check result
     for (let i = 0; i < vaults.length; i++) {
       expect(await wooAccessManager.isZeroFeeVault(vaults[i])).to.eq(true)

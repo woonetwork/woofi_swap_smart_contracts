@@ -67,8 +67,8 @@ contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
         for (uint256 i = 0; i < feeAdmins.length; i++) {
             require(feeAdmins[i] != address(0), 'WooAccessManager: feeAdmin_ZERO_ADDR');
             isFeeAdmin[feeAdmins[i]] = flags[i];
+            emit FeeAdminUpdated(feeAdmins[i], flags[i]);
         }
-        emit BatchFeeAdminUpdated(feeAdmins, flags);
     }
 
     /// @inheritdoc IWooAccessManager
@@ -90,8 +90,8 @@ contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
         for (uint256 i = 0; i < vaultAdmins.length; i++) {
             require(vaultAdmins[i] != address(0), 'WooAccessManager: vaultAdmin_ZERO_ADDR');
             isVaultAdmin[vaultAdmins[i]] = flags[i];
+            emit VaultAdminUpdated(vaultAdmins[i], flags[i]);
         }
-        emit BatchVaultAdminUpdated(vaultAdmins, flags);
     }
 
     /// @inheritdoc IWooAccessManager
@@ -113,8 +113,8 @@ contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
         for (uint256 i = 0; i < rebateAdmins.length; i++) {
             require(rebateAdmins[i] != address(0), 'WooAccessManager: rebateAdmin_ZERO_ADDR');
             isRebateAdmin[rebateAdmins[i]] = flags[i];
+            emit RebateAdminUpdated(rebateAdmins[i], flags[i]);
         }
-        emit BatchRebateAdminUpdated(rebateAdmins, flags);
     }
 
     /// @inheritdoc IWooAccessManager
@@ -136,8 +136,8 @@ contract WooAccessManager is IWooAccessManager, Ownable, Pausable {
         for (uint256 i = 0; i < vaults.length; i++) {
             require(vaults[i] != address(0), 'WooAccessManager: vault_ZERO_ADDR');
             isZeroFeeVault[vaults[i]] = flags[i];
+            emit ZeroFeeVaultUpdated(vaults[i], flags[i]);
         }
-        emit BatchZeroFeeVaultUpdated(vaults, flags);
     }
 
     /// @notice Pause the contract.
