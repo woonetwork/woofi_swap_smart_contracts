@@ -469,6 +469,7 @@ describe('WooStakingVault Access Control & Require Check', () => {
   let newWooAccessManager: WooAccessManager
   let wooStakingVault: WooStakingVault
   let wooToken: TestToken
+  let btcToken: TestToken
 
   let initialTreasuryZeroAddressMessage: string
   let newTreasuryZeroAddressMessage: string
@@ -479,12 +480,15 @@ describe('WooStakingVault Access Control & Require Check', () => {
   let onlyOwnerRevertedMessage: string
   let setWithdrawFeePeriodExceedMessage: string
   let setWithdrawFeeExceedMessage: string
+  let stuckTokenZeroAddressMessage: string
+  let stuckTokenCanNotBeStakedTokenMessage: string
   let whenNotPausedRevertedMessage: string
   let whenPausedRevertedMessage: string
 
   before(async () => {
     ;[owner, user, treasury, newTreasury] = await ethers.getSigners()
     wooToken = (await deployContract(owner, TestTokenArtifact, [])) as TestToken
+    btcToken = (await deployContract(owner, TestTokenArtifact, [])) as TestToken
     // 1.mint woo token to user
     // 2.make sure user woo balance start with 0
     let mintWooBalance = BN_1e18.mul(1000)
@@ -508,6 +512,8 @@ describe('WooStakingVault Access Control & Require Check', () => {
     onlyOwnerRevertedMessage = 'Ownable: caller is not the owner'
     setWithdrawFeePeriodExceedMessage = 'WooStakingVault: newWithdrawFeePeriod>MAX_WITHDRAW_FEE_PERIOD'
     setWithdrawFeeExceedMessage = 'WooStakingVault: newWithdrawFee>MAX_WITHDRAW_FEE'
+    stuckTokenZeroAddressMessage = 'WooStakingVault: stuckToken_ZERO_ADDR'
+    stuckTokenCanNotBeStakedTokenMessage = 'WooStakingVault: stuckToken_CAN_NOT_BE_stakedToken'
     whenNotPausedRevertedMessage = 'Pausable: paused'
     whenPausedRevertedMessage = 'Pausable: not paused'
   })
@@ -605,6 +611,36 @@ describe('WooStakingVault Access Control & Require Check', () => {
   it('New wooAccessManager can not be zero address', async () => {
     await expect(wooStakingVault.connect(owner).setWooAccessManager(ZERO_ADDRESS)).to.be.revertedWith(
       newWooAccessManagerZeroAddressMessage
+    )
+  })
+
+  it('Only owner able to inCaseTokensGetStuck', async () => {
+    let mintBtcBalance = BN_1e18.mul(10)
+    await btcToken.mint(wooStakingVault.address, mintBtcBalance)
+    expect(await btcToken.balanceOf(wooStakingVault.address)).to.eq(mintBtcBalance)
+
+    expect(await btcToken.balanceOf(user.address)).to.eq(BN_ZERO)
+    await expect(wooStakingVault.connect(user).inCaseTokensGetStuck(btcToken.address)).to.be.revertedWith(
+      onlyOwnerRevertedMessage
+    )
+    expect(await btcToken.balanceOf(user.address)).to.eq(BN_ZERO)
+
+    expect(await btcToken.balanceOf(owner.address)).to.eq(BN_ZERO)
+    await wooStakingVault.connect(owner).inCaseTokensGetStuck(btcToken.address)
+    expect(await btcToken.balanceOf(owner.address)).to.eq(mintBtcBalance)
+    expect(await btcToken.balanceOf(wooStakingVault.address)).to.eq(BN_ZERO)
+  })
+
+  it('StuckToken can not be zero address', async () => {
+    await expect(wooStakingVault.connect(owner).inCaseTokensGetStuck(ZERO_ADDRESS)).to.be.revertedWith(
+      stuckTokenZeroAddressMessage
+    )
+  })
+
+  it('StuckToken can not be stakedToken', async () => {
+    let stakedToken = await wooStakingVault.stakedToken()
+    await expect(wooStakingVault.connect(owner).inCaseTokensGetStuck(stakedToken)).to.be.revertedWith(
+      stuckTokenCanNotBeStakedTokenMessage
     )
   })
 
