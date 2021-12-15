@@ -462,6 +462,20 @@ describe('WooPP Test Suite 1', () => {
         .withArgs(baseToken1.address, user1.address, 111)
     })
 
+    it('withdrawAll accuracy1', async () => {
+      expect(await baseToken1.balanceOf(owner.address)).to.eq(100)
+      expect(await baseToken1.balanceOf(wooPP.address)).to.eq(10000)
+      expect(await baseToken1.balanceOf(user1.address)).to.eq(0)
+      const userBalance = await baseToken1.balanceOf(user1.address)
+      console.log(userBalance)
+
+      await wooPP.withdrawAll(baseToken1.address, user1.address)
+
+      expect(await baseToken1.balanceOf(owner.address)).to.eq(100)
+      expect(await baseToken1.balanceOf(wooPP.address)).to.eq(0)
+      expect(await baseToken1.balanceOf(user1.address)).to.eq(userBalance.add(10000))
+    })
+
     it('withdrawAllToOwner accuracy1', async () => {
       expect(await baseToken1.balanceOf(owner.address)).to.eq(100)
       expect(await baseToken1.balanceOf(wooPP.address)).to.eq(10000)
