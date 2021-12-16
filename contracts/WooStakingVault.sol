@@ -197,8 +197,8 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     }
 
     function addReward(uint256 amount) external whenNotPaused {
+        // Note: this method is only for adding Woo reward. Users may not call this method to deposit woo token.
         require(amount > 0, "WooStakingVault: amount_CAN_NOT_BE_ZERO");
-        // only for reward, without mint xWOO
         uint256 balanceBefore = balance();
         uint256 sharePriceBefore = getPricePerFullShare();
         TransferHelper.safeTransferFrom(address(stakedToken), msg.sender, address(this), amount);

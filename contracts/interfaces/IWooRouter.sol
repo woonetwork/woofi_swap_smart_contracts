@@ -51,12 +51,13 @@ interface IWooRouter {
 
     event WooRouterSwap(
         SwapType swapType,
-        address fromToken,
-        address toToken,
+        address indexed fromToken,
+        address indexed toToken,
         uint256 fromAmount,
         uint256 toAmount,
         address from,
-        address to
+        address indexed to,
+        address rebateTo
     );
 
     event WooPoolChanged(address newPool);

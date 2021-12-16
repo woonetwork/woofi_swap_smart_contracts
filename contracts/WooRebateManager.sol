@@ -67,7 +67,7 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
 
     IWooPP private wooPP;
 
-    address public immutable quoteToken; // USDT
+    address public immutable override quoteToken; // USDT
     address public immutable rewardToken; // WOO
 
     IWooAccessManager public accessManager;
@@ -119,6 +119,9 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
         require(pendingRebate[msg.sender] > 0, 'WooRebateManager: NO_pending_rebate');
 
         uint256 quoteAmount = pendingRebate[msg.sender];
+        // Note: set the pending rebate early to make external interactions safe.
+        pendingRebate[msg.sender] = 0;
+
         uint256 balanceBefore = IERC20(rewardToken).balanceOf(address(this));
         TransferHelper.safeApprove(quoteToken, address(wooPP), quoteAmount);
         uint256 wooAmount = wooPP.sellQuote(rewardToken, quoteAmount, 0, address(this), address(0));
@@ -128,7 +131,7 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
         if (wooAmount > 0) {
             TransferHelper.safeTransfer(rewardToken, msg.sender, wooAmount);
         }
-        pendingRebate[msg.sender] = 0;
+
         emit ClaimReward(msg.sender, wooAmount);
     }
 

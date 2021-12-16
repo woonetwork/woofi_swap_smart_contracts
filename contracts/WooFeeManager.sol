@@ -64,7 +64,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     mapping(address => uint256) public override feeRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
     uint256 private vaultRewardRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
 
-    address public immutable quoteToken;
+    address public immutable override quoteToken;
     IWooRebateManager public rebateManager;
     IWooVaultManager public vaultManager;
     IWooAccessManager public accessManager;
@@ -121,14 +121,6 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         emit FeeRateUpdated(token, newFeeRate);
     }
 
-    function emergencyWithdraw(address token, address to) external onlyOwner {
-        require(token != address(0), 'WooFeeManager: token_ZERO_ADDR');
-        require(to != address(0), 'WooFeeManager: to_ZERO_ADDR');
-        uint256 amount = IERC20(token).balanceOf(address(this));
-        TransferHelper.safeTransfer(token, to, amount);
-        emit Withdraw(token, to, amount);
-    }
-
     function setRebateManager(address newRebateManager) external onlyAdmin {
         require(newRebateManager != address(0), 'WooFeeManager: rebateManager_ZERO_ADDR');
         rebateManager = IWooRebateManager(newRebateManager);
@@ -147,5 +139,13 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     function setAccessManager(address newAccessManager) external onlyOwner {
         require(newAccessManager != address(0), 'WooFeeManager: newAccessManager_ZERO_ADDR');
         accessManager = IWooAccessManager(newAccessManager);
+    }
+
+    function emergencyWithdraw(address token, address to) external onlyOwner {
+        require(token != address(0), 'WooFeeManager: token_ZERO_ADDR');
+        require(to != address(0), 'WooFeeManager: to_ZERO_ADDR');
+        uint256 amount = IERC20(token).balanceOf(address(this));
+        TransferHelper.safeTransfer(token, to, amount);
+        emit Withdraw(token, to, amount);
     }
 }
