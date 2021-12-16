@@ -475,6 +475,11 @@ describe('WooStakingVault Access Control & Require Check', () => {
   let newTreasuryZeroAddressMessage: string
   let initialWooAccessManagerZeroAddressMessage: string
   let newWooAccessManagerZeroAddressMessage: string
+  let depositAmountEqualToZeroMessage: string
+  let reserveWithdrawSharesEqualToZeroMessage: string
+  let withdrawWithdrawAmountEqualToZeroMessage: string
+  let instantWithdrawSharesEqualToZeroMessage: string
+  let addRewardAmountEqualToZeroMessage: string
   let sharesExceedBalanceMessage: string
   let nonContractAccountMessage: string
   let onlyOwnerRevertedMessage: string
@@ -507,6 +512,11 @@ describe('WooStakingVault Access Control & Require Check', () => {
     newTreasuryZeroAddressMessage = 'WooStakingVault: newTreasury_ZERO_ADDR'
     initialWooAccessManagerZeroAddressMessage = 'WooStakingVault: initialWooAccessManager_ZERO_ADDR'
     newWooAccessManagerZeroAddressMessage = 'WooStakingVault: newWooAccessManager_ZERO_ADDR'
+    depositAmountEqualToZeroMessage = 'WooStakingVault: amount_CAN_NOT_BE_ZERO'
+    reserveWithdrawSharesEqualToZeroMessage = 'WooStakingVault: shares_CAN_NOT_BE_ZERO'
+    withdrawWithdrawAmountEqualToZeroMessage = 'WooStakingVault: withdrawAmount_CAN_NOT_BE_ZERO'
+    instantWithdrawSharesEqualToZeroMessage = 'WooStakingVault: shares_CAN_NOT_BE_ZERO'
+    addRewardAmountEqualToZeroMessage = 'WooStakingVault: amount_CAN_NOT_BE_ZERO'
     sharesExceedBalanceMessage = 'WooStakingVault: shares exceed balance'
     nonContractAccountMessage = 'function call to a non-contract account'
     onlyOwnerRevertedMessage = 'Ownable: caller is not the owner'
@@ -534,6 +544,38 @@ describe('WooStakingVault Access Control & Require Check', () => {
     await expect(
       deployContract(owner, WooStakingVaultArtifact, [wooToken.address, treasury.address, ZERO_ADDRESS])
     ).to.be.revertedWith(initialWooAccessManagerZeroAddressMessage)
+  })
+
+  it('deposit will be reverted when amount equal to zero', async () => {
+    await expect(wooStakingVault.connect(user).deposit(BN_ZERO)).to.be.revertedWith(
+      depositAmountEqualToZeroMessage
+    )
+  })
+
+  it('reserveWithdraw will be reverted when shares equal to zero', async () => {
+    await expect(wooStakingVault.connect(user).reserveWithdraw(BN_ZERO)).to.be.revertedWith(
+      reserveWithdrawSharesEqualToZeroMessage
+    )
+  })
+
+  it('withdraw will be reverted when withdrawAmount equal to zero', async () => {
+    let [withdrawAmount] = await wooStakingVault.userInfo(user.address)
+    expect(withdrawAmount).to.eq(BN_ZERO)
+    await expect(wooStakingVault.connect(user).withdraw()).to.be.revertedWith(
+      withdrawWithdrawAmountEqualToZeroMessage
+    )
+  })
+
+  it('instantWithdraw will be reverted when shares equal to zero', async () => {
+    await expect(wooStakingVault.connect(user).instantWithdraw(BN_ZERO)).to.be.revertedWith(
+      instantWithdrawSharesEqualToZeroMessage
+    )
+  })
+
+  it('addReward will be reverted when amount equal to zero', async () => {
+    await expect(wooStakingVault.connect(user).addReward(BN_ZERO)).to.be.revertedWith(
+      addRewardAmountEqualToZeroMessage
+    )
   })
 
   it('reserveWithdraw shares exceed balance will be reverted', async () => {

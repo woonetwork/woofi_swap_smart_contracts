@@ -72,7 +72,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     /* ----- State variables ----- */
 
-    IERC20 public stakedToken;
+    IERC20 public immutable stakedToken;
     mapping(address => uint256) public costSharePrice;
     mapping(address => UserInfo) public userInfo;
 
@@ -111,6 +111,8 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     /* ----- External Functions ----- */
 
     function deposit(uint256 amount) external whenNotPaused {
+        require(amount > 0, 'WooStakingVault: amount_CAN_NOT_BE_ZERO');
+
         uint256 balanceBefore = balance();
         TransferHelper.safeTransferFrom(address(stakedToken), msg.sender, address(this), amount);
         uint256 balanceAfter = balance();
@@ -128,6 +130,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     }
 
     function reserveWithdraw(uint256 shares) external {
+        require(shares > 0, 'WooStakingVault: shares_CAN_NOT_BE_ZERO');
         require(shares <= balanceOf(msg.sender), 'WooStakingVault: shares exceed balance');
 
         uint256 currentReserveAmount = shares.mulFloor(getPricePerFullShare()); // calculate reserveAmount before _burn
@@ -151,6 +154,8 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         UserInfo storage user = userInfo[msg.sender];
 
         uint256 withdrawAmount = user.reserveAmount;
+        require(withdrawAmount > 0, "WooStakingVault: withdrawAmount_CAN_NOT_BE_ZERO");
+
         uint256 fee = 0;
         if (block.timestamp < user.lastReserveWithdrawTime.add(withdrawFeePeriod)) {
             fee = withdrawAmount.mul(withdrawFee).div(10000);
@@ -168,6 +173,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     }
 
     function instantWithdraw(uint256 shares) external {
+        require(shares > 0, "WooStakingVault: shares_CAN_NOT_BE_ZERO");
         require(shares <= balanceOf(msg.sender), 'WooStakingVault: shares exceed balance');
 
         uint256 withdrawAmount = shares.mulFloor(getPricePerFullShare());
@@ -191,6 +197,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     }
 
     function addReward(uint256 amount) external whenNotPaused {
+        require(amount > 0, "WooStakingVault: amount_CAN_NOT_BE_ZERO");
         // only for reward, without mint xWOO
         uint256 balanceBefore = balance();
         uint256 sharePriceBefore = getPricePerFullShare();
