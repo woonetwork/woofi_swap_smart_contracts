@@ -547,9 +547,7 @@ describe('WooStakingVault Access Control & Require Check', () => {
   })
 
   it('deposit will be reverted when amount equal to zero', async () => {
-    await expect(wooStakingVault.connect(user).deposit(BN_ZERO)).to.be.revertedWith(
-      depositAmountEqualToZeroMessage
-    )
+    await expect(wooStakingVault.connect(user).deposit(BN_ZERO)).to.be.revertedWith(depositAmountEqualToZeroMessage)
   })
 
   it('reserveWithdraw will be reverted when shares equal to zero', async () => {
@@ -561,9 +559,7 @@ describe('WooStakingVault Access Control & Require Check', () => {
   it('withdraw will be reverted when withdrawAmount equal to zero', async () => {
     let [withdrawAmount] = await wooStakingVault.userInfo(user.address)
     expect(withdrawAmount).to.eq(BN_ZERO)
-    await expect(wooStakingVault.connect(user).withdraw()).to.be.revertedWith(
-      withdrawWithdrawAmountEqualToZeroMessage
-    )
+    await expect(wooStakingVault.connect(user).withdraw()).to.be.revertedWith(withdrawWithdrawAmountEqualToZeroMessage)
   })
 
   it('instantWithdraw will be reverted when shares equal to zero', async () => {
@@ -573,9 +569,7 @@ describe('WooStakingVault Access Control & Require Check', () => {
   })
 
   it('addReward will be reverted when amount equal to zero', async () => {
-    await expect(wooStakingVault.connect(user).addReward(BN_ZERO)).to.be.revertedWith(
-      addRewardAmountEqualToZeroMessage
-    )
+    await expect(wooStakingVault.connect(user).addReward(BN_ZERO)).to.be.revertedWith(addRewardAmountEqualToZeroMessage)
   })
 
   it('reserveWithdraw shares exceed balance will be reverted', async () => {

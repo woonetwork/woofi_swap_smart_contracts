@@ -154,7 +154,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
         UserInfo storage user = userInfo[msg.sender];
 
         uint256 withdrawAmount = user.reserveAmount;
-        require(withdrawAmount > 0, "WooStakingVault: withdrawAmount_CAN_NOT_BE_ZERO");
+        require(withdrawAmount > 0, 'WooStakingVault: withdrawAmount_CAN_NOT_BE_ZERO');
 
         uint256 fee = 0;
         if (block.timestamp < user.lastReserveWithdrawTime.add(withdrawFeePeriod)) {
@@ -173,7 +173,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
     }
 
     function instantWithdraw(uint256 shares) external {
-        require(shares > 0, "WooStakingVault: shares_CAN_NOT_BE_ZERO");
+        require(shares > 0, 'WooStakingVault: shares_CAN_NOT_BE_ZERO');
         require(shares <= balanceOf(msg.sender), 'WooStakingVault: shares exceed balance');
 
         uint256 withdrawAmount = shares.mulFloor(getPricePerFullShare());
@@ -198,7 +198,7 @@ contract WooStakingVault is ERC20, Ownable, Pausable {
 
     function addReward(uint256 amount) external whenNotPaused {
         // Note: this method is only for adding Woo reward. Users may not call this method to deposit woo token.
-        require(amount > 0, "WooStakingVault: amount_CAN_NOT_BE_ZERO");
+        require(amount > 0, 'WooStakingVault: amount_CAN_NOT_BE_ZERO');
         uint256 balanceBefore = balance();
         uint256 sharePriceBefore = getPricePerFullShare();
         TransferHelper.safeTransferFrom(address(stakedToken), msg.sender, address(this), amount);
