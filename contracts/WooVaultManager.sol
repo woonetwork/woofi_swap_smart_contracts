@@ -51,7 +51,7 @@ import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/utils/EnumerableSet.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-contract WooVaultManager is InitializableOwnable, IWooVaultManager {
+contract WooVaultManager is InitializableOwnable, ReentrancyGuard, IWooVaultManager {
     using SafeMath for uint256;
     using DecimalMath for uint256;
     using SafeERC20 for IERC20;
@@ -97,7 +97,7 @@ contract WooVaultManager is InitializableOwnable, IWooVaultManager {
         return vaults;
     }
 
-    function addReward(uint256 amount) external override {
+    function addReward(uint256 amount) external override nonReentrant {
         if (amount == 0) {
             return;
         }

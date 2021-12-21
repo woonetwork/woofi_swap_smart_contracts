@@ -121,6 +121,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         _autoUpdate(baseToken, baseInfo, quoteInfo);
 
         quoteAmount = getQuoteAmountSellBase(baseToken, baseAmount, baseInfo, quoteInfo);
+        wooGuardian.checkSwapAmount(baseToken, quoteToken, baseAmount, quoteAmount);
         uint256 lpFee = quoteAmount.mulCeil(feeManager.feeRate(baseToken));
         quoteAmount = quoteAmount.sub(lpFee);
 
@@ -147,6 +148,7 @@ contract WooPP is InitializableOwnable, ReentrancyGuard, Pausable, IWooPP {
         uint256 lpFee = quoteAmount.mulCeil(feeManager.feeRate(baseToken));
         quoteAmount = quoteAmount.sub(lpFee);
         baseAmount = getBaseAmountSellQuote(baseToken, quoteAmount, baseInfo, quoteInfo);
+        wooGuardian.checkSwapAmount(quoteToken, baseToken, quoteAmount, baseAmount);
 
         require(baseAmount <= IERC20(baseToken).balanceOf(address(this)), 'WooPP: INSUFF_BASE');
     }
