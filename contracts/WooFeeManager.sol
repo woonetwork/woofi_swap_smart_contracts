@@ -93,7 +93,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
 
     /* ----- Public Functions ----- */
 
-    function collectFee(uint256 amount, address brokerAddr) external override {
+    function collectFee(uint256 amount, address brokerAddr) external override nonReentrant {
         TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amount);
 
         // Step 1: distribute rebate if needed

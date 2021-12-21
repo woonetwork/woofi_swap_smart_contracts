@@ -50,7 +50,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-contract WooRebateManager is InitializableOwnable, IWooRebateManager {
+contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateManager {
     using SafeMath for uint256;
     using DecimalMath for uint256;
     using SafeERC20 for IERC20;
@@ -92,7 +92,7 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
         accessManager = IWooAccessManager(newAccessManager);
     }
 
-    function addRebate(address brokerAddr, uint256 amountInUSDT) external override {
+    function addRebate(address brokerAddr, uint256 amountInUSDT) external override nonReentrant {
         if (brokerAddr == address(0)) {
             return;
         }
@@ -115,7 +115,7 @@ contract WooRebateManager is InitializableOwnable, IWooRebateManager {
         return wooPP.querySellQuote(rewardToken, pendingRebate[brokerAddr]);
     }
 
-    function claimRebate() external override {
+    function claimRebate() external override nonReentrant {
         require(pendingRebate[msg.sender] > 0, 'WooRebateManager: NO_pending_rebate');
 
         uint256 quoteAmount = pendingRebate[msg.sender];
