@@ -48,6 +48,12 @@ interface IWooracle {
     /// @return feasible whether the current price is feasible and valid
     function price(address base) external view returns (uint256 priceNow, bool feasible);
 
+    function getPrice(address base) external view returns (uint256);
+
+    function getSpread(address base) external view returns (uint256);
+
+    function getCoeff(address base) external view returns (uint256);
+
     /// @dev returns the state for the given base token.
     /// @param base baseToken address
     /// @return priceNow the current price of base token

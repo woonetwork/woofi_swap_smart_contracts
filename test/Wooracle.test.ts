@@ -45,6 +45,8 @@ use(solidity)
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 const BN_1e18 = BigNumber.from(10).pow(18)
 const BN_2e18 = BN_1e18.mul(2)
+const BN_1e8 = BigNumber.from(10).pow(8)
+const BN_2e8 = BN_1e8.mul(2)
 const ZERO = 0
 
 async function getCurrentBlockTimestamp() {
@@ -94,139 +96,154 @@ describe('Wooracle', () => {
   })
 
   it('postPrice', async () => {
-    expect(await wooracle.isValid(baseToken.address)).to.eq(false)
-    expect(await wooracle.prices(baseToken.address)).to.eq(ZERO)
+    let info = await wooracle.infos(baseToken.address)
+    expect(info.price).to.eq(ZERO)
 
-    await wooracle.postPrice(baseToken.address, BN_1e18)
+    await wooracle.postPrice(baseToken.address, BN_1e8)
     await checkWooracleTimestamp(wooracle)
-    expect(await wooracle.isValid(baseToken.address)).to.eq(true)
-    expect(await wooracle.prices(baseToken.address)).to.eq(BN_1e18)
+    info = await wooracle.infos(baseToken.address)
+    expect(info.price).to.eq(BN_1e8)
 
     await wooracle.postPrice(baseToken.address, ZERO)
     await checkWooracleTimestamp(wooracle)
-    expect(await wooracle.isValid(baseToken.address)).to.eq(false)
+    info = await wooracle.infos(baseToken.address)
+    expect(info.price).to.eq(ZERO)
   })
 
   it('postPriceList', async () => {
     let bases = [baseToken.address, anotherBaseToken.address]
-    let newPrices = [BN_1e18, BN_2e18]
+    let newPrices = [BN_1e8, BN_2e8]
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.isValid(bases[i])).to.eq(false)
-      expect(await wooracle.prices(bases[i])).to.eq(ZERO)
+      let info = await wooracle.infos(bases[i])
+      expect(info.price).to.eq(ZERO)
     }
 
     await wooracle.postPriceList(bases, newPrices)
     await checkWooracleTimestamp(wooracle)
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.isValid(bases[i])).to.eq(true)
-      expect(await wooracle.prices(bases[i])).to.eq(newPrices[i])
+      let info = await wooracle.infos(bases[i])
+      expect(info.price).to.eq(newPrices[i])
     }
 
     await wooracle.postPriceList(bases, [ZERO, ZERO])
     await checkWooracleTimestamp(wooracle)
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.isValid(bases[i])).to.eq(false)
+      let info = await wooracle.infos(bases[i])
+      expect(info.price).to.eq(ZERO)
     }
   })
 
   it('postPriceList reverted with length invalid', async () => {
     let bases = [baseToken.address, anotherBaseToken.address]
-    let newPrices = [BN_1e18, BN_2e18, BN_2e18]
+    let newPrices = [BN_1e8, BN_2e8, BN_2e8]
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.isValid(bases[i])).to.eq(false)
-      expect(await wooracle.prices(bases[i])).to.eq(ZERO)
+      let info = await wooracle.infos(bases[i])
+      expect(info.price).to.eq(ZERO)
     }
 
     await expect(wooracle.postPriceList(bases, newPrices)).to.be.revertedWith('Wooracle: length_INVALID')
   })
 
   it('postSpread', async () => {
-    expect(await wooracle.spreads(baseToken.address)).to.eq(ZERO)
-    await wooracle.postSpread(baseToken.address, BN_1e18)
+    let info = await wooracle.infos(baseToken.address)
+    expect(info.spread).to.eq(ZERO)
+    await wooracle.postSpread(baseToken.address, BN_1e8)
     await checkWooracleTimestamp(wooracle)
-    expect(await wooracle.spreads(baseToken.address)).to.eq(BN_1e18)
+    info = await wooracle.infos(baseToken.address)
+    expect(info.spread).to.eq(BN_1e8)
   })
 
   it('postSpreadList', async () => {
     let bases = [baseToken.address, anotherBaseToken.address]
-    let newSpreads = [BN_1e18, BN_2e18]
+    let newSpreads = [BN_1e8, BN_2e8]
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.spreads(bases[i])).to.eq(ZERO)
+      let info = await wooracle.infos(baseToken.address)
+      expect(info.spread).to.eq(ZERO)
     }
 
     await wooracle.postSpreadList(bases, newSpreads)
     await checkWooracleTimestamp(wooracle)
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.spreads(bases[i])).to.eq(newSpreads[i])
+      let info = await wooracle.infos(bases[i])
+      expect(info.spread).to.eq(newSpreads[i])
     }
   })
 
   it('postSpreadList reverted with length invalid', async () => {
     let bases = [baseToken.address, anotherBaseToken.address]
-    let newSpreads = [BN_1e18, BN_2e18, BN_2e18]
+    let newSpreads = [BN_1e8, BN_2e8, BN_2e8]
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.spreads(bases[i])).to.eq(ZERO)
+      let info = await wooracle.infos(baseToken.address)
+      expect(info.spread).to.eq(ZERO)
     }
 
     await expect(wooracle.postSpreadList(bases, newSpreads)).to.be.revertedWith('Wooracle: length_INVALID')
   })
 
   it('postState', async () => {
-    expect(await wooracle.prices(baseToken.address)).to.eq(ZERO)
-    expect(await wooracle.spreads(baseToken.address)).to.eq(ZERO)
-    expect(await wooracle.coeffs(baseToken.address)).to.eq(ZERO)
-    expect(await wooracle.isValid(baseToken.address)).to.eq(false)
+    const info = await wooracle.infos(baseToken.address)
+    expect(info.price).to.eq(ZERO)
+    expect(info.spread).to.eq(ZERO)
+    expect(info.coeff).to.eq(ZERO)
 
-    await wooracle.postState(baseToken.address, BN_1e18, BN_1e18, BN_1e18)
+    await wooracle.postState(baseToken.address, BN_2e8, BN_1e18, BN_1e18)
     await checkWooracleTimestamp(wooracle)
-    expect(await wooracle.prices(baseToken.address)).to.eq(BN_1e18)
-    expect(await wooracle.spreads(baseToken.address)).to.eq(BN_1e18)
-    expect(await wooracle.coeffs(baseToken.address)).to.eq(BN_1e18)
-    expect(await wooracle.isValid(baseToken.address)).to.eq(true)
 
-    await wooracle.postState(baseToken.address, ZERO, BN_1e18, BN_1e18)
+    const info2 = await wooracle.infos(baseToken.address)
+    expect(info2.price).to.eq(BN_2e8)
+    expect(info2.spread).to.eq(BN_1e18)
+    expect(info2.coeff).to.eq(BN_1e18)
+
+    let [priceNow, spreadNow, coeffNow, isfeasible] = await wooracle.state(baseToken.address)
+    expect(isfeasible).to.eq(true)
+    expect(priceNow).to.eq(BN_2e8)
+    expect(spreadNow).to.eq(BN_1e18)
+    expect(coeffNow).to.eq(BN_1e18)
+
+    await wooracle.postState(baseToken.address, ZERO, BN_1e8, BN_1e8)
     await checkWooracleTimestamp(wooracle)
-    expect(await wooracle.isValid(baseToken.address)).to.eq(false)
+    expect(await wooracle.isFeasible(baseToken.address)).to.eq(false)
   })
 
   it('postStateList', async () => {
     let bases = [baseToken.address, anotherBaseToken.address]
-    let newPrices = [BN_1e18, BN_2e18]
-    let newSpreads = [BN_1e18, BN_2e18]
-    let newCoeffs = [BN_1e18, BN_2e18]
+    let newPrices = [BN_1e8, BN_2e8]
+    let newSpreads = [BN_1e8, BN_2e8]
+    let newCoeffs = [BN_1e8, BN_2e8]
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.prices(bases[i])).to.eq(ZERO)
-      expect(await wooracle.spreads(bases[i])).to.eq(ZERO)
-      expect(await wooracle.coeffs(bases[i])).to.eq(ZERO)
-      expect(await wooracle.isValid(bases[i])).to.eq(false)
+      let info = await wooracle.infos(bases[i])
+      expect(info.price).to.eq(ZERO)
+      expect(info.spread).to.eq(ZERO)
+      expect(info.coeff).to.eq(ZERO)
     }
 
     await wooracle.postStateList(bases, newPrices, newSpreads, newCoeffs)
     await checkWooracleTimestamp(wooracle)
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.prices(bases[i])).to.eq(newPrices[i])
-      expect(await wooracle.spreads(bases[i])).to.eq(newSpreads[i])
-      expect(await wooracle.coeffs(bases[i])).to.eq(newCoeffs[i])
-      expect(await wooracle.isValid(bases[i])).to.eq(true)
+      let info = await wooracle.infos(bases[i])
+      expect(info.price).to.eq(newPrices[i])
+      expect(info.spread).to.eq(newSpreads[i])
+      expect(info.coeff).to.eq(newCoeffs[i])
     }
 
     await wooracle.postStateList(bases, [ZERO, ZERO], newSpreads, newCoeffs)
     await checkWooracleTimestamp(wooracle)
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.isValid(bases[i])).to.eq(false)
+      let info = await wooracle.infos(bases[i])
+      expect(info.price).to.eq(ZERO)
     }
   })
 
   it('postStateList reverted with length invalid', async () => {
     let bases = [baseToken.address, anotherBaseToken.address]
-    let newPrices = [BN_1e18, BN_2e18, BN_2e18]
-    let newSpreads = [BN_1e18, BN_2e18]
-    let newCoeffs = [BN_1e18, BN_2e18]
+    let newPrices = [BN_1e8, BN_2e8, BN_2e8]
+    let newSpreads = [BN_1e8, BN_2e8]
+    let newCoeffs = [BN_1e8, BN_2e8]
     for (let i = 0; i < bases.length; i += 1) {
-      expect(await wooracle.prices(bases[i])).to.eq(ZERO)
-      expect(await wooracle.spreads(bases[i])).to.eq(ZERO)
-      expect(await wooracle.coeffs(bases[i])).to.eq(ZERO)
-      expect(await wooracle.isValid(bases[i])).to.eq(false)
+      let info = await wooracle.infos(bases[i])
+      expect(info.price).to.eq(ZERO)
+      expect(info.spread).to.eq(ZERO)
+      expect(info.coeff).to.eq(ZERO)
     }
 
     await expect(wooracle.postStateList(bases, newPrices, newSpreads, newCoeffs)).to.be.revertedWith(
@@ -235,17 +252,17 @@ describe('Wooracle', () => {
   })
 
   it('price function', async () => {
-    await wooracle.postPrice(baseToken.address, BN_1e18)
+    await wooracle.postPrice(baseToken.address, BN_2e18)
     let [priceNow, isfeasible] = await wooracle.price(baseToken.address)
     expect(isfeasible).to.eq(true)
-    expect(priceNow).to.eq(BN_1e18)
+    expect(priceNow).to.eq(BN_2e18)
   })
 
   it('state function', async () => {
-    await wooracle.postState(baseToken.address, BN_1e18, BN_1e18, BN_1e18)
+    await wooracle.postState(baseToken.address, BN_1e8, BN_1e18, BN_1e18)
     let [priceNow, spreadNow, coeffNow, isfeasible] = await wooracle.state(baseToken.address)
     expect(isfeasible).to.eq(true)
-    expect(priceNow).to.eq(BN_1e18)
+    expect(priceNow).to.eq(BN_1e8)
     expect(spreadNow).to.eq(BN_1e18)
     expect(coeffNow).to.eq(BN_1e18)
   })
