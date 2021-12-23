@@ -42,13 +42,14 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 /// @title Wooracle implementation
 /// @notice Will be maintained and updated periodically by Woo.network in multichains.
 contract Wooracle is InitializableOwnable, IWooracle {
+
     /* ----- State variables ----- */
 
     // 128 + 64 + 64 = 256 bits (slot size)
     struct TokenInfo {
-        uint128 price; // 18 - base_decimal + quote_decimal
-        uint64 coeff; // 18. coeff <= 1e18    (2^64 = 1.84e19)
-        uint64 spread; // 18. spread <= 2e18   (2^64 = 1.84e19)
+        uint128 price;  // 18 - base_decimal + quote_decimal
+        uint64 coeff;   // 18. coeff <= 1e18    (2^64 = 1.84e19)
+        uint64 spread;  // 18. spread <= 2e18   (2^64 = 1.84e19)
     }
 
     mapping(address => TokenInfo) public infos;
@@ -162,7 +163,9 @@ contract Wooracle is InitializableOwnable, IWooracle {
     /// @inheritdoc IWooracle
     function price(address base) external view override returns (uint256 priceNow, bool feasible) {
         priceNow = uint256(infos[base].price);
-        feasible = priceNow != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
+        feasible =
+            priceNow != 0 &&
+            block.timestamp <= (timestamp + staleDuration * 1 seconds);
     }
 
     function getPrice(address base) external view override returns (uint256) {
@@ -193,11 +196,15 @@ contract Wooracle is InitializableOwnable, IWooracle {
         priceNow = uint256(info.price);
         spreadNow = uint256(info.spread);
         coeffNow = uint256(info.coeff);
-        feasible = priceNow != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
+        feasible =
+            priceNow != 0 &&
+            block.timestamp <= (timestamp + staleDuration * 1 seconds);
     }
 
     function isFeasible(address base) public view override returns (bool) {
-        return infos[base].price != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
+        return
+            infos[base].price != 0 &&
+            block.timestamp <= (timestamp + staleDuration * 1 seconds);
     }
 
     /* ----- Private Functions ----- */

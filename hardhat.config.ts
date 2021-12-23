@@ -75,4 +75,9 @@ export default {
   mocha: {
     timeout: 10000,
   },
+  gasReporter: {
+    currency: 'BNB',
+    enabled: true,
+    gasPrice: 5
+  },
 }
