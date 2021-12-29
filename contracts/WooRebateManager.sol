@@ -92,19 +92,6 @@ contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateMa
         accessManager = IWooAccessManager(newAccessManager);
     }
 
-    function addRebate(address brokerAddr, uint256 amountInUSDT) external override nonReentrant {
-        if (brokerAddr == address(0)) {
-            return;
-        }
-
-        uint256 balanceBefore = IERC20(quoteToken).balanceOf(address(this));
-        TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amountInUSDT);
-        uint256 balanceAfter = IERC20(quoteToken).balanceOf(address(this));
-        require(balanceAfter.sub(balanceBefore) >= amountInUSDT, 'RebateManager: amount < balance delta');
-
-        pendingRebate[brokerAddr] = amountInUSDT.add(pendingRebate[brokerAddr]);
-    }
-
     function pendingRebateInUSDT(address brokerAddr) external view override returns (uint256) {
         require(brokerAddr != address(0), 'WooRebateManager: zero_brokerAddr');
         return pendingRebate[brokerAddr];
@@ -136,6 +123,13 @@ contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateMa
     }
 
     /* ----- Admin Functions ----- */
+
+    function addRebate(address brokerAddr, uint256 amountInUSDT) external override nonReentrant onlyAdmin {
+        if (brokerAddr == address(0)) {
+            return;
+        }
+        pendingRebate[brokerAddr] = amountInUSDT.add(pendingRebate[brokerAddr]);
+    }
 
     function setRebateRate(address brokerAddr, uint256 rate) external override onlyAdmin {
         require(brokerAddr != address(0), 'WooRebateManager: brokerAddr_ZERO_ADDR');

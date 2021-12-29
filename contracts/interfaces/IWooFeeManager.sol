@@ -63,4 +63,7 @@ interface IWooFeeManager {
     /// @dev get the quote token address
     /// @return address of quote token
     function quoteToken() external view returns (address);
+
+    /// @dev Collects the fee and distribute to rebate and vault managers.
+    function distributeFees() external;
 }

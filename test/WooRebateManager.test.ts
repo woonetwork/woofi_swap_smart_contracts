@@ -174,8 +174,8 @@ describe('WooRebateManager', () => {
 
       expect(await rebateManager.pendingRebateInUSDT(broker.address)).to.equal(rebateAmount)
 
-      expect(await usdtToken.balanceOf(owner.address)).to.equal(1000 - rebateAmount)
-      expect(await usdtToken.balanceOf(rebateManager.address)).to.equal(rebateAmount)
+      expect(await usdtToken.balanceOf(owner.address)).to.equal(1000)
+      expect(await usdtToken.balanceOf(rebateManager.address)).to.equal(0)
       expect(await usdtToken.balanceOf(broker.address)).to.equal(0)
     })
 

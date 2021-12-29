@@ -62,12 +62,16 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     /* ----- State variables ----- */
 
     mapping(address => uint256) public override feeRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
-    uint256 private vaultRewardRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
+    uint256 public vaultRewardRate; // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
+
+    uint256 public rebateAmount;
 
     address public immutable override quoteToken;
     IWooRebateManager public rebateManager;
     IWooVaultManager public vaultManager;
     IWooAccessManager public accessManager;
+
+    address public treasury;
 
     /* ----- Modifiers ----- */
 
@@ -80,7 +84,8 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         address newQuoteToken,
         address newRebateManager,
         address newVaultManager,
-        address newAccessManager
+        address newAccessManager,
+        address newTreasury
     ) public {
         require(newQuoteToken != address(0), 'WooFeeManager: quoteToken_ZERO_ADDR');
         initOwner(msg.sender);
@@ -89,31 +94,50 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         vaultManager = IWooVaultManager(newVaultManager);
         vaultRewardRate = 1e18;
         accessManager = IWooAccessManager(newAccessManager);
+        treasury = newTreasury;
     }
 
     /* ----- Public Functions ----- */
 
     function collectFee(uint256 amount, address brokerAddr) external override nonReentrant {
         TransferHelper.safeTransferFrom(quoteToken, msg.sender, address(this), amount);
-
-        // Step 1: distribute rebate if needed
         uint256 rebateRate = rebateManager.rebateRate(brokerAddr);
-        uint256 rebateAmount = amount.mulFloor(rebateRate);
-        if (rebateAmount > 0) {
-            TransferHelper.safeApprove(quoteToken, address(rebateManager), rebateAmount);
-            rebateManager.addRebate(brokerAddr, rebateAmount);
-        }
-        uint256 feeAfterRebate = amount.sub(rebateAmount);
-
-        // Step 2: distribute to vault treasury
-        uint256 vaultRewardAmount = feeAfterRebate.mulFloor(vaultRewardRate);
-        if (vaultRewardAmount > 0) {
-            TransferHelper.safeApprove(quoteToken, address(vaultManager), vaultRewardAmount);
-            vaultManager.addReward(vaultRewardAmount);
+        if (rebateRate > 0) {
+            uint256 curRebateAmount = amount.mulFloor(rebateRate);
+            rebateManager.addRebate(brokerAddr, curRebateAmount);
+            rebateAmount = rebateAmount.add(curRebateAmount);
         }
     }
 
     /* ----- Admin Functions ----- */
+
+    function distributeFees() external override nonReentrant onlyAdmin {
+        uint256 balance = IERC20(quoteToken).balanceOf(address(this));
+        require(balance > 0, 'WooFeeManager: balance_ZERO');
+
+        // Step 1: distribute the rebate balance
+        if (rebateAmount > 0) {
+            TransferHelper.safeApprove(quoteToken, address(rebateManager), rebateAmount);
+            TransferHelper.safeTransfer(quoteToken, address(rebateManager), rebateAmount);
+
+            balance = balance.sub(rebateAmount);
+            rebateAmount = 0;
+        }
+
+        // Step 2: distribute the vault balance
+        uint256 vaultAmount = balance.mulFloor(vaultRewardRate);
+        if (vaultAmount > 0) {
+            TransferHelper.safeApprove(quoteToken, address(vaultManager), vaultAmount);
+            TransferHelper.safeTransfer(quoteToken, address(vaultManager), vaultAmount);
+            balance = balance.sub(vaultAmount);
+        }
+
+        // Step 3: balance left for treasury
+        if (balance > 0) {
+            TransferHelper.safeApprove(quoteToken, treasury, balance);
+            TransferHelper.safeTransfer(quoteToken, treasury, balance);
+        }
+    }
 
     function setFeeRate(address token, uint256 newFeeRate) external override onlyAdmin {
         require(newFeeRate <= 1e16, 'WooFeeManager: FEE_RATE>1%');
@@ -139,6 +163,11 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     function setAccessManager(address newAccessManager) external onlyOwner {
         require(newAccessManager != address(0), 'WooFeeManager: newAccessManager_ZERO_ADDR');
         accessManager = IWooAccessManager(newAccessManager);
+    }
+
+    function setTreasury(address newTreasury) external onlyOwner {
+        require(newTreasury != address(0), 'WooFeeManager: newTreasury_ZERO_ADDR');
+        treasury = newTreasury;
     }
 
     function emergencyWithdraw(address token, address to) external onlyOwner {

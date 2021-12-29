@@ -44,8 +44,10 @@ import { WSAECONNABORTED } from 'constants'
 import { BigNumberish } from '@ethersproject/bignumber'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
-import { WooFeeManager, IERC20, WooRebateManager, WooAccessManager } from '../typechain'
+import { WooFeeManager, IERC20, WooRebateManager, WooAccessManager, WooVaultManager } from '../typechain'
 import WooFeeManagerArtifact from '../artifacts/contracts/WooFeeManager.sol/WooFeeManager.json'
+import WooVaultManagerArtifact from '../artifacts/contracts/WooVaultManager.sol/WooVaultManager.json'
+import WooRebateManagerArtifact from '../artifacts/contracts/WooRebateManager.sol/WooRebateManager.json'
 import WooAccessManagerArtifact from '../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json'
 
 use(solidity)
@@ -70,38 +72,39 @@ describe('WooFeeManager Info', () => {
   let owner: SignerWithAddress
   let user1: SignerWithAddress
   let broker: SignerWithAddress
+  let treasury: SignerWithAddress
 
   let feeManager: WooFeeManager
   let btcToken: Contract
   let usdtToken: Contract
-  let wooPP: Contract
+  let wooToken: Contract
   let rebateManager: Contract
   let vaultManager: Contract
   let wooAccessManager: Contract
 
+
   before('Deploy ERC20', async () => {
-    ;[owner, user1, broker] = await ethers.getSigners()
+    ;[owner, user1, broker, treasury] = await ethers.getSigners()
     btcToken = await deployContract(owner, TestToken, [])
     usdtToken = await deployContract(owner, TestToken, [])
+    wooToken = await deployContract(owner, TestToken, [])
 
     rebateManager = await deployMockContract(owner, IWooRebateManager.abi)
     await rebateManager.mock.rebateRate.returns(REBATE_RATE)
     await rebateManager.mock.addRebate.returns()
 
     vaultManager = await deployMockContract(owner, IWooVaultManager.abi)
-    await vaultManager.mock.addReward.returns()
-
     wooAccessManager = await deployMockContract(owner, IWooFeeManager.abi)
   })
 
   describe('ctor, init & basic func', () => {
     beforeEach('Deploy WooFeeManager', async () => {
-      wooPP = await deployMockContract(owner, IWooPP.abi)
       feeManager = (await deployContract(owner, WooFeeManagerArtifact, [
         usdtToken.address,
         rebateManager.address,
         vaultManager.address,
         wooAccessManager.address,
+        treasury.address
       ])) as WooFeeManager
     })
 
@@ -130,12 +133,12 @@ describe('WooFeeManager Info', () => {
     beforeEach('deploy WooFeeManager', async () => {
       quoteToken = await deployContract(owner, TestToken, [])
 
-      wooPP = await deployMockContract(owner, IWooPP.abi)
       feeManager = (await deployContract(owner, WooFeeManagerArtifact, [
         usdtToken.address,
         rebateManager.address,
         vaultManager.address,
         wooAccessManager.address,
+        treasury.address
       ])) as WooFeeManager
 
       await quoteToken.mint(feeManager.address, 30000)
@@ -172,21 +175,30 @@ describe('WooFeeManager Info', () => {
     })
   })
 
-  describe('collectFee', () => {
+  describe('collectFee & Distribute', () => {
+
     beforeEach('deploy WooFeeManager', async () => {
-      wooPP = await deployMockContract(owner, IWooPP.abi)
+      rebateManager = (await deployContract(owner, WooRebateManagerArtifact, [
+        usdtToken.address,
+        wooToken.address,
+        wooAccessManager.address,
+      ])) as WooRebateManager
+
+      vaultManager = (await deployContract(owner, WooVaultManagerArtifact, [
+        usdtToken.address,
+        wooToken.address,
+        wooAccessManager.address,
+      ])) as WooVaultManager
 
       feeManager = (await deployContract(owner, WooFeeManagerArtifact, [
         usdtToken.address,
         rebateManager.address,
         vaultManager.address,
         wooAccessManager.address,
+        treasury.address
       ])) as WooFeeManager
 
-      feeManager.setRebateManager(rebateManager.address)
-      feeManager.setVaultManager(vaultManager.address)
-
-      await usdtToken.mint(feeManager.address, 30000)
+      await usdtToken.mint(feeManager.address, 1000)
       await usdtToken.mint(owner.address, 100000)
     })
 
@@ -197,17 +209,62 @@ describe('WooFeeManager Info', () => {
       const vaultManagerBalance = await usdtToken.balanceOf(vaultManager.address)
       const brokerBalance = await usdtToken.balanceOf(broker.address)
 
-      expect(ownerBalance).to.equal(100000)
-      expect(feeManagerBalance).to.equal(30000)
-      expect(rebateManagerBalance).to.equal(0)
-      expect(vaultManagerBalance).to.equal(0)
-      expect(brokerBalance).to.equal(0)
+      await usdtToken.approve(feeManager.address, 100)
+      await feeManager.collectFee(100, broker.address)
+
+      expect(await usdtToken.balanceOf(owner.address)).to.eq(ownerBalance.sub(100))
+      expect(await usdtToken.balanceOf(feeManager.address)).to.eq(feeManagerBalance.add(100))
+    })
+
+    it('distribute fee accuracy1', async () => {
+      const ownerBalance = await usdtToken.balanceOf(owner.address)
+      const feeManagerBalance = await usdtToken.balanceOf(feeManager.address)
+      const rebateManagerBalance = await usdtToken.balanceOf(rebateManager.address)
+      const vaultManagerBalance = await usdtToken.balanceOf(vaultManager.address)
+      const brokerBalance = await usdtToken.balanceOf(broker.address)
 
       await usdtToken.approve(feeManager.address, 100)
       await feeManager.collectFee(100, broker.address)
 
       expect(await usdtToken.balanceOf(owner.address)).to.eq(ownerBalance.sub(100))
       expect(await usdtToken.balanceOf(feeManager.address)).to.eq(feeManagerBalance.add(100))
+
+      await usdtToken.approve(feeManager.address, 300)
+      await feeManager.collectFee(300, broker.address)
+
+      expect(await usdtToken.balanceOf(owner.address)).to.eq(ownerBalance.sub(400))
+      expect(await usdtToken.balanceOf(feeManager.address)).to.eq(feeManagerBalance.add(400))
+
+      await feeManager.distributeFees()
+
+      expect(await usdtToken.balanceOf(vaultManager.address)).to.eq(vaultManagerBalance.add(1400))
+      expect(await usdtToken.balanceOf(treasury.address)).to.eq(0)
+    })
+
+    it('distribute fee accuracy2', async () => {
+      const ownerBalance = await usdtToken.balanceOf(owner.address)
+      const feeManagerBalance = await usdtToken.balanceOf(feeManager.address)
+      const rebateManagerBalance = await usdtToken.balanceOf(rebateManager.address)
+      const vaultManagerBalance = await usdtToken.balanceOf(vaultManager.address)
+      const brokerBalance = await usdtToken.balanceOf(broker.address)
+
+      await usdtToken.approve(feeManager.address, 100)
+      await feeManager.collectFee(100, broker.address)
+
+      expect(await usdtToken.balanceOf(owner.address)).to.eq(ownerBalance.sub(100))
+      expect(await usdtToken.balanceOf(feeManager.address)).to.eq(feeManagerBalance.add(100))
+
+      await usdtToken.approve(feeManager.address, 300)
+      await feeManager.collectFee(300, broker.address)
+
+      expect(await usdtToken.balanceOf(owner.address)).to.eq(ownerBalance.sub(400))
+      expect(await usdtToken.balanceOf(feeManager.address)).to.eq(feeManagerBalance.add(400))
+
+      await feeManager.setVaultRewardRate(utils.parseEther('0.8'))
+      await feeManager.distributeFees()
+
+      expect(await usdtToken.balanceOf(vaultManager.address)).to.eq(vaultManagerBalance.add(1400 * 0.8))
+      expect(await usdtToken.balanceOf(treasury.address)).to.eq(1400 * 0.2)
     })
   })
 })
@@ -216,6 +273,7 @@ describe('WooFeeManager Access Control', () => {
   let owner: SignerWithAddress
   let admin: SignerWithAddress
   let user: SignerWithAddress
+  let treasury: SignerWithAddress
 
   let wooFeeManager: WooFeeManager
   let token: Contract
@@ -232,7 +290,7 @@ describe('WooFeeManager Access Control', () => {
   let mintToken = BigNumber.from(30000)
 
   before(async () => {
-    ;[owner, admin, user, rebateManager, newRebateManager, vaultManager, newVaultManager] = await ethers.getSigners()
+    ;[owner, admin, user, rebateManager, newRebateManager, vaultManager, newVaultManager, treasury] = await ethers.getSigners()
     token = await deployContract(owner, TestToken, [])
     wooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
     await wooAccessManager.setFeeAdmin(admin.address, true)
@@ -243,6 +301,7 @@ describe('WooFeeManager Access Control', () => {
       rebateManager.address,
       vaultManager.address,
       wooAccessManager.address,
+      treasury.address
     ])) as WooFeeManager
 
     await token.mint(wooFeeManager.address, mintToken)
