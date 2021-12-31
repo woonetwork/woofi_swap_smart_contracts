@@ -78,6 +78,6 @@ export default {
   gasReporter: {
     currency: 'BNB',
     enabled: true,
-    gasPrice: 5
+    gasPrice: 5,
   },
 }
