@@ -82,7 +82,6 @@ describe('WooFeeManager Info', () => {
   let vaultManager: Contract
   let wooAccessManager: Contract
 
-
   before('Deploy ERC20', async () => {
     ;[owner, user1, broker, treasury] = await ethers.getSigners()
     btcToken = await deployContract(owner, TestToken, [])
@@ -104,7 +103,7 @@ describe('WooFeeManager Info', () => {
         rebateManager.address,
         vaultManager.address,
         wooAccessManager.address,
-        treasury.address
+        treasury.address,
       ])) as WooFeeManager
     })
 
@@ -138,7 +137,7 @@ describe('WooFeeManager Info', () => {
         rebateManager.address,
         vaultManager.address,
         wooAccessManager.address,
-        treasury.address
+        treasury.address,
       ])) as WooFeeManager
 
       await quoteToken.mint(feeManager.address, 30000)
@@ -176,7 +175,6 @@ describe('WooFeeManager Info', () => {
   })
 
   describe('collectFee & Distribute', () => {
-
     beforeEach('deploy WooFeeManager', async () => {
       rebateManager = (await deployContract(owner, WooRebateManagerArtifact, [
         usdtToken.address,
@@ -195,7 +193,7 @@ describe('WooFeeManager Info', () => {
         rebateManager.address,
         vaultManager.address,
         wooAccessManager.address,
-        treasury.address
+        treasury.address,
       ])) as WooFeeManager
 
       await usdtToken.mint(feeManager.address, 1000)
@@ -290,7 +288,8 @@ describe('WooFeeManager Access Control', () => {
   let mintToken = BigNumber.from(30000)
 
   before(async () => {
-    ;[owner, admin, user, rebateManager, newRebateManager, vaultManager, newVaultManager, treasury] = await ethers.getSigners()
+    ;[owner, admin, user, rebateManager, newRebateManager, vaultManager, newVaultManager, treasury] =
+      await ethers.getSigners()
     token = await deployContract(owner, TestToken, [])
     wooAccessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
     await wooAccessManager.setFeeAdmin(admin.address, true)
@@ -301,7 +300,7 @@ describe('WooFeeManager Access Control', () => {
       rebateManager.address,
       vaultManager.address,
       wooAccessManager.address,
-      treasury.address
+      treasury.address,
     ])) as WooFeeManager
 
     await token.mint(wooFeeManager.address, mintToken)

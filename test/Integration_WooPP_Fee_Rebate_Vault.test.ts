@@ -146,7 +146,7 @@ describe('Rebate Fee Vault Integration Test', () => {
       rebateManager.address,
       vaultManager.address,
       accessManager.address,
-      treasury.address
+      treasury.address,
     ])) as WooFeeManager
 
     wooPP = (await deployContract(owner, WooPPArtifact, [
