@@ -2,12 +2,12 @@
 pragma solidity 0.6.12;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import "./interfaces/IVault.sol";
-import "./interfaces/IStrategy.sol";
+import './interfaces/IVault.sol';
+import './interfaces/IStrategy.sol';
 
 contract Controller is Ownable {
     using SafeERC20 for IERC20;
@@ -16,10 +16,10 @@ contract Controller is Ownable {
 
     address public governance;
     address public strategist;
-    
-    mapping (address => address) public vaults;
-    mapping (address => address) public strategies;
-    
+
+    mapping(address => address) public vaults;
+    mapping(address => address) public strategies;
+
     constructor() public {
         governance = owner();
         strategist = owner();
@@ -63,20 +63,20 @@ contract Controller is Ownable {
     }
 
     /* ----- Admin Functions ----- */
-    
+
     function setVault(address want, address vault) external onlyStrategist {
         require(vaults[want] == address(0), 'Controller: exist_vault');
         require(IVault(vault).want() == want, 'Controller: want_not_equal');
 
         vaults[want] = vault;
     }
-    
+
     function setStrategy(address want, address strategy) external onlyStrategist {
         require(IStrategy(strategy).want() == want, 'Controller: want_not_equal');
-        
+
         address currentStrategy = strategies[want];
         if (currentStrategy != address(0)) {
-           IStrategy(currentStrategy).withdrawAll();
+            IStrategy(currentStrategy).withdrawAll();
         }
         strategies[want] = strategy;
     }
@@ -86,7 +86,7 @@ contract Controller is Ownable {
 
         IStrategy(strategies[want]).withdrawAll();
     }
-    
+
     function inCaseTokensGetStuck(address token, uint256 amount) external onlyStrategist {
         TransferHelper.safeTransfer(token, msg.sender, amount);
     }

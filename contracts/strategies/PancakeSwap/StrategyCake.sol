@@ -2,14 +2,14 @@
 pragma solidity 0.6.12;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import "../../interfaces/IController.sol";
-import "../../interfaces/PancakeSwap/IMasterChef.sol";
+import '../../interfaces/IController.sol';
+import '../../interfaces/PancakeSwap/IMasterChef.sol';
 
 contract StrategyCake is Ownable {
     using SafeERC20 for IERC20;
@@ -29,12 +29,12 @@ contract StrategyCake is Ownable {
     address public constant masterChef = 0x73feaa1eE314F8c655E354234017bE2193C9E24E;
     address public constant want = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
 
-    constructor (address controller) public {
+    constructor(address controller) public {
         require(pool.poolInfo(0).want == want, 'StrategyCake: want_not_equal');
 
         controller = controller;
         IERC20(want).safeApprove(address(pool), 0);
-        IERC20(want).safeApprove(address(pool), uint(-1));
+        IERC20(want).safeApprove(address(pool), uint256(-1));
     }
 
     /* ----- External Functions ----- */

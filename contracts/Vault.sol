@@ -2,16 +2,16 @@
 pragma solidity 0.6.12;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import "./interfaces/IController.sol";
-import "./interfaces/IStrategy.sol";
-import "./interfaces/IWETH.sol";
+import './interfaces/IController.sol';
+import './interfaces/IStrategy.sol';
+import './interfaces/IWETH.sol';
 
 contract Vault is ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -22,16 +22,19 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
     IERC20 public immutable want;
     IController public controller;
 
-    mapping (address => uint256) public costSharePrice;
+    mapping(address => uint256) public costSharePrice;
 
     /* ----- Constant Variables ----- */
 
     address public constant wrapped = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
-    constructor (address initialWant, address initialController) public ERC20(
-        string(abi.encodePacked('Interest Bearing ', ERC20(initialWant).name())),
-        string(abi.encodePacked('x', ERC20(initialWant).symbol()))
-    ) {
+    constructor(address initialWant, address initialController)
+        public
+        ERC20(
+            string(abi.encodePacked('Interest Bearing ', ERC20(initialWant).name())),
+            string(abi.encodePacked('x', ERC20(initialWant).symbol()))
+        )
+    {
         require(initialWant != address(0), 'Vault: initialWant_ZERO_ADDR');
         require(initialController != address(0), 'Vault: initialController_ZERO_ADDR');
 
@@ -152,5 +155,5 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
         TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
     }
 
-    receive() payable external {}
+    receive() external payable {}
 }
