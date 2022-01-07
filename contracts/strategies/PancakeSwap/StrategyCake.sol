@@ -29,7 +29,7 @@ contract StrategyCake is Ownable, Pausable {
     address public constant masterChef = 0x73feaa1eE314F8c655E354234017bE2193C9E24E;
     address public constant want = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
 
-    constructor (address initialController) public {
+    constructor(address initialController) public {
         require(initialController != address(0), 'StrategyCake: initialController_ZERO_ADDR');
 
         controller = initialController;
