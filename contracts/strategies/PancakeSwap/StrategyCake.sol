@@ -11,7 +11,7 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 import '../../interfaces/IController.sol';
 import '../../interfaces/PancakeSwap/IMasterChef.sol';
 
-contract StrategyCake is Ownable {
+contract StrategyCake is Ownable, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -29,12 +29,12 @@ contract StrategyCake is Ownable {
     address public constant masterChef = 0x73feaa1eE314F8c655E354234017bE2193C9E24E;
     address public constant want = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
 
-    constructor(address controller) public {
-        require(pool.poolInfo(0).want == want, 'StrategyCake: want_not_equal');
+    constructor (address initialController) public {
+        require(initialController != address(0), 'StrategyCake: initialController_ZERO_ADDR');
 
-        controller = controller;
-        IERC20(want).safeApprove(address(pool), 0);
-        IERC20(want).safeApprove(address(pool), uint256(-1));
+        controller = initialController;
+        TransferHelper.safeApprove(want, masterChef, 0);
+        TransferHelper.safeApprove(want, masterChef, uint256(-1));
     }
 
     /* ----- External Functions ----- */
@@ -139,7 +139,7 @@ contract StrategyCake is Ownable {
     }
 
     function setController(address newController) external onlyOwner {
-        require(newGovernance != address(0), 'StrategyCake: newController_ZERO_ADDR');
+        require(newController != address(0), 'StrategyCake: newController_ZERO_ADDR');
 
         controller = newController;
     }

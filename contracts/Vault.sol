@@ -64,7 +64,7 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
             require(msg.value == 0, 'Vault: msg.value_not_equal_to_zero');
         }
 
-        IStrategy(controller.strategies(want)).beforeDeposit();
+        IStrategy(controller.strategies(address(want))).beforeDeposit();
 
         uint256 balanceBefore = want.balanceOf(address(this));
         if (msg.value > 0) {
