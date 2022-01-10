@@ -13,7 +13,7 @@ import '../../interfaces/PancakeSwap/IMasterChef.sol';
 import '../../interfaces/PancakeSwap/IPancakePair.sol';
 import '../../interfaces/PancakeSwap/IPancakeRouter.sol';
 
-contract StrategyLP is Ownable, Pausable{
+contract StrategyLP is Ownable, Pausable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 

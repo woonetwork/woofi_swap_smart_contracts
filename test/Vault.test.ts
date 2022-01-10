@@ -32,9 +32,9 @@
 */
 
 import { expect, use } from 'chai'
-import {BigNumber, Contract} from 'ethers'
+import { BigNumber, Contract } from 'ethers'
 import { ethers } from 'hardhat'
-import {deployContract, deployMockContract, solidity} from 'ethereum-waffle'
+import { deployContract, deployMockContract, solidity } from 'ethereum-waffle'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { TestToken, Vault, Controller } from '../typechain'
 import TestTokenArtifact from '../artifacts/contracts/test/TestErc20Token.sol/TestToken.json'
@@ -111,7 +111,7 @@ describe('Vault Normal Accuracy', () => {
     expect(await want.balanceOf(controller.address)).to.eq(BN_ZERO)
     expect(await want.balanceOf(strategy.address)).to.eq(BN_1e18.mul(100))
     // Vault function: `balance()` should include total balance above three contract
-    await strategy.mock.balanceOf.returns(BN_1e18.mul(100))  // mock return 100 after pass above code
+    await strategy.mock.balanceOf.returns(BN_1e18.mul(100)) // mock return 100 after pass above code
     expect(await vault.balance()).to.eq(BN_1e18.mul(100))
   })
 
@@ -129,7 +129,7 @@ describe('Vault Normal Accuracy', () => {
     expect(userWantBalance).to.eq(BN_1e18.mul(900))
     // user hold 100 shares(xWant), equal to 200 want meantime
     let shares = await vault.balanceOf(user.address)
-    await vault.connect(user).withdraw(shares)  // nothing happen because can't custom strategy withdraw logic
+    await vault.connect(user).withdraw(shares) // nothing happen because can't custom strategy withdraw logic
     expect(await want.balanceOf(user.address)).to.eq(userWantBalance)
   })
 })
