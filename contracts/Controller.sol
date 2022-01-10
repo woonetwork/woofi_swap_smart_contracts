@@ -58,7 +58,7 @@ contract Controller is Ownable {
         return IStrategy(strategies[want]).balanceOf();
     }
 
-    function rewards() external view returns (address) {
+    function rewardRecipient() external view returns (address) {
         return governance;
     }
 

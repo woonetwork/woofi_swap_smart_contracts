@@ -22,6 +22,8 @@ contract StrategyCake is Ownable, Pausable {
 
     address public controller;
 
+    bool public harvestOnDeposit = true;
+
     /* ----- Constant Variables ----- */
 
     uint256 public constant REWARD_MAX = 10000;
@@ -40,7 +42,9 @@ contract StrategyCake is Ownable, Pausable {
     /* ----- External Functions ----- */
 
     function beforeDeposit() external {
-        harvest();
+        if (harvestOnDeposit) {
+            harvest();
+        }
     }
 
     function withdraw(uint256 amount) external {
@@ -59,13 +63,28 @@ contract StrategyCake is Ownable, Pausable {
         uint256 fee = wantBalance.mul(withdrawalFee).div(WITHDRAWAL_MAX);
 
         if (fee > 0) {
-            TransferHelper.safeTransfer(want, IController(controller).rewards(), fee);
+            TransferHelper.safeTransfer(want, IController(controller).rewardRecipient(), fee);
         }
         address vault = IController(controller).vaults(want);
         require(vault != address(0), 'StrategyCake: vault_not_exist');
         if (wantBalance > fee) {
-            IERC20(want).safeTransfer(vault, wantBalance.sub(fee));
+            TransferHelper.safeTransfer(want, vault, wantBalance.sub(fee));
         }
+    }
+
+    function withdrawAll() external returns (uint256) {
+        require(msg.sender == controller, 'StrategyCake: not_controller');
+        address vault = IController(controller).vaults(want);
+        require(vault != address(0), 'StrategyCake: vault_not_exist');
+
+        IMasterChef(masterChef).leaveStaking(balanceOfPool());
+
+        uint256 wantBalance = IERC20(want).balanceOf(address(this));
+        if (wantBalance > 0) {
+            TransferHelper.safeTransfer(want, vault, wantBalance);
+        }
+
+        return wantBalance;
     }
 
     function balanceOf() external view returns (uint256) {
@@ -83,7 +102,7 @@ contract StrategyCake is Ownable, Pausable {
         IMasterChef(masterChef).leaveStaking(0);
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         if (wantBalance > 0) {
-            chargeFees();
+            _chargeFees();
             deposit();
         }
     }
@@ -108,11 +127,10 @@ contract StrategyCake is Ownable, Pausable {
 
     /* ----- Private Functions ----- */
 
-    function chargeFees() private {
-        uint256 wantBalance = IERC20(want).balanceOf(address(this));
-        uint256 fee = wantBalance.mul(strategistReward).div(REWARD_MAX);
+    function _chargeFees() private {
+        uint256 fee = IERC20(want).balanceOf(address(this)).mul(strategistReward).div(REWARD_MAX);
 
-        TransferHelper.safeTransfer(want, IController(controller).rewards(), fee);
+        TransferHelper.safeTransfer(want, IController(controller).rewardRecipient(), fee);
     }
 
     /* ----- Admin Functions ----- */
@@ -126,16 +144,20 @@ contract StrategyCake is Ownable, Pausable {
         TransferHelper.safeTransfer(want, vault, wantBalance);
     }
 
+    function setStrategistReward(uint256 newStrategistReward) external onlyOwner {
+        require(newStrategistReward < REWARD_MAX, 'StrategyCake: newStrategistReward_exceed_FEE_MAX');
+
+        strategistReward = newStrategistReward;
+    }
+
     function setWithdrawalFee(uint256 newWithdrawalFee) external onlyOwner {
         require(newWithdrawalFee < WITHDRAWAL_MAX, 'StrategyCake: newWithdrawalFee_exceed_WITHDRAWAL_MAX');
 
         withdrawalFee = newWithdrawalFee;
     }
 
-    function setStrategistReward(uint256 newStrategistReward) external onlyOwner {
-        require(newStrategistReward < REWARD_MAX, 'StrategyCake: newStrategistReward_exceed_FEE_MAX');
-
-        strategistReward = newStrategistReward;
+    function setHarvestOnDeposit(bool newHarvestOnDeposit) external onlyOwner {
+        harvestOnDeposit = newHarvestOnDeposit;
     }
 
     function setController(address newController) external onlyOwner {
