@@ -87,8 +87,11 @@ contract Controller is Ownable {
         IStrategy(strategies[want]).withdrawAll();
     }
 
-    function inCaseTokensGetStuck(address token, uint256 amount) external onlyStrategist {
-        TransferHelper.safeTransfer(token, msg.sender, amount);
+    function inCaseTokensGetStuck(address stuckToken) external onlyStrategist {
+        require(stuckToken != address(0), 'Vault: stuckToken_ZERO_ADDR');
+
+        uint256 amount = IERC20(stuckToken).balanceOf(address(this));
+        TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
     }
 
     function setStrategist(address newStrategist) external onlyGovernance {

@@ -66,17 +66,16 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
         IStrategy(controller.strategies(address(want))).beforeDeposit();
 
-        uint256 balanceBefore = want.balanceOf(address(this));
+        uint256 balanceBefore = balance();
         if (msg.value > 0) {
             IWETH(wrapped).deposit{value: msg.value}();
         } else {
             TransferHelper.safeTransferFrom(address(want), msg.sender, address(this), amount);
         }
-        uint256 balanceAfter = want.balanceOf(address(this));
+        uint256 balanceAfter = balance();
         amount = balanceAfter.sub(balanceBefore);
 
-        uint256 xTotalSupply = totalSupply();
-        uint256 shares = xTotalSupply == 0 ? amount : amount.mul(xTotalSupply).div(balanceBefore);
+        uint256 shares = totalSupply() == 0 ? amount : amount.mul(totalSupply()).div(balanceBefore);
 
         _updateCostSharePrice(amount, shares);
 

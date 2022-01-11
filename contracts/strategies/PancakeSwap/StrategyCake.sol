@@ -28,15 +28,15 @@ contract StrategyCake is Ownable, Pausable {
 
     uint256 public constant REWARD_MAX = 10000;
     uint256 public constant WITHDRAWAL_MAX = 10000;
-    address public constant masterChef = 0x73feaa1eE314F8c655E354234017bE2193C9E24E;
-    address public constant want = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
+    address public constant masterChef = address(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
+    address public constant want = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
 
     constructor(address initialController) public {
         require(initialController != address(0), 'StrategyCake: initialController_ZERO_ADDR');
 
         controller = initialController;
-        TransferHelper.safeApprove(want, masterChef, 0);
-        TransferHelper.safeApprove(want, masterChef, uint256(-1));
+
+        _giveAllowances();
     }
 
     /* ----- External Functions ----- */
@@ -72,7 +72,7 @@ contract StrategyCake is Ownable, Pausable {
         }
     }
 
-    function withdrawAll() external returns (uint256) {
+    function withdrawAll() external {
         require(msg.sender == controller, 'StrategyCake: not_controller');
         address vault = IController(controller).vaults(want);
         require(vault != address(0), 'StrategyCake: vault_not_exist');
@@ -83,8 +83,6 @@ contract StrategyCake is Ownable, Pausable {
         if (wantBalance > 0) {
             TransferHelper.safeTransfer(want, vault, wantBalance);
         }
-
-        return wantBalance;
     }
 
     function balanceOf() external view returns (uint256) {
@@ -127,6 +125,15 @@ contract StrategyCake is Ownable, Pausable {
 
     /* ----- Private Functions ----- */
 
+    function _giveAllowances() private {
+        TransferHelper.safeApprove(want, masterChef, 0);
+        TransferHelper.safeApprove(want, masterChef, uint256(-1));
+    }
+
+    function _removeAllowances() private {
+        TransferHelper.safeApprove(want, masterChef, 0);
+    }
+
     function _chargeFees() private {
         uint256 fee = IERC20(want).balanceOf(address(this)).mul(strategistReward).div(REWARD_MAX);
 
@@ -145,13 +152,13 @@ contract StrategyCake is Ownable, Pausable {
     }
 
     function setStrategistReward(uint256 newStrategistReward) external onlyOwner {
-        require(newStrategistReward < REWARD_MAX, 'StrategyCake: newStrategistReward_exceed_FEE_MAX');
+        require(newStrategistReward <= REWARD_MAX, 'StrategyCake: newStrategistReward_exceed_FEE_MAX');
 
         strategistReward = newStrategistReward;
     }
 
     function setWithdrawalFee(uint256 newWithdrawalFee) external onlyOwner {
-        require(newWithdrawalFee < WITHDRAWAL_MAX, 'StrategyCake: newWithdrawalFee_exceed_WITHDRAWAL_MAX');
+        require(newWithdrawalFee <= WITHDRAWAL_MAX, 'StrategyCake: newWithdrawalFee_exceed_WITHDRAWAL_MAX');
 
         withdrawalFee = newWithdrawalFee;
     }
@@ -164,5 +171,19 @@ contract StrategyCake is Ownable, Pausable {
         require(newController != address(0), 'StrategyCake: newController_ZERO_ADDR');
 
         controller = newController;
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+
+        _removeAllowances();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+
+        _giveAllowances();
+
+        deposit();
     }
 }
