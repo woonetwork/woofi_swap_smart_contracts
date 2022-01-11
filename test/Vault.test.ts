@@ -38,8 +38,8 @@ import { deployContract, deployMockContract, solidity } from 'ethereum-waffle'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { TestToken, Vault, Controller } from '../typechain'
 import TestTokenArtifact from '../artifacts/contracts/test/TestErc20Token.sol/TestToken.json'
-import ControllerArtifact from '../artifacts/contracts/controller.sol/controller.json'
-import VaultArtifact from '../artifacts/contracts/vault.sol/vault.json'
+import ControllerArtifact from '../artifacts/contracts/Controller.sol/Controller.json'
+import VaultArtifact from '../artifacts/contracts/Vault.sol/Vault.json'
 import IStrategyArtifact from '../artifacts/contracts/interfaces/IStrategy.sol/IStrategy.json'
 
 use(solidity)
