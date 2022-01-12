@@ -121,7 +121,7 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
     }
 
     function balance() public view returns (uint256) {
-        return want.balanceOf(address(this)).add(controller.balanceOf(address(want)));
+        return available().add(controller.balanceOf(address(want)));
     }
 
     function getPricePerFullShare() public view returns (uint256) {
