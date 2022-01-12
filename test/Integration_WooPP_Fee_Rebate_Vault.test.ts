@@ -86,6 +86,7 @@ describe('Rebate Fee Vault Integration Test', () => {
   let broker2: SignerWithAddress
   let vault1: SignerWithAddress
   let vault2: SignerWithAddress
+  let treasury: SignerWithAddress
 
   let wooracle: Contract
   let wooGuardian: Contract
@@ -100,7 +101,7 @@ describe('Rebate Fee Vault Integration Test', () => {
   let accessManager: WooAccessManager
 
   before('Deploy ERC20', async () => {
-    ;[owner, user, broker1, broker2, vault1, vault2] = await ethers.getSigners()
+    ;[owner, user, broker1, broker2, vault1, vault2, treasury] = await ethers.getSigners()
     btcToken = await deployContract(owner, TestToken, [])
     wooToken = await deployContract(owner, TestToken, [])
     usdtToken = await deployContract(owner, TestToken, [])
@@ -145,6 +146,7 @@ describe('Rebate Fee Vault Integration Test', () => {
       rebateManager.address,
       vaultManager.address,
       accessManager.address,
+      treasury.address,
     ])) as WooFeeManager
 
     wooPP = (await deployContract(owner, WooPPArtifact, [
@@ -159,16 +161,18 @@ describe('Rebate Fee Vault Integration Test', () => {
     await wooPP.addBaseToken(btcToken.address, threshold, R)
     await wooPP.addBaseToken(wooToken.address, threshold, R)
 
-    rebateManager.setWooPP(wooPP.address)
-    rebateManager.setRebateRate(broker1.address, BROKER1_REBATE_RATE)
-    rebateManager.setRebateRate(broker2.address, BROKER2_REBATE_RATE)
+    await rebateManager.setWooPP(wooPP.address)
+    await rebateManager.setRebateRate(broker1.address, BROKER1_REBATE_RATE)
+    await rebateManager.setRebateRate(broker2.address, BROKER2_REBATE_RATE)
 
-    vaultManager.setWooPP(wooPP.address)
-    vaultManager.setVaultWeight(vault1.address, VAULT1_WEIGHT)
-    vaultManager.setVaultWeight(vault2.address, VAULT2_WEIGHT)
+    await vaultManager.setWooPP(wooPP.address)
+    await vaultManager.setVaultWeight(vault1.address, VAULT1_WEIGHT)
+    await vaultManager.setVaultWeight(vault2.address, VAULT2_WEIGHT)
 
-    feeManager.setFeeRate(btcToken.address, SWAP_FEE_RATE)
-    feeManager.setFeeRate(wooToken.address, SWAP_FEE_RATE)
+    await feeManager.setFeeRate(btcToken.address, SWAP_FEE_RATE)
+    await feeManager.setFeeRate(wooToken.address, SWAP_FEE_RATE)
+
+    await accessManager.setRebateAdmin(feeManager.address, true)
 
     await btcToken.mint(wooPP.address, ONE.mul(100))
     await usdtToken.mint(wooPP.address, ONE.mul(10000000))
@@ -229,11 +233,17 @@ describe('Rebate Fee Vault Integration Test', () => {
     const rebate2 = fee2.mul(BROKER2_REBATE_RATE).div(ONE)
     const reward2 = fee2.sub(rebate2)
 
-    expect((await usdtToken.balanceOf(rebateManager.address)).div(BASE)).to.eq(rebate1.add(rebate2).div(BASE))
+    expect((await usdtToken.balanceOf(rebateManager.address)).div(BASE)).to.eq(0)
     expect((await rebateManager.pendingRebate(broker1.address)).div(BASE)).to.eq(rebate1.div(BASE))
     expect((await rebateManager.pendingRebate(broker2.address)).div(BASE)).to.eq(rebate2.div(BASE))
 
     // Distribute all the rewards
+
+    expect((await vaultManager.pendingAllReward()).div(BASE)).to.eq(0)
+    expect((await vaultManager.pendingReward(vault1.address)).div(BASE)).to.eq(0)
+    expect((await vaultManager.pendingReward(vault2.address)).div(BASE)).to.eq(0)
+
+    await feeManager.distributeFees()
 
     const vaultRewards = reward1.add(reward2)
     const vaultReward1 = vaultRewards.mul(VAULT1_WEIGHT).div(TOTAL_WEIGHT)
@@ -248,6 +258,10 @@ describe('Rebate Fee Vault Integration Test', () => {
     const prevPendingReward = await vaultManager.pendingAllReward()
 
     await vaultManager.distributeAllReward()
+
+    expect((await vaultManager.pendingAllReward()).div(BASE)).to.eq(0)
+
+    await feeManager.distributeFees()
 
     // NOTE: distribute -> swap quote to reward token -> generate a little pending reward
     const newPendingReward = prevPendingReward.mul(SWAP_FEE_RATE).div(ONE)
