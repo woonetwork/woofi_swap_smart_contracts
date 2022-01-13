@@ -39,21 +39,21 @@ contract StrategyBNB is Ownable, Pausable {
 
     /* ----- Constant Variables ----- */
 
-    address constant public wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
-    address constant public xvs = address(0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63);
-    address constant public vbnb = address(0xA07c5b74C9B40447a954e1466938b865b6BBea36);
+    address public constant wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
+    address public constant xvs = address(0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63);
+    address public constant vbnb = address(0xA07c5b74C9B40447a954e1466938b865b6BBea36);
 
-    address constant public want = wbnb;
+    address public constant want = wbnb;
 
-    address constant public uniRouter = address(0x10ED43C718714eb63d5aA57B78B54704E256024E);
-    address constant public unitroller = address(0xfD36E2c2a6789Db23113685031d7F16329158384);
+    address public constant uniRouter = address(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+    address public constant unitroller = address(0xfD36E2c2a6789Db23113685031d7F16329158384);
 
     uint256 public constant REWARD_MAX = 10000;
     uint256 public constant WITHDRAWAL_MAX = 10000;
 
-    uint256 constant public BORROW_RATE_MAX = 58;
-    uint256 constant public BORROW_DEPTH_MAX = 10;
-    uint256 constant public MIN_LEVERAGE_AMOUNT = 1e12;
+    uint256 public constant BORROW_RATE_MAX = 58;
+    uint256 public constant BORROW_DEPTH_MAX = 10;
+    uint256 public constant MIN_LEVERAGE_AMOUNT = 1e12;
 
     constructor(
         address initialController,
@@ -76,7 +76,7 @@ contract StrategyBNB is Ownable, Pausable {
     }
 
     function withdraw(uint256 amount) external {
-        require(msg.sender == controller, "StrategyBNB: not controller");
+        require(msg.sender == controller, 'StrategyBNB: not controller');
 
         uint256 wbnbBal = IERC20(wbnb).balanceOf(address(this));
 
@@ -143,7 +143,7 @@ contract StrategyBNB is Ownable, Pausable {
     }
 
     function harvest() public whenNotPaused {
-        require(!Address.isContract(msg.sender), "StrategyBNB: not_allow_contract");
+        require(!Address.isContract(msg.sender), 'StrategyBNB: not_allow_contract');
 
         IUnitroller(unitroller).claimVenus(address(this));
         _chargeFees();
@@ -179,16 +179,18 @@ contract StrategyBNB is Ownable, Pausable {
     }
 
     function _leverage(uint256 amount) private {
-        if (amount < MIN_LEVERAGE_AMOUNT) { return; }
+        if (amount < MIN_LEVERAGE_AMOUNT) {
+            return;
+        }
 
-        for (uint i = 0; i < borrowDepth; i++) {
+        for (uint256 i = 0; i < borrowDepth; i++) {
             IVBNB(vbnb).mint{value: amount}();
             amount = amount.mul(borrowRate).div(100);
             IVBNB(vbnb).borrow(amount);
         }
     }
 
-    function _deleverage() private  {
+    function _deleverage() private {
         uint256 bnbBal = address(this).balance;
         uint256 borrowBal = IVBNB(vbnb).borrowBalanceCurrent(address(this));
 
@@ -224,8 +226,8 @@ contract StrategyBNB is Ownable, Pausable {
     /* ----- Admin Functions ----- */
 
     function deleverageOnce(uint256 borrowRateOnce) external onlyOwner {
-        require(borrowRateOnce <= BORROW_RATE_MAX, "StrategyBNB: not_safe");
-        
+        require(borrowRateOnce <= BORROW_RATE_MAX, 'StrategyBNB: not_safe');
+
         uint256 bnbBal = address(this).balance;
         IVBNB(vbnb).repayBorrow{value: bnbBal}();
 
@@ -239,19 +241,19 @@ contract StrategyBNB is Ownable, Pausable {
     }
 
     function rebalance(uint256 newBorrowRate, uint256 newBorrowDepth) external onlyOwner {
-        require(newBorrowRate <= BORROW_RATE_MAX, "StrategyBNB: newBorrowRate_exceed_BORROW_RATE_MAX");
-        require(newBorrowDepth <= BORROW_DEPTH_MAX, "StrategyBNB: newBorrowDepth_exceed_BORROW_DEPTH_MAX");
+        require(newBorrowRate <= BORROW_RATE_MAX, 'StrategyBNB: newBorrowRate_exceed_BORROW_RATE_MAX');
+        require(newBorrowDepth <= BORROW_DEPTH_MAX, 'StrategyBNB: newBorrowDepth_exceed_BORROW_DEPTH_MAX');
 
         _deleverage();
         borrowRate = newBorrowRate;
         borrowDepth = newBorrowDepth;
         _leverage(address(this).balance);
     }
-    
+
     function emergencyExit() external onlyOwner {
         address vault = IController(controller).vaults(want);
         require(vault != address(0), 'StrategyBNB: vault_not_exist');
-        
+
         _deleverage();
         IWETH(wbnb).deposit{value: address(this).balance}();
         uint256 wbnbBalance = IERC20(wbnb).balanceOf(address(this));
@@ -288,7 +290,7 @@ contract StrategyBNB is Ownable, Pausable {
 
     function unpause() external onlyOwner {
         _unpause();
-        
+
         _giveAllowances();
 
         deposit();
@@ -298,5 +300,5 @@ contract StrategyBNB is Ownable, Pausable {
         IUnitroller(unitroller).enterMarkets(markets);
     }
 
-    receive () external payable {}
+    receive() external payable {}
 }
