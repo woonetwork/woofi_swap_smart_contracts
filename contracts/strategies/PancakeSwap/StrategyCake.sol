@@ -137,7 +137,9 @@ contract StrategyCake is Ownable, Pausable {
     function _chargeFees() private {
         uint256 fee = IERC20(want).balanceOf(address(this)).mul(strategistReward).div(REWARD_MAX);
 
-        TransferHelper.safeTransfer(want, IController(controller).rewardRecipient(), fee);
+        if (fee > 0) {
+            TransferHelper.safeTransfer(want, IController(controller).rewardRecipient(), fee);
+        }
     }
 
     /* ----- Admin Functions ----- */

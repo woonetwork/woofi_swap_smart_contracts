@@ -130,6 +130,11 @@ contract StrategyLP is Ownable, Pausable {
     /* ----- Public Functions ----- */
 
     function harvest() public whenNotPaused {
+        require(
+            msg.sender == tx.origin || msg.sender == IController(controller).vaults(want),
+            'StrategyCake: not_contract_or_not_vault'
+        );
+
         IMasterChef(masterChef).deposit(pid, 0);
         uint256 rewardBalance = IERC20(reward).balanceOf(address(this));
 
@@ -184,7 +189,9 @@ contract StrategyLP is Ownable, Pausable {
     function _chargeFees() private {
         uint256 fee = IERC20(reward).balanceOf(address(this)).mul(strategistReward).div(REWARD_MAX);
 
-        TransferHelper.safeTransfer(reward, IController(controller).rewardRecipient(), fee);
+        if (fee > 0) {
+            TransferHelper.safeTransfer(reward, IController(controller).rewardRecipient(), fee);
+        }
     }
 
     function _addLiquidity() private {

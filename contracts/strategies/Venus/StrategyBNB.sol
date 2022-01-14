@@ -143,7 +143,10 @@ contract StrategyBNB is Ownable, Pausable {
     }
 
     function harvest() public whenNotPaused {
-        require(!Address.isContract(msg.sender), 'StrategyBNB: not_allow_contract');
+        require(
+            msg.sender == tx.origin || msg.sender == IController(controller).vaults(want),
+            'StrategyBNB: not_contract_or_not_vault'
+        );
 
         IUnitroller(unitroller).claimVenus(address(this));
         _chargeFees();
@@ -214,7 +217,9 @@ contract StrategyBNB is Ownable, Pausable {
     function _chargeFees() private {
         uint256 fee = IERC20(xvs).balanceOf(address(this)).mul(strategistReward).div(REWARD_MAX);
 
-        TransferHelper.safeTransfer(want, IController(controller).rewardRecipient(), fee);
+        if (fee > 0) {
+            TransferHelper.safeTransfer(xvs, IController(controller).rewardRecipient(), fee);
+        }
     }
 
     function _swapRewards() private {
