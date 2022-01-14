@@ -33,7 +33,7 @@ export default {
       accounts: {
         mnemonic: MNEMONIC,
       },
-      chainId: chainIds.hardhat,
+      chainId: 43112,
     },
     bsc_testnet: {
       url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
@@ -47,6 +47,18 @@ export default {
       gasPrice: 20000000000,
       accounts: [],
     },
+    avax_fuji: {
+      url: 'https://api.avax-test.network/ext/bc/C/rpc',
+      gasPrice: 225000000000,
+      chainId: 43113,
+      accounts: []
+    },
+    avax_main: {
+      url: 'https://api.avax.network/ext/bc/C/rpc',
+      gasPrice: 225000000000,
+      chainId: 43114,
+      accounts: []
+    }
   },
   solidity: {
     version: '0.6.12',
