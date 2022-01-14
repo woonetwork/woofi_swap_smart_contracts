@@ -119,6 +119,8 @@ contract StrategyBNB is Ownable, Pausable {
         if (wbnbBal > 0) {
             TransferHelper.safeTransfer(wbnb, vault, wbnbBal);
         }
+
+        updateBalance();
     }
 
     function balanceOf() external view returns (uint256) {
@@ -253,6 +255,8 @@ contract StrategyBNB is Ownable, Pausable {
         borrowRate = newBorrowRate;
         borrowDepth = newBorrowDepth;
         _leverage(address(this).balance);
+
+        updateBalance();
     }
 
     function emergencyExit() external onlyOwner {
