@@ -132,7 +132,7 @@ contract StrategyLP is Ownable, Pausable {
     function harvest() public whenNotPaused {
         require(
             msg.sender == tx.origin || msg.sender == IController(controller).vaults(want),
-            'StrategyCake: not_contract_or_not_vault'
+            'StrategyLP: not_contract_or_not_vault'
         );
 
         IMasterChef(masterChef).deposit(pid, 0);
