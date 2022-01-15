@@ -51,14 +51,14 @@ export default {
       url: 'https://api.avax-test.network/ext/bc/C/rpc',
       gasPrice: 225000000000,
       chainId: 43113,
-      accounts: []
+      accounts: [],
     },
     avax_main: {
       url: 'https://api.avax.network/ext/bc/C/rpc',
       gasPrice: 225000000000,
       chainId: 43114,
-      accounts: []
-    }
+      accounts: [],
+    },
   },
   solidity: {
     version: '0.6.12',
