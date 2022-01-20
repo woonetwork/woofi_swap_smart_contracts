@@ -8,12 +8,13 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import '../../interfaces/IController.sol';
-import '../../interfaces/PancakeSwap/IMasterChef.sol';
-import '../../interfaces/PancakeSwap/IPancakePair.sol';
-import '../../interfaces/PancakeSwap/IPancakeRouter.sol';
+import '../../../interfaces/PancakeSwap/IMasterChef.sol';
+import '../../../interfaces/PancakeSwap/IPancakePair.sol';
+import '../../../interfaces/PancakeSwap/IPancakeRouter.sol';
+import '../../../interfaces/IWooAccessManager.sol';
+import '../../../interfaces/IStrategy.sol';
 
-contract StrategyLP is Ownable, Pausable {
+contract StrategyLP is Ownable, Pausable, IStrategy {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -22,9 +23,9 @@ contract StrategyLP is Ownable, Pausable {
     uint256 public strategistReward = 0;
     uint256 public withdrawalFee = 0;
 
-    address public want;
-    uint256 public pid;
-    address public controller;
+    address public override want;
+    uint256 public immutable pid;
+    address public immutable override vault;
 
     address[] public rewardToLP0Route;
     address[] public rewardToLP1Route;
@@ -42,51 +43,61 @@ contract StrategyLP is Ownable, Pausable {
     address public constant uniRouter = address(0x10ED43C718714eb63d5aA57B78B54704E256024E);
     address public constant masterChef = address(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
 
-    constructor(
-        address initialController,
-        address initialWant,
-        uint256 initialPid,
-        address[] memory initialRewardToLP0Route,
-        address[] memory initialRewardToLP1Route
-    ) public {
-        controller = initialController;
-        want = initialWant;
-        pid = initialPid;
-        rewardToLP0Route = initialRewardToLP0Route;
-        rewardToLP1Route = initialRewardToLP1Route;
+    address public treasury;
+    IWooAccessManager public accessManager;
 
-        if (initialRewardToLP0Route.length == 0) {
+    constructor(
+        address initVault,
+        address initAccessManager,
+        address initWant,
+        uint256 initPid,
+        address[] memory initRewardToLP0Route,
+        address[] memory initRewardToLP1Route
+    ) public {
+        vault = initVault;
+        accessManager = IWooAccessManager(initAccessManager);
+        want = initWant;
+        pid = initPid;
+        rewardToLP0Route = initRewardToLP0Route;
+        rewardToLP1Route = initRewardToLP1Route;
+
+        if (initRewardToLP0Route.length == 0) {
             lpToken0 = reward;
         } else {
-            require(initialRewardToLP0Route[0] == reward);
-            lpToken0 = initialRewardToLP0Route[initialRewardToLP0Route.length - 1];
+            require(initRewardToLP0Route[0] == reward);
+            lpToken0 = initRewardToLP0Route[initRewardToLP0Route.length - 1];
         }
-        if (initialRewardToLP1Route.length == 0) {
+        if (initRewardToLP1Route.length == 0) {
             lpToken1 = reward;
         } else {
-            require(initialRewardToLP1Route[0] == reward);
-            lpToken1 = initialRewardToLP1Route[initialRewardToLP1Route.length - 1];
+            require(initRewardToLP1Route[0] == reward);
+            lpToken1 = initRewardToLP1Route[initRewardToLP1Route.length - 1];
         }
 
-        require(IPancakePair(initialWant).token0() == lpToken0 || IPancakePair(initialWant).token0() == lpToken1);
-        require(IPancakePair(initialWant).token1() == lpToken0 || IPancakePair(initialWant).token1() == lpToken1);
+        require(IPancakePair(initWant).token0() == lpToken0 || IPancakePair(initWant).token0() == lpToken1);
+        require(IPancakePair(initWant).token1() == lpToken0 || IPancakePair(initWant).token1() == lpToken1);
 
-        (address lpToken, , , ) = IMasterChef(masterChef).poolInfo(initialPid);
-        require(lpToken == want, 'StrategyLP: wrong_initialPid');
+        (address lpToken, , , ) = IMasterChef(masterChef).poolInfo(initPid);
+        require(lpToken == initWant, 'StrategyLP: wrong_initPid');
 
         _giveAllowances();
     }
 
+    modifier onlyAdmin() {
+        require(owner() == _msgSender() || accessManager.isVaultAdmin(msg.sender), 'StrategyLP: NOT_ADMIN');
+        _;
+    }
+
     /* ----- External Functions ----- */
 
-    function beforeDeposit() external {
+    function beforeDeposit() external override {
         if (harvestOnDeposit) {
             harvest();
         }
     }
 
-    function withdraw(uint256 amount) external {
-        require(msg.sender == controller, 'StrategyLP: not_controller');
+    function withdraw(uint256 amount) external override {
+        require(msg.sender == vault, 'StrategyLP: NOT_VAULT');
 
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         if (wantBalance < amount) {
@@ -101,38 +112,23 @@ contract StrategyLP is Ownable, Pausable {
         uint256 fee = amount.mul(withdrawalFee).div(WITHDRAWAL_MAX);
 
         if (fee > 0) {
-            TransferHelper.safeTransfer(want, IController(controller).rewardRecipient(), fee);
+            TransferHelper.safeTransfer(want, treasury, fee);
         }
-        address vault = IController(controller).vaults(want);
-        require(vault != address(0), 'StrategyLP: vault_not_exist');
         if (wantBalance > fee) {
             TransferHelper.safeTransfer(want, vault, wantBalance.sub(fee));
         }
     }
 
-    function withdrawAll() external {
-        require(msg.sender == controller, 'StrategyLP: not_controller');
-        address vault = IController(controller).vaults(want);
-        require(vault != address(0), 'StrategyLP: vault_not_exist');
-
-        IMasterChef(masterChef).withdraw(pid, balanceOfPool());
-
-        uint256 wantBalance = IERC20(want).balanceOf(address(this));
-        if (wantBalance > 0) {
-            TransferHelper.safeTransfer(want, vault, wantBalance);
-        }
-    }
-
-    function balanceOf() external view returns (uint256) {
+    function balanceOf() external view override returns (uint256) {
         return balanceOfWant().add(balanceOfPool());
     }
 
     /* ----- Public Functions ----- */
 
-    function harvest() public whenNotPaused {
+    function harvest() override public whenNotPaused {
         require(
-            msg.sender == tx.origin || msg.sender == IController(controller).vaults(want),
-            'StrategyLP: not_contract_or_not_vault'
+            msg.sender == tx.origin || msg.sender == vault,
+            'StrategyLP: EOA_OR_VAULT'
         );
 
         IMasterChef(masterChef).deposit(pid, 0);
@@ -145,7 +141,7 @@ contract StrategyLP is Ownable, Pausable {
         }
     }
 
-    function deposit() public whenNotPaused {
+    function deposit() override public whenNotPaused {
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
 
         if (wantBalance > 0) {
@@ -153,11 +149,11 @@ contract StrategyLP is Ownable, Pausable {
         }
     }
 
-    function balanceOfWant() public view returns (uint256) {
+    function balanceOfWant() public view override returns (uint256) {
         return IERC20(want).balanceOf(address(this));
     }
 
-    function balanceOfPool() public view returns (uint256) {
+    function balanceOfPool() public view override returns (uint256) {
         (uint256 amount, ) = IMasterChef(masterChef).userInfo(pid, address(this));
 
         return amount;
@@ -190,7 +186,7 @@ contract StrategyLP is Ownable, Pausable {
         uint256 fee = IERC20(reward).balanceOf(address(this)).mul(strategistReward).div(REWARD_MAX);
 
         if (fee > 0) {
-            TransferHelper.safeTransfer(reward, IController(controller).rewardRecipient(), fee);
+            TransferHelper.safeTransfer(reward, treasury, fee);
         }
     }
 
@@ -212,48 +208,49 @@ contract StrategyLP is Ownable, Pausable {
 
     /* ----- Admin Functions ----- */
 
-    function emergencyExit() external onlyOwner {
-        address vault = IController(controller).vaults(want);
-        require(vault != address(0), 'StrategyLP: vault_not_exist');
-
+    function retireStrat() override external {
+        require(msg.sender == vault, "!vault");
         IMasterChef(masterChef).emergencyWithdraw(pid);
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
-        TransferHelper.safeTransfer(want, vault, wantBalance);
+        if (wantBalance > 0) {
+            TransferHelper.safeTransfer(want, vault, wantBalance);
+        }
     }
 
-    function setStrategistReward(uint256 newStrategistReward) external onlyOwner {
-        require(newStrategistReward <= REWARD_MAX, 'StrategyLP: newStrategistReward_exceed_FEE_MAX');
+    function emergencyExit() override external onlyAdmin {
+        IMasterChef(masterChef).emergencyWithdraw(pid);
+        uint256 wantBalance = IERC20(want).balanceOf(address(this));
+        if (wantBalance > 0) {
+            TransferHelper.safeTransfer(want, vault, wantBalance);
+        }
+    }
 
+    function setStrategistReward(uint256 newStrategistReward) external onlyAdmin {
+        require(newStrategistReward <= REWARD_MAX, 'StrategyLP: newStrategistReward_exceed_FEE_MAX');
         strategistReward = newStrategistReward;
     }
 
-    function setWithdrawalFee(uint256 newWithdrawalFee) external onlyOwner {
+    function setWithdrawalFee(uint256 newWithdrawalFee) external onlyAdmin {
         require(newWithdrawalFee <= WITHDRAWAL_MAX, 'StrategyLP: newWithdrawalFee_exceed_WITHDRAWAL_MAX');
-
         withdrawalFee = newWithdrawalFee;
     }
 
-    function setHarvestOnDeposit(bool newHarvestOnDeposit) external onlyOwner {
+    function setHarvestOnDeposit(bool newHarvestOnDeposit) external onlyAdmin {
         harvestOnDeposit = newHarvestOnDeposit;
     }
 
-    function setController(address newController) external onlyOwner {
-        require(newController != address(0), 'StrategyLP: newController_ZERO_ADDR');
-
-        controller = newController;
-    }
-
-    function pause() external onlyOwner {
+    function pause() public override onlyAdmin {
         _pause();
-
         _removeAllowances();
     }
 
-    function unpause() external onlyOwner {
+    function unpause() external override onlyAdmin {
         _unpause();
-
         _giveAllowances();
-
         deposit();
+    }
+
+    function paused() public view override(IStrategy, Pausable) returns (bool) {
+        return Pausable.paused();
     }
 }

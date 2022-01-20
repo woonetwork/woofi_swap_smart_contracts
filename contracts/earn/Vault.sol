@@ -9,37 +9,53 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import './interfaces/IController.sol';
-import './interfaces/IStrategy.sol';
-import './interfaces/IWETH.sol';
+import '../interfaces/IStrategy.sol';
+import '../interfaces/IWETH.sol';
+import '../interfaces/IWooAccessManager.sol';
 
 contract Vault is ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
+    struct StratCandidate {
+        address implementation;
+        uint proposedTime;
+    }
+
     /* ----- State Variables ----- */
 
     IERC20 public immutable want;
-    IController public controller;
+    IWooAccessManager public immutable accessManager;
+
+    IStrategy public strategy;
+    StratCandidate public stratCandidate;
 
     mapping(address => uint256) public costSharePrice;
+
+    event NewStratCandidate(address implementation);
+    event UpgradeStrat(address implementation);
 
     /* ----- Constant Variables ----- */
 
     address public constant wrapped = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
-    constructor(address initialWant, address initialController)
+    constructor(address initWant, address initAccessManager)
         public
         ERC20(
-            string(abi.encodePacked('Interest Bearing ', ERC20(initialWant).name())),
-            string(abi.encodePacked('x', ERC20(initialWant).symbol()))
+            string(abi.encodePacked('WOOFi Earn ', ERC20(initWant).name())),
+            string(abi.encodePacked('we', ERC20(initWant).symbol()))
         )
     {
-        require(initialWant != address(0), 'Vault: initialWant_ZERO_ADDR');
-        require(initialController != address(0), 'Vault: initialController_ZERO_ADDR');
+        require(initWant != address(0), 'Vault: initWant_ZERO_ADDR');
+        require(initAccessManager != address(0), 'Vault: initAccessManager_ZERO_ADDR');
 
-        want = IERC20(initialWant);
-        controller = IController(initialController);
+        want = IERC20(initWant);
+        accessManager = IWooAccessManager(initAccessManager);
+    }
+
+    modifier onlyAdmin() {
+        require(owner() == _msgSender() || accessManager.isVaultAdmin(msg.sender), 'Vault: NOT_ADMIN');
+        _;
     }
 
     /* ----- External Functions ----- */
@@ -64,7 +80,9 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
             require(msg.value == 0, 'Vault: msg.value_not_equal_to_zero');
         }
 
-        IStrategy(controller.strategies(address(want))).beforeDeposit();
+        if (_isStratActive()) {
+            strategy.beforeDeposit();
+        }
 
         uint256 balanceBefore = balance();
         if (msg.value > 0) {
@@ -77,7 +95,10 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
         uint256 shares = totalSupply() == 0 ? amount : amount.mul(totalSupply()).div(balanceBefore);
 
-        _updateCostSharePrice(amount, shares);
+        uint256 sharesBefore = balanceOf(msg.sender);
+        uint256 costBefore = costSharePrice[msg.sender];
+        uint256 costAfter = (sharesBefore.mul(costBefore).add(amount.mul(1e18))).div(sharesBefore.add(shares));
+        costSharePrice[msg.sender] = costAfter;
 
         _mint(msg.sender, shares);
 
@@ -93,27 +114,30 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
         uint256 balanceBefore = want.balanceOf(address(this));
         if (balanceBefore < withdrawAmount) {
-            uint256 needWithdraw = withdrawAmount.sub(balanceBefore);
-            controller.withdraw(address(want), needWithdraw);
+            uint256 balanceToWithdraw = withdrawAmount.sub(balanceBefore);
+            require(_isStratActive(), 'Vault: STRAT_INACTIVE');
+            strategy.withdraw(balanceToWithdraw);
             uint256 balanceAfter = want.balanceOf(address(this));
             uint256 diff = balanceAfter.sub(balanceBefore);
-            if (diff < needWithdraw) {
+            if (diff < balanceToWithdraw) {
                 withdrawAmount = balanceBefore.add(diff);
             }
         }
 
         if (address(want) == wrapped) {
             IWETH(wrapped).withdraw(withdrawAmount);
-            msg.sender.transfer(withdrawAmount);
+            TransferHelper.safeTransferETH(msg.sender, withdrawAmount);
         } else {
             TransferHelper.safeTransfer(address(want), msg.sender, withdrawAmount);
         }
     }
 
     function earn() public {
-        uint256 balanceAvail = available();
-        TransferHelper.safeTransfer(address(want), address(controller), balanceAvail);
-        controller.earn(address(want), balanceAvail);
+        if (_isStratActive()) {
+            uint balanceAvail = available();
+            TransferHelper.safeTransfer(address(want), address(strategy), balanceAvail);
+            strategy.deposit();
+        }
     }
 
     function available() public view returns (uint256) {
@@ -121,32 +145,49 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
     }
 
     function balance() public view returns (uint256) {
-        return available().add(controller.balanceOf(address(want)));
+        return _isStratActive() ? available().add(strategy.balanceOf()) : available();
     }
 
     function getPricePerFullShare() public view returns (uint256) {
         return totalSupply() == 0 ? 1e18 : balance().mul(1e18).div(totalSupply());
     }
 
-    /* ----- Private Functions ----- */
-
-    function _updateCostSharePrice(uint256 amount, uint256 shares) private {
-        uint256 sharesBefore = balanceOf(msg.sender);
-        uint256 costBefore = costSharePrice[msg.sender];
-        uint256 costAfter = (sharesBefore.mul(costBefore).add(amount.mul(1e18))).div(sharesBefore.add(shares));
-
-        costSharePrice[msg.sender] = costAfter;
+    function _isStratActive() internal view returns (bool) {
+        return address(strategy) != address(0) && !strategy.paused();
     }
 
     /* ----- Admin Functions ----- */
-
-    function setController(address newController) public onlyOwner {
-        require(newController != address(0), 'Vault: newController_ZERO_ADDR');
-
-        controller = IController(newController);
+    function setupStrat(address _strat) public onlyAdmin {
+        require(_strat != address(0), 'Vault: STRAT_ALREADY_SET');
+        require(address(this) == IStrategy(_strat).vault(), 'Vault: STRAT_VAULT_INVALID');
+        strategy = IStrategy(_strat);
     }
 
-    function inCaseTokensGetStuck(address stuckToken) external onlyOwner {
+    function proposeStrat(address _implementation) public onlyAdmin {
+        require(address(this) == IStrategy(_implementation).vault(), 'Vault: STRAT_VAULT_INVALID');
+        stratCandidate = StratCandidate({
+            implementation: _implementation,
+            proposedTime: block.timestamp
+         });
+
+        emit NewStratCandidate(_implementation);
+    }
+
+    function upgradeStrat() public onlyAdmin {
+        require(stratCandidate.implementation != address(0), 'Vault: NO_CANDIDATE');
+        require(stratCandidate.proposedTime.add(48 hours) < block.timestamp, 'Vault: TIME_INVALID');
+
+        emit UpgradeStrat(stratCandidate.implementation);
+
+        strategy.retireStrat();
+        strategy = IStrategy(stratCandidate.implementation);
+        stratCandidate.implementation = address(0);
+        stratCandidate.proposedTime = 5000000000;
+
+        earn();
+    }
+
+    function inCaseTokensGetStuck(address stuckToken) external onlyAdmin {
         require(stuckToken != address(0), 'Vault: stuckToken_ZERO_ADDR');
         require(stuckToken != address(want), 'Vault: stuckToken_CAN_NOT_BE_want');
 
