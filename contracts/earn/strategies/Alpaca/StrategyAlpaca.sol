@@ -85,7 +85,9 @@ contract StrategyAlpaca is Ownable, Pausable, IStrategy {
 
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         if (wantBalance < amount) {
-            uint256 ibAmount = amount.mul(IAlpacaVault(alpacaVault).totalSupply()).div(IAlpacaVault(alpacaVault).totalToken());
+            uint256 ibAmount = amount.mul(IAlpacaVault(alpacaVault).totalSupply()).div(
+                IAlpacaVault(alpacaVault).totalToken()
+            );
             IFairLaunch(fairLaunch).withdraw(address(this), poolId, ibAmount);
             IAlpacaVault(alpacaVault).withdraw(IERC20(alpacaVault).balanceOf(address(this)));
             wantBalance = IERC20(want).balanceOf(address(this));
