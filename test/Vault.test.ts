@@ -36,9 +36,10 @@ import { BigNumber, Contract } from 'ethers'
 import { ethers } from 'hardhat'
 import { deployContract, deployMockContract, solidity } from 'ethereum-waffle'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { TestToken, Vault, WooAccessManager } from '../typechain'
+import { TestToken, Vault, WooAccessManager, VoidStrategy, IStrategy, VoidStrategy__factory } from '../typechain'
 import TestTokenArtifact from '../artifacts/contracts/test/TestErc20Token.sol/TestToken.json'
 import VaultArtifact from '../artifacts/contracts/earn/Vault.sol/Vault.json'
+import VoidStrategyArtifact from '../artifacts/contracts/earn/strategies/VoidStrategy.sol/VoidStrategy.json'
 import WooAccessManagerArtifact from '../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json'
 import IStrategyArtifact from '../artifacts/contracts/interfaces/IStrategy.sol/IStrategy.json'
 
@@ -52,14 +53,16 @@ const BN_ZERO = BigNumber.from(0)
 describe('Vault Normal Accuracy', () => {
   let owner: SignerWithAddress
   let user: SignerWithAddress
+  let treasury: SignerWithAddress
 
   let want: TestToken
   let vault: Vault
   let accessManager: WooAccessManager
-  let strategy: Contract
+  let strategy: VoidStrategy
+  let strategy2: VoidStrategy
 
   beforeEach(async () => {
-    ;[owner, user] = await ethers.getSigners()
+    ;[owner, user, treasury] = await ethers.getSigners()
     want = (await deployContract(owner, TestTokenArtifact, [])) as TestToken
     let mintWantBalance = BN_1e18.mul(1000)
     await want.mint(user.address, mintWantBalance)
@@ -69,16 +72,8 @@ describe('Vault Normal Accuracy', () => {
     await accessManager.setVaultAdmin(owner.address, true)
 
     vault = (await deployContract(owner, VaultArtifact, [want.address, accessManager.address])) as Vault
-
-    strategy = await deployMockContract(owner, IStrategyArtifact.abi)
-    await strategy.mock.want.returns(want.address)
-    await strategy.mock.vault.returns(vault.address)
-    await strategy.mock.paused.returns(false)
-    await strategy.mock.beforeDeposit.returns()
-    await strategy.mock.deposit.returns()
-    await strategy.mock.withdraw.returns()
-    // await strategy.mock.withdrawAll.returns(10000)
-    await strategy.mock.balanceOf.returns(0)
+    strategy = (await deployContract(owner, VoidStrategyArtifact, [vault.address, accessManager.address, want.address])) as VoidStrategy
+    strategy2 = (await deployContract(owner, VoidStrategyArtifact, [vault.address, accessManager.address, want.address])) as VoidStrategy
   })
 
   it('Check state variables after contract initialized', async () => {
@@ -122,8 +117,7 @@ describe('Vault Normal Accuracy', () => {
     // Check want balance in three contract
     expect(await want.balanceOf(vault.address)).to.eq(BN_ZERO)
     expect(await want.balanceOf(strategy.address)).to.eq(BN_1e18.mul(100))
-    // Vault function: `balance()` should include total balance above three contract
-    await strategy.mock.balanceOf.returns(BN_1e18.mul(100)) // mock return 100 after pass above code
+
     expect(await vault.balance()).to.eq(BN_1e18.mul(100))
   })
 
@@ -139,12 +133,10 @@ describe('Vault Normal Accuracy', () => {
 
     // harvest 100 more wants to strategy(equal to Strategy function `harvest()`)
     await want.mint(strategy.address, BN_1e18.mul(100))
-    await strategy.mock.balanceOf.returns(BN_1e18.mul(200))
     expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(2))
 
     // harvest 100 more wants to strategy(equal to Strategy function `harvest()`)
     await want.mint(strategy.address, BN_1e18.mul(100))
-    await strategy.mock.balanceOf.returns(BN_1e18.mul(300))
     expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(3))
   })
 
@@ -154,32 +146,111 @@ describe('Vault Normal Accuracy', () => {
     let wantDeposited = BN_1e18.mul(100)
     await want.connect(user).approve(vault.address, wantDeposited)
     await vault.connect(user).deposit(wantDeposited)
+    expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(1))
 
     let userWantBalance = await want.balanceOf(user.address)
-    expect(userWantBalance).to.eq(BN_1e18.mul(900))
-
     let shares = await vault.balanceOf(user.address)
-    await vault.connect(user).withdraw(shares) // nothing happen because can't custom strategy withdraw logic
-    expect(await want.balanceOf(user.address)).to.eq(userWantBalance)
+    await vault.connect(user).withdraw(shares)
+    expect(await want.balanceOf(user.address)).to.eq(userWantBalance.add(shares.mul(1)))
   })
 
-  it('withdraw1', async () => {
+  it('withdraw2', async () => {
     await vault.setupStrat(strategy.address)
 
     let wantDeposited = BN_1e18.mul(100)
     await want.connect(user).approve(vault.address, wantDeposited)
     await vault.connect(user).deposit(wantDeposited)
+    expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(1))
 
     await want.mint(strategy.address, BN_1e18.mul(100))
-    await strategy.mock.balanceOf.returns(BN_1e18.mul(200))
+    expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(2))
 
-    // user want balance: BN_1e18.mul(900)
     let userWantBalance = await want.balanceOf(user.address)
-    expect(userWantBalance).to.eq(BN_1e18.mul(900))
-
-    // user hold 100 shares(xWant), equal to 200 want meantime
     let shares = await vault.balanceOf(user.address)
-    await vault.connect(user).withdraw(shares) // nothing happen because can't custom strategy withdraw logic
-    expect(await want.balanceOf(user.address)).to.eq(userWantBalance)
+    await vault.connect(user).withdraw(shares)
+    expect(await want.balanceOf(user.address)).to.eq(userWantBalance.add(shares.mul(2)))
+  })
+
+  it('withdraw3 with fee', async () => {
+    await vault.setupStrat(strategy.address)
+
+    await strategy.setWithdrawalTreasury(treasury.address)
+    await strategy.setWithdrawalFee(100) // 1% withdrawal fee
+
+    let wantDeposited = BN_1e18.mul(100)
+    await want.connect(user).approve(vault.address, wantDeposited)
+    await vault.connect(user).deposit(wantDeposited)
+    expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(1))
+
+    await want.mint(strategy.address, BN_1e18.mul(100))
+    expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(2))
+
+    let userWantBalance = await want.balanceOf(user.address)
+    let shares = await vault.balanceOf(user.address)
+    await vault.connect(user).withdraw(shares)
+
+    const expectedBal = userWantBalance.add(shares.mul(2).mul(99).div(100)) // 1% withdrawal fee
+    expect(await want.balanceOf(user.address)).to.eq(expectedBal)
+    expect(await want.balanceOf(treasury.address)).to.eq(BN_1e18.mul(2))
+  })
+
+  it('update strategy 1', async () => {
+    await vault.setupStrat(strategy.address)
+
+    let wantDeposited = BN_1e18.mul(100)
+    await want.connect(user).approve(vault.address, wantDeposited)
+    await vault.connect(user).deposit(wantDeposited)
+    expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(1))
+
+    await want.mint(strategy.address, BN_1e18.mul(100))
+    expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(2))
+    expect(await vault.available()).to.eq(0)
+    expect(await vault.balance()).to.eq(BN_1e18.mul(200))
+
+    expect(await vault.strategy()).to.eq(strategy.address)
+    expect(await want.balanceOf(strategy.address)).to.eq(BN_1e18.mul(200))
+    expect(await want.balanceOf(strategy2.address)).to.eq(BN_1e18.mul(0))
+
+    await vault.proposeStrat(strategy2.address)
+    expect((await vault.stratCandidate()).implementation).to.eq(strategy2.address)
+
+    await expect(vault.upgradeStrat()).to.be.revertedWith(
+      'Vault: TIME_INVALID'
+    )
+  })
+
+  it('update strategy 2', async () => {
+    await vault.setupStrat(strategy.address)
+
+    let wantDeposited = BN_1e18.mul(100)
+    await want.connect(user).approve(vault.address, wantDeposited)
+    await vault.connect(user).deposit(wantDeposited)
+    expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(1))
+
+    await want.mint(strategy.address, BN_1e18.mul(100))
+    expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(2))
+    expect(await vault.available()).to.eq(0)
+    expect(await vault.balance()).to.eq(BN_1e18.mul(200))
+
+    expect(await vault.strategy()).to.eq(strategy.address)
+    expect(await want.balanceOf(strategy.address)).to.eq(BN_1e18.mul(200))
+    expect(await want.balanceOf(strategy2.address)).to.eq(BN_1e18.mul(0))
+
+    await vault.proposeStrat(strategy2.address)
+    expect((await vault.stratCandidate()).implementation).to.eq(strategy2.address)
+
+    await ethers.provider.send("evm_increaseTime", [3600*48 + 1])
+    await ethers.provider.send("evm_mine", [])
+
+    await vault.upgradeStrat()
+
+    expect(await vault.strategy()).to.eq(strategy2.address)
+    expect((await vault.stratCandidate()).implementation).to.eq(ZERO_ADDRESS)
+    expect(await want.balanceOf(strategy.address)).to.eq(BN_1e18.mul(0))
+    expect(await want.balanceOf(strategy2.address)).to.eq(BN_1e18.mul(200))
+
+    expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(2))
+    expect(await vault.available()).to.eq(0)
+    expect(await vault.balance()).to.eq(BN_1e18.mul(200))
   })
 })

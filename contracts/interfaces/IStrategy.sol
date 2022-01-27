@@ -26,9 +26,5 @@ interface IStrategy {
 
     function emergencyExit() external;
 
-    function pause() external;
-
-    function unpause() external;
-
     function paused() external view returns (bool);
 }
