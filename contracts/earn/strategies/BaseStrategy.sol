@@ -12,7 +12,6 @@ import '../../interfaces/PancakeSwap/IMasterChef.sol';
 import '../../interfaces/IWooAccessManager.sol';
 import '../../interfaces/IStrategy.sol';
 
-
 /**
  * Base strategy abstract contract for:
  *  - vault and access manager setup
@@ -31,17 +30,14 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy {
     /* ----- Constant Variables ----- */
 
     uint256 public constant FEE_MAX = 10000;
-    uint256 public performanceFee = 300;  // 1 in 10000th: 100: 1%, 300: 3%
-    uint256 public withdrawalFee = 0;   // 1 in 10000th: 1: 0.01%, 10: 0.1%
+    uint256 public performanceFee = 300; // 1 in 10000th: 100: 1%, 300: 3%
+    uint256 public withdrawalFee = 0; // 1 in 10000th: 1: 0.01%, 10: 0.1%
     address public performanceTreasury;
     address public withdrawalTreasury;
 
     IWooAccessManager public accessManager;
 
-    constructor(
-        address initVault,
-        address initAccessManager
-    ) public {
+    constructor(address initVault, address initAccessManager) public {
         require(initVault != address(0), 'BaseStrategy: initVault_ZERO_ADDR');
         vault = initVault;
         accessManager = IWooAccessManager(initAccessManager);
@@ -90,13 +86,17 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy {
     function balanceOfPool() public view virtual override returns (uint256);
 
     function deposit() public virtual override;
+
     function withdraw(uint256 amount) external virtual override;
+
     function harvest() public virtual override;
 
     function retireStrat() external virtual override;
+
     function emergencyExit() external virtual override;
 
     function _giveAllowances() internal virtual;
+
     function _removeAllowances() internal virtual;
 
     /* ----- Admin Functions ----- */

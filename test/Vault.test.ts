@@ -72,8 +72,16 @@ describe('Vault Normal Accuracy', () => {
     await accessManager.setVaultAdmin(owner.address, true)
 
     vault = (await deployContract(owner, VaultArtifact, [want.address, accessManager.address])) as Vault
-    strategy = (await deployContract(owner, VoidStrategyArtifact, [vault.address, accessManager.address, want.address])) as VoidStrategy
-    strategy2 = (await deployContract(owner, VoidStrategyArtifact, [vault.address, accessManager.address, want.address])) as VoidStrategy
+    strategy = (await deployContract(owner, VoidStrategyArtifact, [
+      vault.address,
+      accessManager.address,
+      want.address,
+    ])) as VoidStrategy
+    strategy2 = (await deployContract(owner, VoidStrategyArtifact, [
+      vault.address,
+      accessManager.address,
+      want.address,
+    ])) as VoidStrategy
   })
 
   it('Check state variables after contract initialized', async () => {
@@ -214,9 +222,7 @@ describe('Vault Normal Accuracy', () => {
     await vault.proposeStrat(strategy2.address)
     expect((await vault.stratCandidate()).implementation).to.eq(strategy2.address)
 
-    await expect(vault.upgradeStrat()).to.be.revertedWith(
-      'Vault: TIME_INVALID'
-    )
+    await expect(vault.upgradeStrat()).to.be.revertedWith('Vault: TIME_INVALID')
   })
 
   it('update strategy 2', async () => {
@@ -239,8 +245,8 @@ describe('Vault Normal Accuracy', () => {
     await vault.proposeStrat(strategy2.address)
     expect((await vault.stratCandidate()).implementation).to.eq(strategy2.address)
 
-    await ethers.provider.send("evm_increaseTime", [3600*48 + 1])
-    await ethers.provider.send("evm_mine", [])
+    await ethers.provider.send('evm_increaseTime', [3600 * 48 + 1])
+    await ethers.provider.send('evm_mine', [])
 
     await vault.upgradeStrat()
 
