@@ -14,18 +14,15 @@ import '../../../interfaces/PancakeSwap/IPancakeRouter.sol';
 import '../../../interfaces/IWooAccessManager.sol';
 import '../../../interfaces/IStrategy.sol';
 
-contract StrategyLP is Ownable, Pausable, IStrategy {
+import '../BaseStrategy.sol';
+
+contract StrategyLP is BaseStrategy {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     /* ----- State Variables ----- */
 
-    uint256 public strategistReward = 0;
-    uint256 public withdrawalFee = 0;
-
-    address public override want;
     uint256 public immutable pid;
-    address public immutable override vault;
 
     address[] public rewardToLP0Route;
     address[] public rewardToLP1Route;
@@ -33,18 +30,9 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
     address public lpToken0;
     address public lpToken1;
 
-    bool public harvestOnDeposit = false;
-
-    /* ----- Constant Variables ----- */
-
-    uint256 public constant REWARD_MAX = 10000;
-    uint256 public constant WITHDRAWAL_MAX = 10000;
     address public constant reward = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
     address public constant uniRouter = address(0x10ED43C718714eb63d5aA57B78B54704E256024E);
     address public constant masterChef = address(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
-
-    address public treasury;
-    IWooAccessManager public accessManager;
 
     constructor(
         address initVault,
@@ -53,9 +41,7 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
         uint256 initPid,
         address[] memory initRewardToLP0Route,
         address[] memory initRewardToLP1Route
-    ) public {
-        vault = initVault;
-        accessManager = IWooAccessManager(initAccessManager);
+    ) BaseStrategy(initVault, initAccessManager) public {
         want = initWant;
         pid = initPid;
         rewardToLP0Route = initRewardToLP0Route;
@@ -83,18 +69,7 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
         _giveAllowances();
     }
 
-    modifier onlyAdmin() {
-        require(owner() == _msgSender() || accessManager.isVaultAdmin(msg.sender), 'StrategyLP: NOT_ADMIN');
-        _;
-    }
-
     /* ----- External Functions ----- */
-
-    function beforeDeposit() external override {
-        if (harvestOnDeposit) {
-            harvest();
-        }
-    }
 
     function withdraw(uint256 amount) external override {
         require(msg.sender == vault, 'StrategyLP: NOT_VAULT');
@@ -105,60 +80,45 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
             wantBalance = IERC20(want).balanceOf(address(this));
         }
 
-        if (wantBalance > amount) {
-            wantBalance = amount;
-        }
+        // just in case the decimal precision for the very left staking amount
+        uint256 withdrawAmount = amount < wantBalance ? amount : wantBalance;
 
-        uint256 fee = amount.mul(withdrawalFee).div(WITHDRAWAL_MAX);
-
-        if (fee > 0) {
-            TransferHelper.safeTransfer(want, treasury, fee);
-        }
-        if (wantBalance > fee) {
-            TransferHelper.safeTransfer(want, vault, wantBalance.sub(fee));
+        uint256 fee = chargeWithdrawalFee(withdrawAmount);
+        if (withdrawAmount > fee) {
+            TransferHelper.safeTransfer(want, vault, withdrawAmount.sub(fee));
         }
     }
-
-    function balanceOf() external view override returns (uint256) {
-        return balanceOfWant().add(balanceOfPool());
-    }
-
-    /* ----- Public Functions ----- */
 
     function harvest() public override whenNotPaused {
         require(msg.sender == tx.origin || msg.sender == vault, 'StrategyLP: EOA_OR_VAULT');
 
         IMasterChef(masterChef).deposit(pid, 0);
-        uint256 rewardBalance = IERC20(reward).balanceOf(address(this));
-
-        if (rewardBalance > 0) {
-            _chargeFees();
+        uint256 rewardAmount = IERC20(reward).balanceOf(address(this));
+        if (rewardAmount > 0) {
+            uint256 wantBefore = IERC20(want).balanceOf(address(this));
             _addLiquidity();
-            deposit();
+            uint256 wantAfter = IERC20(want).balanceOf(address(this));
+            uint256 perfAmount = wantAfter.sub(wantBefore);
+            chargePerformanceFee(perfAmount);
         }
+        deposit();
     }
 
     function deposit() public override whenNotPaused {
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
-
         if (wantBalance > 0) {
             IMasterChef(masterChef).deposit(pid, wantBalance);
         }
     }
 
-    function balanceOfWant() public view override returns (uint256) {
-        return IERC20(want).balanceOf(address(this));
-    }
-
     function balanceOfPool() public view override returns (uint256) {
         (uint256 amount, ) = IMasterChef(masterChef).userInfo(pid, address(this));
-
         return amount;
     }
 
     /* ----- Private Functions ----- */
 
-    function _giveAllowances() private {
+    function _giveAllowances() internal override {
         TransferHelper.safeApprove(want, masterChef, 0);
         TransferHelper.safeApprove(want, masterChef, uint256(-1));
 
@@ -172,19 +132,11 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
         TransferHelper.safeApprove(lpToken1, uniRouter, uint256(-1));
     }
 
-    function _removeAllowances() private {
+    function _removeAllowances() internal override {
         TransferHelper.safeApprove(want, masterChef, 0);
         TransferHelper.safeApprove(reward, uniRouter, 0);
         TransferHelper.safeApprove(lpToken0, uniRouter, 0);
         TransferHelper.safeApprove(lpToken1, uniRouter, 0);
-    }
-
-    function _chargeFees() private {
-        uint256 fee = IERC20(reward).balanceOf(address(this)).mul(strategistReward).div(REWARD_MAX);
-
-        if (fee > 0) {
-            TransferHelper.safeTransfer(reward, treasury, fee);
-        }
     }
 
     function _addLiquidity() private {
@@ -200,10 +152,16 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
 
         uint256 lp0Balance = IERC20(lpToken0).balanceOf(address(this));
         uint256 lp1Balance = IERC20(lpToken1).balanceOf(address(this));
-        IPancakeRouter(uniRouter).addLiquidity(lpToken0, lpToken1, lp0Balance, lp1Balance, 0, 0, address(this), now);
+        IPancakeRouter(uniRouter).addLiquidity(
+            lpToken0,
+            lpToken1,
+            lp0Balance,
+            lp1Balance,
+            0,
+            0,
+            address(this),
+            now);
     }
-
-    /* ----- Admin Functions ----- */
 
     function retireStrat() external override {
         require(msg.sender == vault, '!vault');
@@ -220,34 +178,5 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
         if (wantBalance > 0) {
             TransferHelper.safeTransfer(want, vault, wantBalance);
         }
-    }
-
-    function setStrategistReward(uint256 newStrategistReward) external onlyAdmin {
-        require(newStrategistReward <= REWARD_MAX, 'StrategyLP: newStrategistReward_exceed_FEE_MAX');
-        strategistReward = newStrategistReward;
-    }
-
-    function setWithdrawalFee(uint256 newWithdrawalFee) external onlyAdmin {
-        require(newWithdrawalFee <= WITHDRAWAL_MAX, 'StrategyLP: newWithdrawalFee_exceed_WITHDRAWAL_MAX');
-        withdrawalFee = newWithdrawalFee;
-    }
-
-    function setHarvestOnDeposit(bool newHarvestOnDeposit) external onlyAdmin {
-        harvestOnDeposit = newHarvestOnDeposit;
-    }
-
-    function pause() public override onlyAdmin {
-        _pause();
-        _removeAllowances();
-    }
-
-    function unpause() external override onlyAdmin {
-        _unpause();
-        _giveAllowances();
-        deposit();
-    }
-
-    function paused() public view override(IStrategy, Pausable) returns (bool) {
-        return Pausable.paused();
     }
 }

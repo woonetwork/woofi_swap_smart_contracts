@@ -37,7 +37,7 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
     /* ----- Constant Variables ----- */
 
-    address public constant wrapped = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address public constant wrapperEther = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
     constructor(address initWant, address initAccessManager)
         public
@@ -68,16 +68,13 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
         withdraw(balanceOf(msg.sender));
     }
 
-    /* ----- Public Functions ----- */
-
     function deposit(uint256 amount) public payable nonReentrant {
         require(amount > 0, 'Vault: amount_CAN_NOT_BE_ZERO');
 
-        if (msg.value > 0) {
-            require(address(want) == wrapped, 'Vault: not_BNB');
-            require(amount == msg.value, 'Vault: msg.value_not_equal_to_amount');
+        if (address(want) == wrapperEther) {
+            require(msg.value == amount, 'Vault: msg.value_INSUFFICIENT');
         } else {
-            require(msg.value == 0, 'Vault: msg.value_not_equal_to_zero');
+            require(msg.value == 0, 'Vault: msg.value_INVALID');
         }
 
         if (_isStratActive()) {
@@ -85,16 +82,15 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
         }
 
         uint256 balanceBefore = balance();
-        if (msg.value > 0) {
-            IWETH(wrapped).deposit{value: msg.value}();
+        if (address(want) == wrapperEther) {
+            IWETH(wrapperEther).deposit{value: msg.value}();
         } else {
             TransferHelper.safeTransferFrom(address(want), msg.sender, address(this), amount);
         }
         uint256 balanceAfter = balance();
-        amount = balanceAfter.sub(balanceBefore);
+        require(amount <= balanceAfter.sub(balanceBefore), 'Vault: amount_NOT_ENOUGH');
 
         uint256 shares = totalSupply() == 0 ? amount : amount.mul(totalSupply()).div(balanceBefore);
-
         uint256 sharesBefore = balanceOf(msg.sender);
         uint256 costBefore = costSharePrice[msg.sender];
         uint256 costAfter = (sharesBefore.mul(costBefore).add(amount.mul(1e18))).div(sharesBefore.add(shares));
@@ -106,8 +102,8 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
     }
 
     function withdraw(uint256 shares) public nonReentrant {
-        require(shares > 0, 'Vault: shares_CAN_NOT_BE_ZERO');
-        require(shares <= balanceOf(msg.sender), 'Vault: shares exceed balance');
+        require(shares > 0, 'Vault: shares_ZERO');
+        require(shares <= balanceOf(msg.sender), 'Vault: shares_NOT_ENOUGH');
 
         uint256 withdrawAmount = shares.mul(balance()).div(totalSupply());
         _burn(msg.sender, shares);
@@ -118,14 +114,14 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
             require(_isStratActive(), 'Vault: STRAT_INACTIVE');
             strategy.withdraw(balanceToWithdraw);
             uint256 balanceAfter = want.balanceOf(address(this));
-            uint256 diff = balanceAfter.sub(balanceBefore);
-            if (diff < balanceToWithdraw) {
-                withdrawAmount = balanceBefore.add(diff);
+            if (withdrawAmount > balanceAfter) {
+                // NOTE: in case a small amount not counted in, due to the decimal precision.
+                withdrawAmount = balanceAfter;
             }
         }
 
-        if (address(want) == wrapped) {
-            IWETH(wrapped).withdraw(withdrawAmount);
+        if (address(want) == wrapperEther) {
+            IWETH(wrapperEther).withdraw(withdrawAmount);
             TransferHelper.safeTransferETH(msg.sender, withdrawAmount);
         } else {
             TransferHelper.safeTransfer(address(want), msg.sender, withdrawAmount);
@@ -186,10 +182,12 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
     function inCaseTokensGetStuck(address stuckToken) external onlyAdmin {
         require(stuckToken != address(0), 'Vault: stuckToken_ZERO_ADDR');
-        require(stuckToken != address(want), 'Vault: stuckToken_CAN_NOT_BE_want');
+        require(stuckToken != address(want), 'Vault: stuckToken_NOT_WANT');
 
         uint256 amount = IERC20(stuckToken).balanceOf(address(this));
-        TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
+        if (amount > 0) {
+            TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
+        }
     }
 
     receive() external payable {}
