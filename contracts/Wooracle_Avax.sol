@@ -44,8 +44,8 @@ contract Wooracle is InitializableOwnable, IWooracle {
     /* ----- State variables ----- */
 
     struct TokenInfo {
-        uint256 price;  // 18 - base_decimal + quote_decimal
-        uint256 coeff;  // 36 - quote
+        uint256 price; // 18 - base_decimal + quote_decimal
+        uint256 coeff; // 36 - quote
         uint256 spread; // 18
     }
 
