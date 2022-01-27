@@ -141,7 +141,7 @@ contract StrategyAlpaca is BaseStrategy {
     function _withdrawAll() private {
         uint256 amount = balanceOfPool();
         uint256 ibAmount = amount.mul(IAlpacaVault(alpacaVault).totalSupply()).div(
-                IAlpacaVault(alpacaVault).totalToken()
+            IAlpacaVault(alpacaVault).totalToken()
         );
         IFairLaunch(fairLaunch).withdraw(address(this), pid, ibAmount);
         IAlpacaVault(alpacaVault).withdraw(IERC20(alpacaVault).balanceOf(address(this)));
