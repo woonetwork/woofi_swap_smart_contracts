@@ -41,7 +41,7 @@ contract StrategyLP is BaseStrategy {
         uint256 initPid,
         address[] memory initRewardToLP0Route,
         address[] memory initRewardToLP1Route
-    ) BaseStrategy(initVault, initAccessManager) public {
+    ) public BaseStrategy(initVault, initAccessManager) {
         want = initWant;
         pid = initPid;
         rewardToLP0Route = initRewardToLP0Route;
@@ -152,15 +152,7 @@ contract StrategyLP is BaseStrategy {
 
         uint256 lp0Balance = IERC20(lpToken0).balanceOf(address(this));
         uint256 lp1Balance = IERC20(lpToken1).balanceOf(address(this));
-        IPancakeRouter(uniRouter).addLiquidity(
-            lpToken0,
-            lpToken1,
-            lp0Balance,
-            lp1Balance,
-            0,
-            0,
-            address(this),
-            now);
+        IPancakeRouter(uniRouter).addLiquidity(lpToken0, lpToken1, lp0Balance, lp1Balance, 0, 0, address(this), now);
     }
 
     function retireStrat() external override {

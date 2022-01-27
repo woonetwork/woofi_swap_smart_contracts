@@ -18,7 +18,7 @@ contract VoidStrategy is BaseStrategy {
         address initVault,
         address initAccessManager,
         address initWant
-    ) BaseStrategy(initVault, initAccessManager) public {
+    ) public BaseStrategy(initVault, initAccessManager) {
         want = initWant;
         _giveAllowances();
     }
@@ -42,8 +42,7 @@ contract VoidStrategy is BaseStrategy {
         deposit();
     }
 
-    function deposit() public override whenNotPaused {
-    }
+    function deposit() public override whenNotPaused {}
 
     function balanceOfPool() public view override returns (uint256) {
         return 0;
@@ -51,11 +50,9 @@ contract VoidStrategy is BaseStrategy {
 
     /* ----- Private Functions ----- */
 
-    function _giveAllowances() internal override {
-    }
+    function _giveAllowances() internal override {}
 
-    function _removeAllowances() internal override {
-    }
+    function _removeAllowances() internal override {}
 
     function retireStrat() external override {
         require(msg.sender == vault, '!vault');

@@ -18,8 +18,7 @@ contract StrategyCake is BaseStrategy {
 
     address public constant masterChef = address(0x73feaa1eE314F8c655E354234017bE2193C9E24E);
 
-    constructor(address initVault, address initAccessManager)
-        BaseStrategy(initVault, initAccessManager) public {
+    constructor(address initVault, address initAccessManager) public BaseStrategy(initVault, initAccessManager) {
         want = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
         _giveAllowances();
     }
