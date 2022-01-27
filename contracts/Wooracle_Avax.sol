@@ -37,18 +37,16 @@ pragma experimental ABIEncoderV2;
 
 import './libraries/InitializableOwnable.sol';
 import './interfaces/IWooracle.sol';
-import '@openzeppelin/contracts/math/SafeMath.sol';
 
-/// @title Wooracle implementation
+/// @title Wooracle implementation in Avalanche chain.
 /// @notice Will be maintained and updated periodically by Woo.network in multichains.
 contract Wooracle is InitializableOwnable, IWooracle {
     /* ----- State variables ----- */
 
-    // 128 + 64 + 64 = 256 bits (slot size)
     struct TokenInfo {
-        uint128 price; // 18 - base_decimal + quote_decimal
-        uint64 coeff; // 18. coeff <= 1e18    (2^64 = 1.84e19)
-        uint64 spread; // 18. spread <= 2e18   (2^64 = 1.84e19)
+        uint256 price; // 18 - base_decimal + quote_decimal
+        uint256 coeff; // 36 - quote
+        uint256 spread; // 18
     }
 
     mapping(address => TokenInfo) public infos;
@@ -80,7 +78,7 @@ contract Wooracle is InitializableOwnable, IWooracle {
     /// @dev Update the base token prices.
     /// @param base the baseToken address
     /// @param newPrice the new prices for the base token
-    function postPrice(address base, uint128 newPrice) external onlyOwner {
+    function postPrice(address base, uint256 newPrice) external onlyOwner {
         infos[base].price = newPrice;
         timestamp = block.timestamp;
     }
@@ -88,7 +86,7 @@ contract Wooracle is InitializableOwnable, IWooracle {
     /// @dev batch update baseTokens prices
     /// @param bases list of baseToken address
     /// @param newPrices the updated prices list
-    function postPriceList(address[] calldata bases, uint128[] calldata newPrices) external onlyOwner {
+    function postPriceList(address[] calldata bases, uint256[] calldata newPrices) external onlyOwner {
         uint256 length = bases.length;
         require(length == newPrices.length, 'Wooracle: length_INVALID');
 
@@ -102,7 +100,7 @@ contract Wooracle is InitializableOwnable, IWooracle {
     /// @dev update the spreads info.
     /// @param base baseToken address
     /// @param newSpread the new spreads
-    function postSpread(address base, uint64 newSpread) external onlyOwner {
+    function postSpread(address base, uint256 newSpread) external onlyOwner {
         infos[base].spread = newSpread;
         timestamp = block.timestamp;
     }
@@ -110,7 +108,7 @@ contract Wooracle is InitializableOwnable, IWooracle {
     /// @dev batch update the spreads info.
     /// @param bases list of baseToken address
     /// @param newSpreads list of spreads info
-    function postSpreadList(address[] calldata bases, uint64[] calldata newSpreads) external onlyOwner {
+    function postSpreadList(address[] calldata bases, uint256[] calldata newSpreads) external onlyOwner {
         uint256 length = bases.length;
         require(length == newSpreads.length, 'Wooracle: length_INVALID');
 
@@ -128,9 +126,9 @@ contract Wooracle is InitializableOwnable, IWooracle {
     /// @param newCoeff the new slippage coefficent
     function postState(
         address base,
-        uint128 newPrice,
-        uint64 newSpread,
-        uint64 newCoeff
+        uint256 newPrice,
+        uint256 newSpread,
+        uint256 newCoeff
     ) external onlyOwner {
         _setState(base, newPrice, newSpread, newCoeff);
         timestamp = block.timestamp;
@@ -143,9 +141,9 @@ contract Wooracle is InitializableOwnable, IWooracle {
     /// @param newCoeffs the slippage coefficent list
     function postStateList(
         address[] calldata bases,
-        uint128[] calldata newPrices,
-        uint64[] calldata newSpreads,
-        uint64[] calldata newCoeffs
+        uint256[] calldata newPrices,
+        uint256[] calldata newSpreads,
+        uint256[] calldata newCoeffs
     ) external onlyOwner {
         uint256 length = bases.length;
         require(
@@ -161,20 +159,20 @@ contract Wooracle is InitializableOwnable, IWooracle {
 
     /// @inheritdoc IWooracle
     function price(address base) external view override returns (uint256 priceNow, bool feasible) {
-        priceNow = uint256(infos[base].price);
+        priceNow = infos[base].price;
         feasible = priceNow != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
     }
 
     function getPrice(address base) external view override returns (uint256) {
-        return uint256(infos[base].price);
+        return infos[base].price;
     }
 
     function getSpread(address base) external view override returns (uint256) {
-        return uint256(infos[base].spread);
+        return infos[base].spread;
     }
 
     function getCoeff(address base) external view override returns (uint256) {
-        return uint256(infos[base].coeff);
+        return infos[base].coeff;
     }
 
     /// @inheritdoc IWooracle
@@ -190,9 +188,9 @@ contract Wooracle is InitializableOwnable, IWooracle {
         )
     {
         TokenInfo storage info = infos[base];
-        priceNow = uint256(info.price);
-        spreadNow = uint256(info.spread);
-        coeffNow = uint256(info.coeff);
+        priceNow = info.price;
+        spreadNow = info.spread;
+        coeffNow = info.coeff;
         feasible = priceNow != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
     }
 
@@ -204,9 +202,9 @@ contract Wooracle is InitializableOwnable, IWooracle {
 
     function _setState(
         address base,
-        uint128 newPrice,
-        uint64 newSpread,
-        uint64 newCoeff
+        uint256 newPrice,
+        uint256 newSpread,
+        uint256 newCoeff
     ) private {
         TokenInfo storage info = infos[base];
         info.price = newPrice;
