@@ -14,7 +14,7 @@ import '../../../interfaces/PancakeSwap/IPancakeRouter.sol';
 import '../../../interfaces/IWooAccessManager.sol';
 import '../../../interfaces/IStrategy.sol';
 import '../../../interfaces/IWETH.sol';
-import "../BaseStrategy.sol";
+import '../BaseStrategy.sol';
 
 contract StrategyAlpaca is BaseStrategy {
     using SafeERC20 for IERC20;
@@ -96,7 +96,6 @@ contract StrategyAlpaca is BaseStrategy {
             IAlpacaVault(alpacaVault).withdraw(IERC20(alpacaVault).balanceOf(address(this)));
             wantBalance = IERC20(want).balanceOf(address(this));
         }
-
 
         // just in case the decimal precision for the very left staking amount
         uint256 withdrawAmount = amount < wantBalance ? amount : wantBalance;
