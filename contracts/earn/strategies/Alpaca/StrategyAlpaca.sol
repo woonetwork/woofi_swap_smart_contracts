@@ -43,6 +43,8 @@ contract StrategyAlpaca is BaseStrategy {
         uint256 initPid,
         address[] memory initRewardToWantRoute
     ) public BaseStrategy(initVault, initAccessManager) {
+        (address stakeToken, , , , ) = IFairLaunch(initFairLaunch).poolInfo(initPid);
+        require(stakeToken == initAlpacaVault, 'StrategyAlpaca: wrong_initPid');
         want = initWant;
         alpacaVault = initAlpacaVault;
         fairLaunch = initFairLaunch;
@@ -62,7 +64,13 @@ contract StrategyAlpaca is BaseStrategy {
 
         if (rewardBalance > 0) {
             uint256 wantBalBefore = IERC20(want).balanceOf(address(this));
-            _swapRewards();
+            IPancakeRouter(uniRouter).swapExactTokensForTokens(
+                rewardBalance,
+                0,
+                rewardToWantRoute,
+                address(this),
+                now.add(600)
+            );
             uint256 wantBalAfter = IERC20(want).balanceOf(address(this));
             uint256 perfAmount = wantBalAfter.sub(wantBalBefore);
             chargePerformanceFee(perfAmount);
@@ -86,6 +94,7 @@ contract StrategyAlpaca is BaseStrategy {
 
     function withdraw(uint256 amount) public override {
         require(msg.sender == address(vault), 'StrategyAlpaca: not_vault');
+        require(amount > 0, 'StrategyAlpaca: amount_ZERO');
 
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         if (wantBalance < amount) {
@@ -129,23 +138,20 @@ contract StrategyAlpaca is BaseStrategy {
         TransferHelper.safeApprove(alpacaVault, fairLaunch, 0);
     }
 
-    function _swapRewards() private {
-        uint256 rewardBalance = IERC20(reward).balanceOf(address(this));
-
-        IPancakeRouter(uniRouter).swapExactTokensForTokens(
-            rewardBalance,
-            0,
-            rewardToWantRoute,
-            address(this),
-            now.add(600)
+    function _withdrawAll() private {
+        uint256 amount = balanceOfPool();
+        uint256 ibAmount = amount.mul(IAlpacaVault(alpacaVault).totalSupply()).div(
+                IAlpacaVault(alpacaVault).totalToken()
         );
+        IFairLaunch(fairLaunch).withdraw(address(this), pid, ibAmount);
+        IAlpacaVault(alpacaVault).withdraw(IERC20(alpacaVault).balanceOf(address(this)));
     }
 
     /* ----- Admin Functions ----- */
 
     function retireStrat() external override {
         require(msg.sender == vault, '!vault');
-        withdraw(balanceOfPool());
+        _withdrawAll();
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         if (wantBalance > 0) {
             TransferHelper.safeTransfer(want, vault, wantBalance);
@@ -153,7 +159,7 @@ contract StrategyAlpaca is BaseStrategy {
     }
 
     function emergencyExit() external override onlyAdmin {
-        withdraw(balanceOfPool());
+        _withdrawAll();
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         if (wantBalance > 0) {
             TransferHelper.safeTransfer(want, vault, wantBalance);

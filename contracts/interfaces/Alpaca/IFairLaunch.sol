@@ -27,4 +27,15 @@ interface IFairLaunch {
             uint256 bonusDebt,
             uint256 fundedBy
         );
+
+    function poolInfo(uint256)
+        external
+        view
+        returns (
+            address stakeToken,
+            uint256 allocPoint,
+            uint256 lastRewardBlock,
+            uint256 accAlpacaPerShare,
+            uint256 accAlpacaPerShareTilBonusEnd
+        );
 }
