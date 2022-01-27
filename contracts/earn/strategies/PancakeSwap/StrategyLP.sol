@@ -125,11 +125,8 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
 
     /* ----- Public Functions ----- */
 
-    function harvest() override public whenNotPaused {
-        require(
-            msg.sender == tx.origin || msg.sender == vault,
-            'StrategyLP: EOA_OR_VAULT'
-        );
+    function harvest() public override whenNotPaused {
+        require(msg.sender == tx.origin || msg.sender == vault, 'StrategyLP: EOA_OR_VAULT');
 
         IMasterChef(masterChef).deposit(pid, 0);
         uint256 rewardBalance = IERC20(reward).balanceOf(address(this));
@@ -141,7 +138,7 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
         }
     }
 
-    function deposit() override public whenNotPaused {
+    function deposit() public override whenNotPaused {
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
 
         if (wantBalance > 0) {
@@ -208,8 +205,8 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
 
     /* ----- Admin Functions ----- */
 
-    function retireStrat() override external {
-        require(msg.sender == vault, "!vault");
+    function retireStrat() external override {
+        require(msg.sender == vault, '!vault');
         IMasterChef(masterChef).emergencyWithdraw(pid);
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         if (wantBalance > 0) {
@@ -217,7 +214,7 @@ contract StrategyLP is Ownable, Pausable, IStrategy {
         }
     }
 
-    function emergencyExit() override external onlyAdmin {
+    function emergencyExit() external override onlyAdmin {
         IMasterChef(masterChef).emergencyWithdraw(pid);
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         if (wantBalance > 0) {
