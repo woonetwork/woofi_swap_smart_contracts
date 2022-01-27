@@ -19,7 +19,7 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
     struct StratCandidate {
         address implementation;
-        uint proposedTime;
+        uint256 proposedTime;
     }
 
     /* ----- State Variables ----- */
@@ -134,7 +134,7 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
     function earn() public {
         if (_isStratActive()) {
-            uint balanceAvail = available();
+            uint256 balanceAvail = available();
             TransferHelper.safeTransfer(address(want), address(strategy), balanceAvail);
             strategy.deposit();
         }
@@ -165,10 +165,7 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
     function proposeStrat(address _implementation) public onlyAdmin {
         require(address(this) == IStrategy(_implementation).vault(), 'Vault: STRAT_VAULT_INVALID');
-        stratCandidate = StratCandidate({
-            implementation: _implementation,
-            proposedTime: block.timestamp
-         });
+        stratCandidate = StratCandidate({implementation: _implementation, proposedTime: block.timestamp});
 
         emit NewStratCandidate(_implementation);
     }

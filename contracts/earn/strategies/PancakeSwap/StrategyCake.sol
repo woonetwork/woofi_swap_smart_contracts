@@ -35,10 +35,7 @@ contract StrategyCake is Ownable, Pausable, IStrategy {
     address public treasury;
     IWooAccessManager public accessManager;
 
-    constructor(
-        address initVault,
-        address initAccessManager
-    ) public {
+    constructor(address initVault, address initAccessManager) public {
         require(initVault != address(0), 'StrategyCake: initVault_ZERO_ADDR');
         vault = initVault;
         accessManager = IWooAccessManager(initAccessManager);
@@ -88,10 +85,7 @@ contract StrategyCake is Ownable, Pausable, IStrategy {
     /* ----- Public Functions ----- */
 
     function harvest() public override whenNotPaused {
-        require(
-            msg.sender == tx.origin || msg.sender == address(vault),
-            'StrategyCake: EOA_or_vault'
-        );
+        require(msg.sender == tx.origin || msg.sender == address(vault), 'StrategyCake: EOA_or_vault');
 
         IMasterChef(masterChef).leaveStaking(0);
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
@@ -140,7 +134,7 @@ contract StrategyCake is Ownable, Pausable, IStrategy {
     /* ----- Admin Functions ----- */
 
     function retireStrat() external override {
-        require(msg.sender == vault, "!vault");
+        require(msg.sender == vault, '!vault');
         IMasterChef(masterChef).emergencyWithdraw(0);
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         if (wantBalance > 0) {
