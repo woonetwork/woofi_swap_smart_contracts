@@ -38,7 +38,7 @@ import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
 // import Wooracle from '../build/Wooracle.json'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { Wooracle } from '../typechain'
-import WooracleArtifact from '../artifacts/contracts/Wooracle.sol/Wooracle.json'
+import WooracleArtifact from '../artifacts/contracts/Wooracle_BSC.sol/Wooracle.json'
 
 use(solidity)
 
