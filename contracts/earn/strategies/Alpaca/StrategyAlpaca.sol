@@ -165,4 +165,6 @@ contract StrategyAlpaca is BaseStrategy {
             TransferHelper.safeTransfer(want, vault, wantBalance);
         }
     }
+
+    receive() external payable {}
 }
