@@ -147,7 +147,7 @@ contract StrategyLP is BaseStrategy {
         }
 
         if (lpToken1 != reward) {
-            IPancakeRouter(uniRouter).swapExactTokensForTokens(rewardHalf, 0, rewardToLP0Route, address(this), now);
+            IPancakeRouter(uniRouter).swapExactTokensForTokens(rewardHalf, 0, rewardToLP1Route, address(this), now);
         }
 
         uint256 lp0Balance = IERC20(lpToken0).balanceOf(address(this));
