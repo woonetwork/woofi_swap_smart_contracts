@@ -59,9 +59,12 @@ contract StrategyAlpaca is BaseStrategy {
     function harvest() public override whenNotPaused {
         require(msg.sender == tx.origin || msg.sender == address(vault), 'StrategyAlpaca: EOA_or_vault');
 
-        IFairLaunch(fairLaunch).harvest(pid);
-        uint256 rewardBalance = IERC20(reward).balanceOf(address(this));
+        (uint256 amount, , , ) = IFairLaunch(fairLaunch).userInfo(pid, address(this));
+        if (amount > 0) {
+            IFairLaunch(fairLaunch).harvest(pid);
+        }
 
+        uint256 rewardBalance = IERC20(reward).balanceOf(address(this));
         if (rewardBalance > 0) {
             uint256 wantBalBefore = IERC20(want).balanceOf(address(this));
             IPancakeRouter(uniRouter).swapExactTokensForTokens(
@@ -74,8 +77,9 @@ contract StrategyAlpaca is BaseStrategy {
             uint256 wantBalAfter = IERC20(want).balanceOf(address(this));
             uint256 perfAmount = wantBalAfter.sub(wantBalBefore);
             chargePerformanceFee(perfAmount);
-            deposit();
         }
+
+        deposit();
     }
 
     function deposit() public override whenNotPaused {
