@@ -27,4 +27,6 @@ interface IStrategy {
     function emergencyExit() external;
 
     function paused() external view returns (bool);
+
+    function inCaseTokensGetStuck(address stuckToken) external;
 }

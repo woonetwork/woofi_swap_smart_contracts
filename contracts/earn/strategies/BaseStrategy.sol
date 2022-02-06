@@ -37,8 +37,12 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy {
 
     IWooAccessManager public accessManager;
 
+    event PerformanceFeeUpdated(uint256 newFee);
+    event WithdrawalFeeUpdated(uint256 newFee);
+
     constructor(address initVault, address initAccessManager) public {
         require(initVault != address(0), 'BaseStrategy: initVault_ZERO_ADDR');
+        require(initAccessManager != address(0), 'BaseStrategy: initAccessManager_ZERO_ADDR');
         vault = initVault;
         accessManager = IWooAccessManager(initAccessManager);
     }
@@ -104,18 +108,23 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy {
     function setPerformanceFee(uint256 fee) external onlyAdmin {
         require(fee <= FEE_MAX, 'BaseStrategy: fee_EXCCEEDS_MAX');
         performanceFee = fee;
+        emit PerformanceFeeUpdated(fee);
     }
 
     function setWithdrawalFee(uint256 fee) external onlyAdmin {
         require(fee <= FEE_MAX, 'BaseStrategy: fee_EXCCEEDS_MAX');
+        require(fee <= 500, 'BaseStrategy: fee_EXCCEEDS_5%'); // less than 5%
         withdrawalFee = fee;
+        emit WithdrawalFeeUpdated(fee);
     }
 
     function setPerformanceTreasury(address treasury) external onlyAdmin {
+        require(treasury != address(0), 'BaseStrategy: treasury_ZERO_ADDR');
         performanceTreasury = treasury;
     }
 
     function setWithdrawalTreasury(address treasury) external onlyAdmin {
+        require(treasury != address(0), 'BaseStrategy: treasury_ZERO_ADDR');
         withdrawalTreasury = treasury;
     }
 
@@ -136,5 +145,15 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy {
 
     function paused() public view override(IStrategy, Pausable) returns (bool) {
         return Pausable.paused();
+    }
+
+    function inCaseTokensGetStuck(address stuckToken) external override onlyAdmin {
+        require(stuckToken != address(0), 'BaseStrategy: stuckToken_ZERO_ADDR');
+        require(stuckToken != address(want), 'BaseStrategy: stuckToken_NOT_WANT');
+
+        uint256 amount = IERC20(stuckToken).balanceOf(address(this));
+        if (amount > 0) {
+            TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
+        }
     }
 }

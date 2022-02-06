@@ -32,8 +32,8 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
     mapping(address => uint256) public costSharePrice;
 
-    event NewStratCandidate(address implementation);
-    event UpgradeStrat(address implementation);
+    event NewStratCandidate(address indexed implementation);
+    event UpgradeStrat(address indexed implementation);
 
     /* ----- Constant Variables ----- */
 
@@ -153,14 +153,20 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
     }
 
     /* ----- Admin Functions ----- */
+
     function setupStrat(address _strat) public onlyAdmin {
-        require(_strat != address(0), 'Vault: STRAT_ALREADY_SET');
+        require(_strat != address(0), 'Vault: STRAT_ZERO_ADDR');
+        require(address(strategy) == address(0), 'Vault: STRAT_ALREADY_SET');
         require(address(this) == IStrategy(_strat).vault(), 'Vault: STRAT_VAULT_INVALID');
+        require(address(want) == IStrategy(_strat).want(), 'Vault: STRAT_WANT_INVALID');
         strategy = IStrategy(_strat);
+
+        emit UpgradeStrat(_strat);
     }
 
     function proposeStrat(address _implementation) public onlyAdmin {
         require(address(this) == IStrategy(_implementation).vault(), 'Vault: STRAT_VAULT_INVALID');
+        require(address(want) == IStrategy(_implementation).want(), 'Vault: STRAT_WANT_INVALID');
         stratCandidate = StratCandidate({implementation: _implementation, proposedTime: block.timestamp});
 
         emit NewStratCandidate(_implementation);
