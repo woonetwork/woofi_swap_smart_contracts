@@ -31,7 +31,6 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-
 import { expect, use } from 'chai'
 import { BigNumber, Contract, utils } from 'ethers'
 import { ethers } from 'hardhat'
@@ -266,15 +265,11 @@ describe('Vault Normal Accuracy', () => {
   })
 
   it('inCaseTokensGetStuck1', async () => {
-    await expect(vault.inCaseTokensGetStuck(ZERO_ADDRESS)).to.be.revertedWith(
-      'Vault: stuckToken_ZERO_ADDR'
-    )
+    await expect(vault.inCaseTokensGetStuck(ZERO_ADDRESS)).to.be.revertedWith('Vault: stuckToken_ZERO_ADDR')
   })
 
   it('inCaseTokensGetStuck2', async () => {
-    await expect(vault.inCaseTokensGetStuck(want.address)).to.be.revertedWith(
-      'Vault: stuckToken_NOT_WANT'
-    )
+    await expect(vault.inCaseTokensGetStuck(want.address)).to.be.revertedWith('Vault: stuckToken_NOT_WANT')
   })
 
   it('inCaseTokensGetStuck3', async () => {
@@ -296,6 +291,6 @@ describe('Vault Normal Accuracy', () => {
       value: 123456,
     })
 
-    await vault.inCaseNativeTokensGetStuck();
+    await vault.inCaseNativeTokensGetStuck()
   })
 })
