@@ -31,10 +31,11 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+
 import { expect, use } from 'chai'
-import { BigNumber, Contract } from 'ethers'
+import { BigNumber, Contract, utils } from 'ethers'
 import { ethers } from 'hardhat'
-import { deployContract, deployMockContract, solidity } from 'ethereum-waffle'
+import { deployContract, deployMockContract, solidity, MockProvider } from 'ethereum-waffle'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { TestToken, Vault, WooAccessManager, VoidStrategy, IStrategy, VoidStrategy__factory } from '../typechain'
 import TestTokenArtifact from '../artifacts/contracts/test/TestErc20Token.sol/TestToken.json'
@@ -56,6 +57,7 @@ describe('Vault Normal Accuracy', () => {
   let treasury: SignerWithAddress
 
   let want: TestToken
+  let token1: TestToken
   let vault: Vault
   let accessManager: WooAccessManager
   let strategy: VoidStrategy
@@ -63,10 +65,13 @@ describe('Vault Normal Accuracy', () => {
 
   beforeEach(async () => {
     ;[owner, user, treasury] = await ethers.getSigners()
+
     want = (await deployContract(owner, TestTokenArtifact, [])) as TestToken
     let mintWantBalance = BN_1e18.mul(1000)
     await want.mint(user.address, mintWantBalance)
     expect(await want.balanceOf(user.address)).to.eq(mintWantBalance)
+
+    token1 = (await deployContract(owner, TestTokenArtifact, [])) as TestToken
 
     accessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
     await accessManager.setVaultAdmin(owner.address, true)
@@ -258,5 +263,39 @@ describe('Vault Normal Accuracy', () => {
     expect(await vault.getPricePerFullShare()).to.eq(BN_1e18.mul(2))
     expect(await vault.available()).to.eq(0)
     expect(await vault.balance()).to.eq(BN_1e18.mul(200))
+  })
+
+  it('inCaseTokensGetStuck1', async () => {
+    await expect(vault.inCaseTokensGetStuck(ZERO_ADDRESS)).to.be.revertedWith(
+      'Vault: stuckToken_ZERO_ADDR'
+    )
+  })
+
+  it('inCaseTokensGetStuck2', async () => {
+    await expect(vault.inCaseTokensGetStuck(want.address)).to.be.revertedWith(
+      'Vault: stuckToken_NOT_WANT'
+    )
+  })
+
+  it('inCaseTokensGetStuck3', async () => {
+    const bal = ethers.utils.parseEther('1000')
+    await token1.mint(vault.address, bal)
+
+    expect(await token1.balanceOf(vault.address)).to.equal(bal)
+    expect(await token1.balanceOf(owner.address)).to.equal(0)
+
+    await vault.inCaseTokensGetStuck(token1.address)
+
+    expect(await token1.balanceOf(vault.address)).to.equal(0)
+    expect(await token1.balanceOf(owner.address)).to.equal(bal)
+  })
+
+  it('inCaseNativeTokensGetStuck', async () => {
+    await owner.sendTransaction({
+      to: vault.address,
+      value: 123456,
+    })
+
+    await vault.inCaseNativeTokensGetStuck();
   })
 })
