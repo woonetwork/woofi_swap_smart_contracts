@@ -196,5 +196,13 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
         }
     }
 
+    function inCaseNativeTokensGetStuck() external onlyAdmin {
+        // NOTE: vault never needs native tokens to do the yield farming;
+        // This native token balance indicates a user's incorrect transfer.
+        if (address(this).balance > 0) {
+            TransferHelper.safeTransferETH(msg.sender, address(this).balance);
+        }
+    }
+
     receive() external payable {}
 }
