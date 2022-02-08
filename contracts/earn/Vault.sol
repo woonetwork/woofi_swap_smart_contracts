@@ -122,7 +122,7 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
         }
     }
 
-    function earn() override public {
+    function earn() public override {
         if (_isStratActive()) {
             uint256 balanceAvail = available();
             TransferHelper.safeTransfer(want, address(strategy), balanceAvail);
