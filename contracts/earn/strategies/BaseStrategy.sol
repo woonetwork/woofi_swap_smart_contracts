@@ -6,6 +6,7 @@ import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 import '../../interfaces/PancakeSwap/IMasterChef.sol';
@@ -19,7 +20,7 @@ import '../../interfaces/IVault.sol';
  *  - fees management
  *  - pause / unpause
  */
-abstract contract BaseStrategy is Ownable, Pausable, IStrategy {
+abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 

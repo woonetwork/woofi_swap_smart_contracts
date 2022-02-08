@@ -20,7 +20,7 @@ contract VoidStrategy is BaseStrategy {
 
     /* ----- External Functions ----- */
 
-    function withdraw(uint256 amount) external override {
+    function withdraw(uint256 amount) external override nonReentrant {
         require(msg.sender == vault, 'VoidStrategy: NOT_VAULT');
 
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
@@ -37,7 +37,7 @@ contract VoidStrategy is BaseStrategy {
         deposit();
     }
 
-    function deposit() public override whenNotPaused {}
+    function deposit() public override whenNotPaused nonReentrant {}
 
     function balanceOfPool() public view override returns (uint256) {
         return 0;
