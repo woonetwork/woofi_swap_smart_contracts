@@ -24,7 +24,7 @@ contract StrategyCake is BaseStrategy {
 
     /* ----- External Functions ----- */
 
-    function withdraw(uint256 amount) external override {
+    function withdraw(uint256 amount) external override nonReentrant {
         require(msg.sender == address(vault), 'StrategyCake: NOT_VAULT');
 
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
@@ -54,7 +54,7 @@ contract StrategyCake is BaseStrategy {
         deposit();
     }
 
-    function deposit() public override whenNotPaused {
+    function deposit() public override whenNotPaused nonReentrant {
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
         if (wantBalance > 0) {
             IMasterChef(masterChef).enterStaking(wantBalance);

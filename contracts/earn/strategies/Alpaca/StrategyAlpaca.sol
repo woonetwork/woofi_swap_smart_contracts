@@ -80,7 +80,7 @@ contract StrategyAlpaca is BaseStrategy {
         deposit();
     }
 
-    function deposit() public override whenNotPaused {
+    function deposit() public override whenNotPaused nonReentrant {
         uint256 wantBalance = IERC20(want).balanceOf(address(this));
 
         if (wantBalance > 0) {
@@ -94,7 +94,7 @@ contract StrategyAlpaca is BaseStrategy {
         }
     }
 
-    function withdraw(uint256 amount) public override {
+    function withdraw(uint256 amount) public override nonReentrant {
         require(msg.sender == address(vault), 'StrategyAlpaca: not_vault');
         require(amount > 0, 'StrategyAlpaca: amount_ZERO');
 

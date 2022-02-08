@@ -39,7 +39,8 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
 
     /* ----- Constant Variables ----- */
 
-    address public constant wrapperEther = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    // WBNB: https://bscscan.com/token/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c
+    address public constant wrappedEther = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
     constructor(address initWant, address initAccessManager)
         public
@@ -65,7 +66,7 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     function deposit(uint256 amount) public payable override nonReentrant {
         require(amount > 0, 'Vault: amount_CAN_NOT_BE_ZERO');
 
-        if (want == wrapperEther) {
+        if (want == wrappedEther) {
             require(msg.value == amount, 'Vault: msg.value_INSUFFICIENT');
         } else {
             require(msg.value == 0, 'Vault: msg.value_INVALID');
@@ -76,8 +77,8 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
         }
 
         uint256 balanceBefore = balance();
-        if (want == wrapperEther) {
-            IWETH(wrapperEther).deposit{value: msg.value}();
+        if (want == wrappedEther) {
+            IWETH(wrappedEther).deposit{value: msg.value}();
         } else {
             TransferHelper.safeTransferFrom(want, msg.sender, address(this), amount);
         }
@@ -114,8 +115,8 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
             }
         }
 
-        if (want == wrapperEther) {
-            IWETH(wrapperEther).withdraw(withdrawAmount);
+        if (want == wrappedEther) {
+            IWETH(wrappedEther).withdraw(withdrawAmount);
             TransferHelper.safeTransferETH(msg.sender, withdrawAmount);
         } else {
             TransferHelper.safeTransfer(want, msg.sender, withdrawAmount);
@@ -135,7 +136,7 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     }
 
     function balance() public view override returns (uint256) {
-        return _isStratActive() ? available().add(strategy.balanceOf()) : available();
+        return address(strategy) != address(0) ? available().add(strategy.balanceOf()) : available();
     }
 
     function getPricePerFullShare() public view override returns (uint256) {
@@ -161,7 +162,10 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     function proposeStrat(address _implementation) public onlyAdmin {
         require(address(this) == IStrategy(_implementation).vault(), 'Vault: STRAT_VAULT_INVALID');
         require(want == IStrategy(_implementation).want(), 'Vault: STRAT_WANT_INVALID');
-        stratCandidate = StratCandidate({implementation: _implementation, proposedTime: block.timestamp});
+        stratCandidate = StratCandidate({
+            implementation: _implementation,
+            proposedTime: block.timestamp
+        });
 
         emit NewStratCandidate(_implementation);
     }
@@ -175,7 +179,7 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
         strategy.retireStrat();
         strategy = IStrategy(stratCandidate.implementation);
         stratCandidate.implementation = address(0);
-        stratCandidate.proposedTime = 5000000000;
+        stratCandidate.proposedTime = 5000000000; // 100+ years to ensure proposedTime check
 
         earn();
     }
