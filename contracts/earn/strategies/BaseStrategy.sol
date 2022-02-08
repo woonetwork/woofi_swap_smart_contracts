@@ -160,5 +160,4 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
             TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
         }
     }
-
 }

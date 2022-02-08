@@ -162,10 +162,7 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     function proposeStrat(address _implementation) public onlyAdmin {
         require(address(this) == IStrategy(_implementation).vault(), 'Vault: STRAT_VAULT_INVALID');
         require(want == IStrategy(_implementation).want(), 'Vault: STRAT_WANT_INVALID');
-        stratCandidate = StratCandidate({
-            implementation: _implementation,
-            proposedTime: block.timestamp
-        });
+        stratCandidate = StratCandidate({implementation: _implementation, proposedTime: block.timestamp});
 
         emit NewStratCandidate(_implementation);
     }

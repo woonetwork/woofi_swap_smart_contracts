@@ -37,8 +37,7 @@ contract VoidStrategy is BaseStrategy {
         deposit();
     }
 
-    function deposit() public override whenNotPaused nonReentrant {
-    }
+    function deposit() public override whenNotPaused nonReentrant {}
 
     function balanceOfPool() public view override returns (uint256) {
         return 0;
@@ -46,11 +45,9 @@ contract VoidStrategy is BaseStrategy {
 
     /* ----- Private Functions ----- */
 
-    function _giveAllowances() internal override {
-    }
+    function _giveAllowances() internal override {}
 
-    function _removeAllowances() internal override {
-    }
+    function _removeAllowances() internal override {}
 
     function retireStrat() external override {
         require(msg.sender == vault, '!vault');
