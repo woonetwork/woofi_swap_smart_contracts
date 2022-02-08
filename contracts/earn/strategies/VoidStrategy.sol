@@ -14,12 +14,7 @@ contract VoidStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    constructor(
-        address initVault,
-        address initAccessManager,
-        address initWant
-    ) public BaseStrategy(initVault, initAccessManager) {
-        want = initWant;
+    constructor(address initVault, address initAccessManager) public BaseStrategy(initVault, initAccessManager) {
         _giveAllowances();
     }
 

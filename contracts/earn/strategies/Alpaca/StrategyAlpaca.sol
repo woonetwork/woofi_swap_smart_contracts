@@ -37,7 +37,6 @@ contract StrategyAlpaca is BaseStrategy {
     constructor(
         address initVault,
         address initAccessManager,
-        address initWant,
         address initAlpacaVault,
         address initFairLaunch,
         uint256 initPid,
@@ -45,7 +44,6 @@ contract StrategyAlpaca is BaseStrategy {
     ) public BaseStrategy(initVault, initAccessManager) {
         (address stakeToken, , , , ) = IFairLaunch(initFairLaunch).poolInfo(initPid);
         require(stakeToken == initAlpacaVault, 'StrategyAlpaca: wrong_initPid');
-        want = initWant;
         alpacaVault = initAlpacaVault;
         fairLaunch = initFairLaunch;
         pid = initPid;

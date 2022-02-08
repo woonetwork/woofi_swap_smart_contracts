@@ -11,6 +11,7 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 import '../../interfaces/PancakeSwap/IMasterChef.sol';
 import '../../interfaces/IWooAccessManager.sol';
 import '../../interfaces/IStrategy.sol';
+import '../../interfaces/IVault.sol';
 
 /**
  * Base strategy abstract contract for:
@@ -25,6 +26,7 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy {
     /* ----- State Variables ----- */
     address public override want;
     address public immutable override vault;
+
     bool public harvestOnDeposit = true;
 
     /* ----- Constant Variables ----- */
@@ -45,6 +47,7 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy {
         require(initAccessManager != address(0), 'BaseStrategy: initAccessManager_ZERO_ADDR');
         vault = initVault;
         accessManager = IWooAccessManager(initAccessManager);
+        want = IVault(initVault).want();
     }
 
     modifier onlyAdmin() {

@@ -79,12 +79,10 @@ describe('Vault Normal Accuracy', () => {
     strategy = (await deployContract(owner, VoidStrategyArtifact, [
       vault.address,
       accessManager.address,
-      want.address,
     ])) as VoidStrategy
     strategy2 = (await deployContract(owner, VoidStrategyArtifact, [
       vault.address,
       accessManager.address,
-      want.address,
     ])) as VoidStrategy
   })
 
