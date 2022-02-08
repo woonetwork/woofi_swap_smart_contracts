@@ -16,10 +16,8 @@ contract VoidStrategy is BaseStrategy {
 
     constructor(
         address initVault,
-        address initAccessManager,
-        address initWant
+        address initAccessManager
     ) public BaseStrategy(initVault, initAccessManager) {
-        want = initWant;
         _giveAllowances();
     }
 

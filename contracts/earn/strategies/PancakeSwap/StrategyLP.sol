@@ -37,14 +37,10 @@ contract StrategyLP is BaseStrategy {
     constructor(
         address initVault,
         address initAccessManager,
-        address initWant,
         uint256 initPid,
         address[] memory initRewardToLP0Route,
         address[] memory initRewardToLP1Route
     ) public BaseStrategy(initVault, initAccessManager) {
-        require(initWant != address(0), 'StrategyLP: initWant_ZERO_ADDR');
-
-        want = initWant;
         pid = initPid;
         rewardToLP0Route = initRewardToLP0Route;
         rewardToLP1Route = initRewardToLP1Route;
@@ -63,16 +59,16 @@ contract StrategyLP is BaseStrategy {
         }
 
         require(
-            IPancakePair(initWant).token0() == lpToken0 || IPancakePair(initWant).token0() == lpToken1,
+            IPancakePair(want).token0() == lpToken0 || IPancakePair(want).token0() == lpToken1,
             'StrategyLP: LP_token0_INVALID'
         );
         require(
-            IPancakePair(initWant).token1() == lpToken0 || IPancakePair(initWant).token1() == lpToken1,
+            IPancakePair(want).token1() == lpToken0 || IPancakePair(want).token1() == lpToken1,
             'StrategyLP: LP_token1_INVALID'
         );
 
         (address lpToken, , , ) = IMasterChef(masterChef).poolInfo(initPid);
-        require(lpToken == initWant, 'StrategyLP: wrong_initPid');
+        require(lpToken == want, 'StrategyLP: wrong_initPid');
 
         _giveAllowances();
     }

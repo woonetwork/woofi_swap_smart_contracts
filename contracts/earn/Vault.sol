@@ -12,8 +12,9 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 import '../interfaces/IStrategy.sol';
 import '../interfaces/IWETH.sol';
 import '../interfaces/IWooAccessManager.sol';
+import '../interfaces/IVault.sol';
 
-contract Vault is ERC20, Ownable, ReentrancyGuard {
+contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -24,7 +25,8 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
     /* ----- State Variables ----- */
 
-    IERC20 public immutable want;
+    address public immutable override want;
+
     IWooAccessManager public immutable accessManager;
 
     IStrategy public strategy;
@@ -49,7 +51,7 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
         require(initWant != address(0), 'Vault: initWant_ZERO_ADDR');
         require(initAccessManager != address(0), 'Vault: initAccessManager_ZERO_ADDR');
 
-        want = IERC20(initWant);
+        want = initWant;
         accessManager = IWooAccessManager(initAccessManager);
     }
 
@@ -60,18 +62,10 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
     /* ----- External Functions ----- */
 
-    function depositAll() external {
-        deposit(want.balanceOf(msg.sender));
-    }
-
-    function withdrawAll() external {
-        withdraw(balanceOf(msg.sender));
-    }
-
-    function deposit(uint256 amount) public payable nonReentrant {
+    function deposit(uint256 amount) public payable override nonReentrant {
         require(amount > 0, 'Vault: amount_CAN_NOT_BE_ZERO');
 
-        if (address(want) == wrapperEther) {
+        if (want == wrapperEther) {
             require(msg.value == amount, 'Vault: msg.value_INSUFFICIENT');
         } else {
             require(msg.value == 0, 'Vault: msg.value_INVALID');
@@ -82,10 +76,10 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
         }
 
         uint256 balanceBefore = balance();
-        if (address(want) == wrapperEther) {
+        if (want == wrapperEther) {
             IWETH(wrapperEther).deposit{value: msg.value}();
         } else {
-            TransferHelper.safeTransferFrom(address(want), msg.sender, address(this), amount);
+            TransferHelper.safeTransferFrom(want, msg.sender, address(this), amount);
         }
         uint256 balanceAfter = balance();
         require(amount <= balanceAfter.sub(balanceBefore), 'Vault: amount_NOT_ENOUGH');
@@ -101,50 +95,50 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
         earn();
     }
 
-    function withdraw(uint256 shares) public nonReentrant {
+    function withdraw(uint256 shares) public override nonReentrant {
         require(shares > 0, 'Vault: shares_ZERO');
         require(shares <= balanceOf(msg.sender), 'Vault: shares_NOT_ENOUGH');
 
         uint256 withdrawAmount = shares.mul(balance()).div(totalSupply());
         _burn(msg.sender, shares);
 
-        uint256 balanceBefore = want.balanceOf(address(this));
+        uint256 balanceBefore = IERC20(want).balanceOf(address(this));
         if (balanceBefore < withdrawAmount) {
             uint256 balanceToWithdraw = withdrawAmount.sub(balanceBefore);
             require(_isStratActive(), 'Vault: STRAT_INACTIVE');
             strategy.withdraw(balanceToWithdraw);
-            uint256 balanceAfter = want.balanceOf(address(this));
+            uint256 balanceAfter = IERC20(want).balanceOf(address(this));
             if (withdrawAmount > balanceAfter) {
                 // NOTE: in case a small amount not counted in, due to the decimal precision.
                 withdrawAmount = balanceAfter;
             }
         }
 
-        if (address(want) == wrapperEther) {
+        if (want == wrapperEther) {
             IWETH(wrapperEther).withdraw(withdrawAmount);
             TransferHelper.safeTransferETH(msg.sender, withdrawAmount);
         } else {
-            TransferHelper.safeTransfer(address(want), msg.sender, withdrawAmount);
+            TransferHelper.safeTransfer(want, msg.sender, withdrawAmount);
         }
     }
 
-    function earn() public {
+    function earn() override public {
         if (_isStratActive()) {
             uint256 balanceAvail = available();
-            TransferHelper.safeTransfer(address(want), address(strategy), balanceAvail);
+            TransferHelper.safeTransfer(want, address(strategy), balanceAvail);
             strategy.deposit();
         }
     }
 
-    function available() public view returns (uint256) {
-        return want.balanceOf(address(this));
+    function available() public view override returns (uint256) {
+        return IERC20(want).balanceOf(address(this));
     }
 
-    function balance() public view returns (uint256) {
+    function balance() public view override returns (uint256) {
         return _isStratActive() ? available().add(strategy.balanceOf()) : available();
     }
 
-    function getPricePerFullShare() public view returns (uint256) {
+    function getPricePerFullShare() public view override returns (uint256) {
         return totalSupply() == 0 ? 1e18 : balance().mul(1e18).div(totalSupply());
     }
 
@@ -158,7 +152,7 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
         require(_strat != address(0), 'Vault: STRAT_ZERO_ADDR');
         require(address(strategy) == address(0), 'Vault: STRAT_ALREADY_SET');
         require(address(this) == IStrategy(_strat).vault(), 'Vault: STRAT_VAULT_INVALID');
-        require(address(want) == IStrategy(_strat).want(), 'Vault: STRAT_WANT_INVALID');
+        require(want == IStrategy(_strat).want(), 'Vault: STRAT_WANT_INVALID');
         strategy = IStrategy(_strat);
 
         emit UpgradeStrat(_strat);
@@ -166,7 +160,7 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
     function proposeStrat(address _implementation) public onlyAdmin {
         require(address(this) == IStrategy(_implementation).vault(), 'Vault: STRAT_VAULT_INVALID');
-        require(address(want) == IStrategy(_implementation).want(), 'Vault: STRAT_WANT_INVALID');
+        require(want == IStrategy(_implementation).want(), 'Vault: STRAT_WANT_INVALID');
         stratCandidate = StratCandidate({implementation: _implementation, proposedTime: block.timestamp});
 
         emit NewStratCandidate(_implementation);
@@ -188,7 +182,7 @@ contract Vault is ERC20, Ownable, ReentrancyGuard {
 
     function inCaseTokensGetStuck(address stuckToken) external onlyAdmin {
         require(stuckToken != address(0), 'Vault: stuckToken_ZERO_ADDR');
-        require(stuckToken != address(want), 'Vault: stuckToken_NOT_WANT');
+        require(stuckToken != want, 'Vault: stuckToken_NOT_WANT');
 
         uint256 amount = IERC20(stuckToken).balanceOf(address(this));
         if (amount > 0) {
