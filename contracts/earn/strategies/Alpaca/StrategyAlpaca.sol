@@ -156,6 +156,7 @@ contract StrategyAlpaca is BaseStrategy {
     }
 
     function _wrapEther() private {
+        // NOTE: alpaca vault withdrawal returns the native BNB token; so wrapEther is required.
         uint256 etherBalance = address(this).balance;
         if (etherBalance > 0) {
             IWETH(wrappedEther).deposit{value: etherBalance}();
