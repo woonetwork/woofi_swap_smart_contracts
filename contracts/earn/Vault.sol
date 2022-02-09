@@ -72,7 +72,8 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
             require(msg.value == 0, 'Vault: msg.value_INVALID');
         }
 
-        if (_isStratActive()) {
+        if (address(strategy) != address(0)) {
+            require(!strategy.paused(), 'Vault: strat_paused');
             strategy.beforeDeposit();
         }
 
