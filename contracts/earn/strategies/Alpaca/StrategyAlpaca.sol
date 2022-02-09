@@ -105,6 +105,9 @@ contract StrategyAlpaca is BaseStrategy {
             );
             IFairLaunch(fairLaunch).withdraw(address(this), pid, ibAmount);
             IAlpacaVault(alpacaVault).withdraw(IERC20(alpacaVault).balanceOf(address(this)));
+            if (want == wrappedEther) {
+                _wrapEther();
+            }
             wantBalance = IERC20(want).balanceOf(address(this));
         }
 
@@ -147,6 +150,17 @@ contract StrategyAlpaca is BaseStrategy {
         );
         IFairLaunch(fairLaunch).withdraw(address(this), pid, ibAmount);
         IAlpacaVault(alpacaVault).withdraw(IERC20(alpacaVault).balanceOf(address(this)));
+        if (want == wrappedEther) {
+            _wrapEther();
+        }
+    }
+
+    function _wrapEther() private {
+        // NOTE: alpaca vault withdrawal returns the native BNB token; so wrapEther is required.
+        uint256 etherBalance = address(this).balance;
+        if (etherBalance > 0) {
+            IWETH(wrappedEther).deposit{value: etherBalance}();
+        }
     }
 
     /* ----- Admin Functions ----- */
