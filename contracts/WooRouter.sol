@@ -187,15 +187,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         require(realToAmount >= minToAmount, 'WooRouter: realToAmount_NOT_ENOUGH');
         _generalTransfer(toToken, to, realToAmount);
 
-        emit WooRouterSwap(
-            SwapType.DodoSwap,
-            fromToken, toToken,
-            fromAmount,
-            realToAmount,
-            msg.sender,
-            to,
-            address(0)
-        );
+        emit WooRouterSwap(SwapType.DodoSwap, fromToken, toToken, fromAmount, realToAmount, msg.sender, to, address(0));
     }
 
     /* ----- External Functions ---- */
