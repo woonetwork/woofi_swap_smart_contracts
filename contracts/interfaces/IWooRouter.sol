@@ -114,7 +114,8 @@ interface IWooRouter {
         address fromToken,
         address toToken,
         uint256 fromAmount,
+        uint256 minToAmount,
         address payable to,
         bytes calldata data
-    ) external payable;
+    ) external payable returns (uint256 realToAmount);
 }

@@ -166,9 +166,10 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         address fromToken,
         address toToken,
         uint256 fromAmount,
+        uint256 minToAmount,
         address payable to,
         bytes calldata data
-    ) external payable override nonReentrant {
+    ) external payable override nonReentrant returns (uint256 realToAmount) {
         require(approveTarget != address(0), 'WooRouter: approveTarget_ADDR_ZERO');
         require(swapTarget != address(0), 'WooRouter: swapTarget_ADDR_ZERO');
         require(fromToken != address(0), 'WooRouter: fromToken_ADDR_ZERO');
@@ -182,12 +183,11 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         uint256 postBalance = _generalBalanceOf(toToken, address(this));
 
         require(preBalance <= postBalance, 'WooRouter: balance_ERROR');
-        uint256 swapBalance = postBalance.sub(preBalance);
-        if (postBalance > preBalance) {
-            _generalTransfer(toToken, to, swapBalance);
-        }
+        realToAmount = postBalance.sub(preBalance);
+        require(realToAmount >= minToAmount, 'WooRouter: realToAmount_NOT_ENOUGH');
+        _generalTransfer(toToken, to, realToAmount);
 
-        emit WooRouterSwap(SwapType.DodoSwap, fromToken, toToken, fromAmount, swapBalance, msg.sender, to, address(0));
+        emit WooRouterSwap(SwapType.DodoSwap, fromToken, toToken, fromAmount, realToAmount, msg.sender, to, address(0));
     }
 
     /* ----- External Functions ---- */
