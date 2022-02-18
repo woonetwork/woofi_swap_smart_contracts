@@ -133,7 +133,7 @@ contract VaultErc20 is IVault, ERC20, Ownable, ReentrancyGuard {
             require(_isStratActive(), 'Vault: STRAT_INACTIVE');
             strategy.withdraw(balanceToWithdraw);
             uint256 balanceAfter = IERC20(want).balanceOf(address(this));
-            require(balanceAfter.sub(balanceBefore) > 0,  'Vault: Strat_WITHDRAW_ERROR');
+            require(balanceAfter.sub(balanceBefore) > 0, 'Vault: Strat_WITHDRAW_ERROR');
             if (withdrawAmount > balanceAfter) {
                 // NOTE: Tiny diff is accepted due to the decimal precision.
                 withdrawAmount = balanceAfter;
