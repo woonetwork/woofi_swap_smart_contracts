@@ -114,6 +114,25 @@ interface IWooRouter {
         address fromToken,
         address toToken,
         uint256 fromAmount,
+        address payable to,
+        bytes calldata data
+    ) external payable;
+
+    /// @dev swap fromToken -> toToken via an external 3rd swap
+    /// @param approveTarget the contract address for token transfer approval
+    /// @param swapTarget the contract address for swap
+    /// @param fromToken the from token
+    /// @param toToken the to token
+    /// @param fromAmount the amount of fromToken to swap
+    /// @param minToAmount the min amount of swapped toToken
+    /// @param to the destination address
+    /// @param data call data for external call
+    function externalSwap(
+        address approveTarget,
+        address swapTarget,
+        address fromToken,
+        address toToken,
+        uint256 fromAmount,
         uint256 minToAmount,
         address payable to,
         bytes calldata data
