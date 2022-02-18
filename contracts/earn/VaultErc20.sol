@@ -14,7 +14,40 @@ import '../interfaces/IWETH.sol';
 import '../interfaces/IWooAccessManager.sol';
 import '../interfaces/IVault.sol';
 
-contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
+/*
+
+░██╗░░░░░░░██╗░█████╗░░█████╗░░░░░░░███████╗██╗
+░██║░░██╗░░██║██╔══██╗██╔══██╗░░░░░░██╔════╝██║
+░╚██╗████╗██╔╝██║░░██║██║░░██║█████╗█████╗░░██║
+░░████╔═████║░██║░░██║██║░░██║╚════╝██╔══╝░░██║
+░░╚██╔╝░╚██╔╝░╚█████╔╝╚█████╔╝░░░░░░██║░░░░░██║
+░░░╚═╝░░░╚═╝░░░╚════╝░░╚════╝░░░░░░░╚═╝░░░░░╚═╝
+
+*
+* MIT License
+* ===========
+*
+* Copyright (c) 2020 WooTrade
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+contract VaultErc20 is IVault, ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -36,11 +69,6 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
 
     event NewStratCandidate(address indexed implementation);
     event UpgradeStrat(address indexed implementation);
-
-    /* ----- Constant Variables ----- */
-
-    // WBNB: https://bscscan.com/token/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c
-    address public constant wrappedEther = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
 
     constructor(address initWant, address initAccessManager)
         public
@@ -66,34 +94,27 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     function deposit(uint256 amount) public payable override nonReentrant {
         require(amount > 0, 'Vault: amount_CAN_NOT_BE_ZERO');
 
-        if (want == wrappedEther) {
-            require(msg.value == amount, 'Vault: msg.value_INSUFFICIENT');
-        } else {
-            require(msg.value == 0, 'Vault: msg.value_INVALID');
-        }
-
+        // STEP 0: strategy's routing work before deposit.
         if (address(strategy) != address(0)) {
             require(!strategy.paused(), 'Vault: strat_paused');
             strategy.beforeDeposit();
         }
 
+        // STEP 1: check the deposit amount
         uint256 balanceBefore = balance();
-        if (want == wrappedEther) {
-            IWETH(wrappedEther).deposit{value: msg.value}();
-        } else {
-            TransferHelper.safeTransferFrom(want, msg.sender, address(this), amount);
-        }
+        TransferHelper.safeTransferFrom(want, msg.sender, address(this), amount);
         uint256 balanceAfter = balance();
         require(amount <= balanceAfter.sub(balanceBefore), 'Vault: amount_NOT_ENOUGH');
 
+        // STEP 2: issues the shares and update the cost basis
         uint256 shares = totalSupply() == 0 ? amount : amount.mul(totalSupply()).div(balanceBefore);
         uint256 sharesBefore = balanceOf(msg.sender);
         uint256 costBefore = costSharePrice[msg.sender];
         uint256 costAfter = (sharesBefore.mul(costBefore).add(amount.mul(1e18))).div(sharesBefore.add(shares));
         costSharePrice[msg.sender] = costAfter;
-
         _mint(msg.sender, shares);
 
+        // STEP 3
         earn();
     }
 
@@ -101,34 +122,35 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
         require(shares > 0, 'Vault: shares_ZERO');
         require(shares <= balanceOf(msg.sender), 'Vault: shares_NOT_ENOUGH');
 
+        // STEP 0: burn the user's shares to start the withdrawal process.
         uint256 withdrawAmount = shares.mul(balance()).div(totalSupply());
         _burn(msg.sender, shares);
 
+        // STEP 1: withdraw the token from strategy if needed
         uint256 balanceBefore = IERC20(want).balanceOf(address(this));
         if (balanceBefore < withdrawAmount) {
             uint256 balanceToWithdraw = withdrawAmount.sub(balanceBefore);
             require(_isStratActive(), 'Vault: STRAT_INACTIVE');
             strategy.withdraw(balanceToWithdraw);
             uint256 balanceAfter = IERC20(want).balanceOf(address(this));
+            require(balanceAfter.sub(balanceBefore) > 0, 'Vault: Strat_WITHDRAW_ERROR');
             if (withdrawAmount > balanceAfter) {
-                // NOTE: in case a small amount not counted in, due to the decimal precision.
+                // NOTE: Tiny diff is accepted due to the decimal precision.
                 withdrawAmount = balanceAfter;
             }
         }
 
-        if (want == wrappedEther) {
-            IWETH(wrappedEther).withdraw(withdrawAmount);
-            TransferHelper.safeTransferETH(msg.sender, withdrawAmount);
-        } else {
-            TransferHelper.safeTransfer(want, msg.sender, withdrawAmount);
-        }
+        // STEP 3
+        TransferHelper.safeTransfer(want, msg.sender, withdrawAmount);
     }
 
     function earn() public override {
         if (_isStratActive()) {
             uint256 balanceAvail = available();
-            TransferHelper.safeTransfer(want, address(strategy), balanceAvail);
-            strategy.deposit();
+            if (balanceAvail > 0) {
+                TransferHelper.safeTransfer(want, address(strategy), balanceAvail);
+                strategy.deposit();
+            }
         }
     }
 
@@ -183,6 +205,7 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     }
 
     function inCaseTokensGetStuck(address stuckToken) external onlyAdmin {
+        // NOTE: vault never allowed to access users' `want` token
         require(stuckToken != want, 'Vault: stuckToken_NOT_WANT');
         require(stuckToken != address(0), 'Vault: stuckToken_ZERO_ADDR');
         uint256 amount = IERC20(stuckToken).balanceOf(address(this));
@@ -190,14 +213,4 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
             TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
         }
     }
-
-    function inCaseNativeTokensGetStuck() external onlyAdmin {
-        // NOTE: vault never needs native tokens to do the yield farming;
-        // This native token balance indicates a user's incorrect transfer.
-        if (address(this).balance > 0) {
-            TransferHelper.safeTransferETH(msg.sender, address(this).balance);
-        }
-    }
-
-    receive() external payable {}
 }
