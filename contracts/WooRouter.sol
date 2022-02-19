@@ -166,10 +166,23 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         address fromToken,
         address toToken,
         uint256 fromAmount,
+        address payable to,
+        bytes calldata data
+    ) external payable override {
+        this.externalSwap(approveTarget, swapTarget, fromToken, toToken, fromAmount, 0, to, data);
+    }
+
+    /// @inheritdoc IWooRouter
+    function externalSwap(
+        address approveTarget,
+        address swapTarget,
+        address fromToken,
+        address toToken,
+        uint256 fromAmount,
         uint256 minToAmount,
         address payable to,
         bytes calldata data
-    ) external payable override nonReentrant returns (uint256 realToAmount) {
+    ) public payable override nonReentrant returns (uint256 realToAmount) {
         require(approveTarget != address(0), 'WooRouter: approveTarget_ADDR_ZERO');
         require(swapTarget != address(0), 'WooRouter: swapTarget_ADDR_ZERO');
         require(fromToken != address(0), 'WooRouter: fromToken_ADDR_ZERO');
