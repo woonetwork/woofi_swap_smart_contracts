@@ -15,7 +15,7 @@ import '../../../interfaces/IWooAccessManager.sol';
 import '../../../interfaces/IWETH.sol';
 import '../BaseStrategy.sol';
 
-contract StrategyBankerJoeNative is BaseStrategy {
+contract StrategyBankerJoe is BaseStrategy {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -28,9 +28,9 @@ contract StrategyBankerJoeNative is BaseStrategy {
 
     /* ----- Constant Variables ----- */
 
-    address public constant wrappedEther = address(0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7);
-    address public constant reward = address(0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd);
-    address public constant uniRouter = address(0x60aE616a2155Ee3d9A68541Ba4544862310933d4);
+    address public constant wrappedEther = address(0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7);  // WAVAX
+    address public constant reward = address(0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd);        // JOE
+    address public constant uniRouter = address(0x60aE616a2155Ee3d9A68541Ba4544862310933d4);     // JoeRouter
     address public constant comptroller = address(0xdc13687554205E5b89Ac783db14bb5bba4A1eDaC);
 
     /* ----- Events ----- */
@@ -53,11 +53,8 @@ contract StrategyBankerJoeNative is BaseStrategy {
 
     /* ----- External Functions ----- */
 
-    function beforeDeposit() external override {
-        require(msg.sender == address(vault), 'StrategyBankerJoeNative: !vault');
-        if (harvestOnDeposit) {
-            harvest();
-        }
+    function beforeDeposit() public override {
+        super.beforeDeposit();
         updateSupplyBal();
     }
 
@@ -70,6 +67,7 @@ contract StrategyBankerJoeNative is BaseStrategy {
     function harvest() public override whenNotPaused {
         require(msg.sender == tx.origin || msg.sender == address(vault), 'StrategyBankerJoeNative: EOA_or_vault');
 
+        // When pendingImplementation not zero address, means there is a new implement ready to replace.
         if (IComptroller(comptroller).pendingImplementation() == address(0)) {
             uint256 beforeBal = balanceOfWant();
 
@@ -83,12 +81,12 @@ contract StrategyBankerJoeNative is BaseStrategy {
             uint256 rewardBal = IERC20(reward).balanceOf(address(this));
             if (rewardBal > 0) {
                 IJoeRouter(uniRouter).swapExactTokensForTokens(rewardBal, 0, rewardToWantRoute, address(this), now);
-                chargePerformanceFee(balanceOfWant().sub(beforeBal));
                 uint256 wantHarvested = balanceOfWant().sub(beforeBal);
+                uint256 fee = chargePerformanceFee(wantHarvested);
                 deposit();
 
                 lastHarvest = block.timestamp;
-                emit StratHarvest(msg.sender, wantHarvested, balanceOf());
+                emit StratHarvest(msg.sender, wantHarvested.sub(fee), balanceOf());
             }
         } else {
             _withdrawAll();
@@ -113,9 +111,11 @@ contract StrategyBankerJoeNative is BaseStrategy {
         uint256 wantBal = balanceOfWant();
 
         if (wantBal < amount) {
-            IVToken(iToken).redeemUnderlying(amount);
+            IVToken(iToken).redeemUnderlying(amount.sub(wantBal));
             updateSupplyBal();
-            wantBal = IERC20(want).balanceOf(address(this));
+            uint256 newWantBal = IERC20(want).balanceOf(address(this));
+            require(newWantBal > wantBal, 'StrategyBankerJoeNative: !newWantBal');
+            wantBal = newWantBal;
         }
 
         uint256 withdrawAmt = amount < wantBal ? amount : wantBal;
@@ -157,6 +157,7 @@ contract StrategyBankerJoeNative is BaseStrategy {
         if (iTokenBal > 0) {
             IVToken(iToken).redeem(iTokenBal);
         }
+        updateSupplyBal();
     }
 
     /* ----- Admin Functions ----- */

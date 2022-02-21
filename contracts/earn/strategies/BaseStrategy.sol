@@ -57,16 +57,14 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
         _;
     }
 
-    /* ----- External Functions ----- */
+    /* ----- Public Functions ----- */
 
-    function beforeDeposit() external virtual override {
+    function beforeDeposit() public virtual override {
         require(msg.sender == address(vault), 'BaseStrategy: NOT_VAULT');
         if (harvestOnDeposit) {
             harvest();
         }
     }
-
-    /* ----- Public Functions ----- */
 
     function balanceOf() public view override returns (uint256) {
         return balanceOfWant().add(balanceOfPool());
