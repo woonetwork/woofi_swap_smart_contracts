@@ -28,9 +28,9 @@ contract StrategyBankerJoe is BaseStrategy {
 
     /* ----- Constant Variables ----- */
 
-    address public constant wrappedEther = address(0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7);  // WAVAX
-    address public constant reward = address(0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd);        // JOE
-    address public constant uniRouter = address(0x60aE616a2155Ee3d9A68541Ba4544862310933d4);     // JoeRouter
+    address public constant wrappedEther = address(0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7); // WAVAX
+    address public constant reward = address(0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd); // JOE
+    address public constant uniRouter = address(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter
     address public constant comptroller = address(0xdc13687554205E5b89Ac783db14bb5bba4A1eDaC);
 
     /* ----- Events ----- */
