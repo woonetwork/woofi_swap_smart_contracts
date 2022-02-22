@@ -58,6 +58,7 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
     using SafeMath for uint256;
 
     /* ----- State Variables ----- */
+
     address public override want;
     address public immutable override vault;
 
@@ -89,22 +90,24 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
         _;
     }
 
-    /* ----- External Functions ----- */
+    /* ----- Public Functions ----- */
 
-    function beforeDeposit() external override {
+    function beforeDeposit() public virtual override {
         require(msg.sender == address(vault), 'BaseStrategy: NOT_VAULT');
         if (harvestOnDeposit) {
             harvest();
         }
     }
 
-    function balanceOf() external view override returns (uint256) {
+    function balanceOf() public view override returns (uint256) {
         return balanceOfWant().add(balanceOfPool());
     }
 
     function balanceOfWant() public view override returns (uint256) {
         return IERC20(want).balanceOf(address(this));
     }
+
+    /* ----- Internal Functions ----- */
 
     function chargePerformanceFee(uint256 amount) internal returns (uint256) {
         uint256 fee = amount.mul(performanceFee).div(FEE_MAX);
