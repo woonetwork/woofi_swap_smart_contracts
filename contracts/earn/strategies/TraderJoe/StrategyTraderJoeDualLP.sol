@@ -139,6 +139,9 @@ contract StrategyTraderJoeDualLP is BaseStrategy {
         TransferHelper.safeApprove(reward, uniRouter, 0);
         TransferHelper.safeApprove(reward, uniRouter, uint256(-1));
 
+        TransferHelper.safeApprove(secondReward, uniRouter, 0);
+        TransferHelper.safeApprove(secondReward, uniRouter, uint256(-1));
+
         TransferHelper.safeApprove(lpToken0, uniRouter, 0);
         TransferHelper.safeApprove(lpToken0, uniRouter, uint256(-1));
 
@@ -149,6 +152,7 @@ contract StrategyTraderJoeDualLP is BaseStrategy {
     function _removeAllowances() internal override {
         TransferHelper.safeApprove(want, masterChef, 0);
         TransferHelper.safeApprove(reward, uniRouter, 0);
+        TransferHelper.safeApprove(secondReward, uniRouter, 0);
         TransferHelper.safeApprove(lpToken0, uniRouter, 0);
         TransferHelper.safeApprove(lpToken1, uniRouter, 0);
     }
