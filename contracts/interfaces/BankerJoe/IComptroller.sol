@@ -14,5 +14,7 @@ interface IComptroller {
 
     function pendingImplementation() external view returns (address implementation);
 
-    function claimReward(uint8 rewardType, address holder) external;
+    function claimReward(uint8 rewardType, address payable holder) external;
+
+    function claimReward(uint8 rewardType, address payable holder, address[] memory _iTokens) external;
 }
