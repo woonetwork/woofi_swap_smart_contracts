@@ -23,6 +23,7 @@ contract StrategyBankerJoe is BaseStrategy {
 
     address public iToken;
     address[] public rewardToWantRoute;
+    address[] public nativeToWantRoute;
     uint256 public lastHarvest;
     uint256 public supplyBal;
 
@@ -43,10 +44,12 @@ contract StrategyBankerJoe is BaseStrategy {
         address initVault,
         address initAccessManager,
         address initIToken,
-        address[] memory initRewardToWantRoute
+        address[] memory initRewardToWantRoute,
+        address[] memory initNativeToWantRoute
     ) public BaseStrategy(initVault, initAccessManager) {
         iToken = initIToken;
         rewardToWantRoute = initRewardToWantRoute;
+        nativeToWantRoute = initNativeToWantRoute;
 
         _giveAllowances();
     }
@@ -65,7 +68,7 @@ contract StrategyBankerJoe is BaseStrategy {
     /* ----- Public Functions ----- */
 
     function harvest() public override whenNotPaused {
-        require(msg.sender == tx.origin || msg.sender == address(vault), 'StrategyBankerJoeNative: EOA_or_vault');
+        require(msg.sender == tx.origin || msg.sender == address(vault), 'StrategyBankerJoe: EOA_or_vault');
 
         // When pendingImplementation not zero address, means there is a new implement ready to replace.
         if (IComptroller(comptroller).pendingImplementation() == address(0)) {
@@ -79,8 +82,12 @@ contract StrategyBankerJoe is BaseStrategy {
             }
 
             uint256 rewardBal = IERC20(reward).balanceOf(address(this));
+            uint256 nativeBal = IERC20(wrappedEther).balanceOf(address(this));
             if (rewardBal > 0) {
                 IJoeRouter(uniRouter).swapExactTokensForTokens(rewardBal, 0, rewardToWantRoute, address(this), now);
+                if (want != wrappedEther && nativeBal > 0) {
+                    IJoeRouter(uniRouter).swapExactTokensForTokens(nativeBal, 0, nativeToWantRoute, address(this), now);
+                }
                 uint256 wantHarvested = balanceOfWant().sub(beforeBal);
                 uint256 fee = chargePerformanceFee(wantHarvested);
                 deposit();
@@ -105,8 +112,8 @@ contract StrategyBankerJoe is BaseStrategy {
     }
 
     function withdraw(uint256 amount) public override nonReentrant {
-        require(msg.sender == vault, 'StrategyBankerJoeNative: !vault');
-        require(amount > 0, 'StrategyBankerJoeNative: !amount');
+        require(msg.sender == vault, 'StrategyBankerJoe: !vault');
+        require(amount > 0, 'StrategyBankerJoe: !amount');
 
         uint256 wantBal = balanceOfWant();
 
@@ -114,7 +121,7 @@ contract StrategyBankerJoe is BaseStrategy {
             IVToken(iToken).redeemUnderlying(amount.sub(wantBal));
             updateSupplyBal();
             uint256 newWantBal = IERC20(want).balanceOf(address(this));
-            require(newWantBal > wantBal, 'StrategyBankerJoeNative: !newWantBal');
+            require(newWantBal > wantBal, 'StrategyBankerJoe: !newWantBal');
             wantBal = newWantBal;
         }
 
@@ -163,7 +170,7 @@ contract StrategyBankerJoe is BaseStrategy {
     /* ----- Admin Functions ----- */
 
     function retireStrat() external override {
-        require(msg.sender == vault, 'StrategyBankerJoeNative: !vault');
+        require(msg.sender == vault, 'StrategyBankerJoe: !vault');
         _withdrawAll();
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         if (wantBal > 0) {
