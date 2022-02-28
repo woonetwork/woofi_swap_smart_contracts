@@ -16,5 +16,9 @@ interface IComptroller {
 
     function claimReward(uint8 rewardType, address payable holder) external;
 
-    function claimReward(uint8 rewardType, address payable holder, address[] memory _iTokens) external;
+    function claimReward(
+        uint8 rewardType,
+        address payable holder,
+        address[] memory _iTokens
+    ) external;
 }

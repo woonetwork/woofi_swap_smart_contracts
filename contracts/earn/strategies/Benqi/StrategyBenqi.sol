@@ -104,7 +104,11 @@ contract StrategyBenqi is BaseStrategy {
         }
     }
 
-    function _harvestAndSwap(uint8 index, address reward, address[] memory route) private {
+    function _harvestAndSwap(
+        uint8 index,
+        address reward,
+        address[] memory route
+    ) private {
         address[] memory markets = new address[](1);
         markets[0] = qiToken;
         IComptroller(comptroller).claimReward(index, address(this), markets);
