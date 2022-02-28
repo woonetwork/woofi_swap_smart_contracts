@@ -169,7 +169,7 @@ contract WooRouter is IWooRouter, Ownable, ReentrancyGuard {
         address payable to,
         bytes calldata data
     ) external payable override {
-        this.externalSwap(approveTarget, swapTarget, fromToken, toToken, fromAmount, 0, to, data);
+        externalSwap(approveTarget, swapTarget, fromToken, toToken, fromAmount, 0, to, data);
     }
 
     /// @inheritdoc IWooRouter
