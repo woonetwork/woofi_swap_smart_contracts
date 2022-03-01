@@ -86,7 +86,7 @@ contract StrategyBenqi is BaseStrategy {
         require(msg.sender == tx.origin || msg.sender == address(vault), 'StrategyBenqi: EOA_or_vault');
 
         // When pendingImplementation not zero address, means there is a new implement ready to replace.
-        if (IComptroller(comptroller).pendingImplementation() == address(0)) {
+        if (IComptroller(comptroller).pendingComptrollerImplementation() == address(0)) {
             uint256 beforeBal = balanceOfWant();
 
             _harvestAndSwap(0, reward1, reward1ToWantRoute);

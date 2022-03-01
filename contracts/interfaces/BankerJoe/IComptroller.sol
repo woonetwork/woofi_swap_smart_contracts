@@ -10,8 +10,6 @@ interface IComptroller {
 
     function enterMarkets(address[] memory _iTokens) external;
 
-    function pendingComptrollerImplementation() external view returns (address implementation);
-
     function pendingImplementation() external view returns (address implementation);
 
     function claimReward(uint8 rewardType, address payable holder) external;
@@ -21,4 +19,7 @@ interface IComptroller {
         address payable holder,
         address[] memory _iTokens
     ) external;
+
+    // Benqi comptroller admin method
+    function pendingComptrollerImplementation() external view returns (address implementation);
 }
