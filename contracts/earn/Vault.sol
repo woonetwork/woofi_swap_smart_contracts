@@ -32,6 +32,8 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     IStrategy public strategy;
     StratCandidate public stratCandidate;
 
+    uint256 public approvalDelay = 48 hours;
+
     mapping(address => uint256) public costSharePrice;
 
     event NewStratCandidate(address indexed implementation);
@@ -170,7 +172,7 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
 
     function upgradeStrat() public onlyAdmin {
         require(stratCandidate.implementation != address(0), 'Vault: NO_CANDIDATE');
-        require(stratCandidate.proposedTime.add(48 hours) < block.timestamp, 'Vault: TIME_INVALID');
+        require(stratCandidate.proposedTime.add(approvalDelay) < block.timestamp, 'Vault: TIME_INVALID');
 
         emit UpgradeStrat(stratCandidate.implementation);
 
@@ -180,6 +182,11 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
         stratCandidate.proposedTime = 5000000000; // 100+ years to ensure proposedTime check
 
         earn();
+    }
+
+    function setApprovalDelay(uint256 newApprovalDelay) external onlyAdmin {
+        require(newApprovalDelay > 0, 'Vault: newApprovalDelay_ZERO');
+        approvalDelay = newApprovalDelay;
     }
 
     function inCaseTokensGetStuck(address stuckToken) external onlyAdmin {
