@@ -170,7 +170,9 @@ contract StrategyBankerJoe is BaseStrategy {
         address reward,
         address[] memory route
     ) private {
-        IComptroller(comptroller).claimReward(index, address(this));
+        address[] memory markets = new address[](1);
+        markets[0] = iToken;
+        IComptroller(comptroller).claimReward(index, address(this), markets);
 
         // in case of reward token is native token (ETH/BNB/AVAX)
         uint256 toWrapBal = address(this).balance;
