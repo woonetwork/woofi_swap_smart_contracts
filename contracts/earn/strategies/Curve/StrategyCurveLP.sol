@@ -210,6 +210,10 @@ contract StrategyCurveLP is BaseStrategy {
 
     /* ----- Admin Functions ----- */
 
+    function setCrvEnabled(bool newCrvEnabled) external onlyAdmin {
+        crvEnabled = newCrvEnabled;
+    }
+
     function setCrvRoute(address newCrvRouter, address[] memory newCrvToNative) external onlyAdmin {
         require(newCrvToNative[0] == crv, 'StrategyCurveLP: !crv');
         require(newCrvToNative[newCrvToNative.length - 1] == native, 'StrategyCurveLP: !native');
