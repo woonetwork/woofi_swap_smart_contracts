@@ -21,8 +21,8 @@ contract StrategyCurveLP is BaseStrategy {
 
     // Tokens used
     address public crv;
-    address public coReward;  // cooperation reward
-    address public wNative;  // wrapped native
+    address public coReward; // cooperation reward
+    address public wNative; // wrapped native
     address public depositToken;
 
     // Third party contracts
