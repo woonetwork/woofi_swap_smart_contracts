@@ -21,7 +21,8 @@ contract StrategyCurveLP is BaseStrategy {
 
     // Tokens used
     address public crv;
-    address public native;
+    address public coReward;  // cooperation reward
+    address public wNative;  // wrapped native
     address public depositToken;
 
     // Third party contracts
@@ -32,13 +33,11 @@ contract StrategyCurveLP is BaseStrategy {
     bool public useUnderlying;
 
     // Routes
-    address[] public crvToNativeRoute;
-    address[] public nativeToDepositRoute;
+    address[] public crvToWNativeRoute;
+    address[] public coRewardToWNativeRoute;
+    address[] public wNativeToDepositRoute;
 
-    // if no CRV rewards yet, can enable later with custom router
-    bool public crvEnabled = true;
     address public crvRouter;
-
     address public uniRouter;
 
     uint256 public lastHarvest;
@@ -57,8 +56,9 @@ contract StrategyCurveLP is BaseStrategy {
         uint256 initPoolSize,
         uint256 initDepositIndex,
         bool initUseUnderLying,
-        address[] memory initCrvToNativeRoute,
-        address[] memory initNativeToDepositRoute,
+        address[] memory initCrvToWNativeRoute,
+        address[] memory initCoRewardToWNativeRoute,
+        address[] memory initWNativeToDepositRoute,
         address initUniRouter
     ) public BaseStrategy(initVault, initAccessManager) {
         rewardsGauge = initRewardsGauge;
@@ -67,14 +67,16 @@ contract StrategyCurveLP is BaseStrategy {
         depositIndex = initDepositIndex;
         useUnderlying = initUseUnderLying;
 
-        crv = initCrvToNativeRoute[0];
-        native = initCrvToNativeRoute[initCrvToNativeRoute.length - 1];
-        crvToNativeRoute = initCrvToNativeRoute;
+        crv = initCrvToWNativeRoute[0];
+        coReward = initCoRewardToWNativeRoute[0];
+        wNative = initCrvToWNativeRoute[initCrvToWNativeRoute.length - 1];
+        crvToWNativeRoute = initCrvToWNativeRoute;
+        coRewardToWNativeRoute = initCoRewardToWNativeRoute;
         crvRouter = initUniRouter;
 
-        require(initNativeToDepositRoute[0] == native, 'StrategyCurveLP: initNativeToDepositRoute[0] != native');
-        depositToken = initNativeToDepositRoute[initNativeToDepositRoute.length - 1];
-        nativeToDepositRoute = initNativeToDepositRoute;
+        require(initWNativeToDepositRoute[0] == wNative, 'StrategyCurveLP: initWNativeToDepositRoute[0] != wNative');
+        depositToken = initWNativeToDepositRoute[initWNativeToDepositRoute.length - 1];
+        wNativeToDepositRoute = initWNativeToDepositRoute;
         uniRouter = initUniRouter;
 
         _giveAllowances();
@@ -82,12 +84,16 @@ contract StrategyCurveLP is BaseStrategy {
 
     /* ----- External Functions ----- */
 
-    function crvToNative() external view returns (address[] memory) {
-        return crvToNativeRoute;
+    function crvToWNative() external view returns (address[] memory) {
+        return crvToWNativeRoute;
     }
 
-    function nativeToDeposit() external view returns (address[] memory) {
-        return nativeToDepositRoute;
+    function coRewardToWNative() external view returns (address[] memory) {
+        return coRewardToWNativeRoute;
+    }
+
+    function wNativeToDeposit() external view returns (address[] memory) {
+        return wNativeToDepositRoute;
     }
 
     /* ----- Public Functions ----- */
@@ -97,8 +103,12 @@ contract StrategyCurveLP is BaseStrategy {
 
         IRewardsGauge(rewardsGauge).claim_rewards(address(this));
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
-        uint256 nativeBal = IERC20(native).balanceOf(address(this));
-        if (nativeBal > 0 || crvBal > 0) {
+        uint256 coRewardBal = 0;
+        if (coReward != address(0)) {
+            coRewardBal = IERC20(coReward).balanceOf(address(this));
+        }
+        uint256 wNativeBal = IERC20(wNative).balanceOf(address(this));
+        if (wNativeBal > 0 || crvBal > 0 || coRewardBal > 0) {
             uint256 beforeBal = balanceOfWant();
             _addLiquidity();
             uint256 wantHarvested = balanceOfWant().sub(beforeBal);
@@ -147,39 +157,59 @@ contract StrategyCurveLP is BaseStrategy {
     function _giveAllowances() internal override {
         TransferHelper.safeApprove(want, rewardsGauge, 0);
         TransferHelper.safeApprove(want, rewardsGauge, uint256(-1));
-        TransferHelper.safeApprove(native, uniRouter, 0);
-        TransferHelper.safeApprove(native, uniRouter, uint256(-1));
         TransferHelper.safeApprove(crv, crvRouter, 0);
         TransferHelper.safeApprove(crv, crvRouter, uint256(-1));
+        if (coReward != address(0)) {
+            TransferHelper.safeApprove(coReward, uniRouter, 0);
+            TransferHelper.safeApprove(coReward, uniRouter, uint256(-1));
+        }
+        TransferHelper.safeApprove(wNative, uniRouter, 0);
+        TransferHelper.safeApprove(wNative, uniRouter, uint256(-1));
         TransferHelper.safeApprove(depositToken, pool, 0);
         TransferHelper.safeApprove(depositToken, pool, uint256(-1));
     }
 
     function _removeAllowances() internal override {
         TransferHelper.safeApprove(want, rewardsGauge, 0);
-        TransferHelper.safeApprove(native, uniRouter, 0);
+        if (coReward != address(0)) {
+            TransferHelper.safeApprove(coReward, uniRouter, 0);
+        }
+        TransferHelper.safeApprove(wNative, uniRouter, 0);
         TransferHelper.safeApprove(crv, crvRouter, 0);
         TransferHelper.safeApprove(depositToken, pool, 0);
     }
 
     function _addLiquidity() internal {
         uint256 crvBal = IERC20(crv).balanceOf(address(this));
-        if (crvEnabled && crvBal > 0) {
+        if (crvBal > 0) {
             IUniswapRouter(crvRouter).swapExactTokensForTokens(
                 crvBal,
                 0,
-                crvToNativeRoute,
+                crvToWNativeRoute,
                 address(this),
                 block.timestamp
             );
         }
 
-        uint256 nativeBal = IERC20(native).balanceOf(address(this));
-        if (depositToken != native) {
+        if (coReward != address(0)) {
+            uint256 coRewardBal = IERC20(coReward).balanceOf(address(this));
+            if (coRewardBal > 0) {
+                IUniswapRouter(uniRouter).swapExactTokensForTokens(
+                    coRewardBal,
+                    0,
+                    coRewardToWNativeRoute,
+                    address(this),
+                    block.timestamp
+                );
+            }
+        }
+
+        uint256 wNativeBal = IERC20(wNative).balanceOf(address(this));
+        if (depositToken != wNative) {
             IUniswapRouter(uniRouter).swapExactTokensForTokens(
-                nativeBal,
+                wNativeBal,
                 0,
-                nativeToDepositRoute,
+                wNativeToDepositRoute,
                 address(this),
                 block.timestamp
             );
@@ -210,16 +240,12 @@ contract StrategyCurveLP is BaseStrategy {
 
     /* ----- Admin Functions ----- */
 
-    function setCrvEnabled(bool newCrvEnabled) external onlyAdmin {
-        crvEnabled = newCrvEnabled;
-    }
-
-    function setCrvRoute(address newCrvRouter, address[] memory newCrvToNative) external onlyAdmin {
-        require(newCrvToNative[0] == crv, 'StrategyCurveLP: !crv');
-        require(newCrvToNative[newCrvToNative.length - 1] == native, 'StrategyCurveLP: !native');
+    function setCrvRoute(address newCrvRouter, address[] memory newCrvToWNativeRoute) external onlyAdmin {
+        require(newCrvToWNativeRoute[0] == crv, 'StrategyCurveLP: !crv');
+        require(newCrvToWNativeRoute[newCrvToWNativeRoute.length - 1] == wNative, 'StrategyCurveLP: !wNative');
 
         _removeAllowances();
-        crvToNativeRoute = newCrvToNative;
+        crvToWNativeRoute = newCrvToWNativeRoute;
         crvRouter = newCrvRouter;
         _giveAllowances();
     }
