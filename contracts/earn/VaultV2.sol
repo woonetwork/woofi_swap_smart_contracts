@@ -46,7 +46,7 @@ import '../interfaces/IVault.sol';
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
+contract WOOFiVaultV2 is IVault, ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -74,51 +74,54 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     /* ----- Constant Variables ----- */
 
     // WBNB: https://bscscan.com/token/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c
-    address public constant wrappedEther = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    // WAVAX: https://snowtrace.io/address/0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7
+    address public immutable weth;
 
-    constructor(address initWant, address initAccessManager)
+    constructor(address _weth, address _want, address _accessManager)
         public
         ERC20(
-            string(abi.encodePacked('WOOFi Earn ', ERC20(initWant).name())),
-            string(abi.encodePacked('we', ERC20(initWant).symbol()))
+            string(abi.encodePacked('WOOFi Earn ', ERC20(_want).name())),
+            string(abi.encodePacked('we', ERC20(_want).symbol()))
         )
     {
-        require(initWant != address(0), 'Vault: initWant_ZERO_ADDR');
-        require(initAccessManager != address(0), 'Vault: initAccessManager_ZERO_ADDR');
+        require(_weth != address(0), 'WOOFiVaultV2: weth_ZERO_ADDR');
+        require(_want != address(0), 'WOOFiVaultV2: want_ZERO_ADDR');
+        require(_accessManager != address(0), 'WOOFiVaultV2: accessManager_ZERO_ADDR');
 
-        want = initWant;
-        accessManager = IWooAccessManager(initAccessManager);
+        weth = _weth;
+        want = _want;
+        accessManager = IWooAccessManager(_accessManager);
     }
 
     modifier onlyAdmin() {
-        require(owner() == _msgSender() || accessManager.isVaultAdmin(msg.sender), 'Vault: NOT_ADMIN');
+        require(owner() == msg.sender || accessManager.isVaultAdmin(msg.sender), 'WOOFiVaultV2: NOT_ADMIN');
         _;
     }
 
     /* ----- External Functions ----- */
 
     function deposit(uint256 amount) public payable override nonReentrant {
-        require(amount > 0, 'Vault: amount_CAN_NOT_BE_ZERO');
+        require(amount > 0, 'WOOFiVaultV2: amount_CAN_NOT_BE_ZERO');
 
-        if (want == wrappedEther) {
-            require(msg.value == amount, 'Vault: msg.value_INSUFFICIENT');
+        if (want == weth) {
+            require(msg.value == amount, 'WOOFiVaultV2: msg.value_INSUFFICIENT');
         } else {
-            require(msg.value == 0, 'Vault: msg.value_INVALID');
+            require(msg.value == 0, 'WOOFiVaultV2: msg.value_INVALID');
         }
 
         if (address(strategy) != address(0)) {
-            require(!strategy.paused(), 'Vault: strat_paused');
+            require(!strategy.paused(), 'WOOFiVaultV2: strat_paused');
             strategy.beforeDeposit();
         }
 
         uint256 balanceBefore = balance();
-        if (want == wrappedEther) {
-            IWETH(wrappedEther).deposit{value: msg.value}();
+        if (want == weth) {
+            IWETH(weth).deposit{value: msg.value}();
         } else {
             TransferHelper.safeTransferFrom(want, msg.sender, address(this), amount);
         }
         uint256 balanceAfter = balance();
-        require(amount <= balanceAfter.sub(balanceBefore), 'Vault: amount_NOT_ENOUGH');
+        require(amount <= balanceAfter.sub(balanceBefore), 'WOOFiVaultV2: amount_NOT_ENOUGH');
 
         uint256 shares = totalSupply() == 0 ? amount : amount.mul(totalSupply()).div(balanceBefore);
         uint256 sharesBefore = balanceOf(msg.sender);
@@ -132,8 +135,8 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     }
 
     function withdraw(uint256 shares) public override nonReentrant {
-        require(shares > 0, 'Vault: shares_ZERO');
-        require(shares <= balanceOf(msg.sender), 'Vault: shares_NOT_ENOUGH');
+        require(shares > 0, 'WOOFiVaultV2: shares_ZERO');
+        require(shares <= balanceOf(msg.sender), 'WOOFiVaultV2: shares_NOT_ENOUGH');
 
         if (address(strategy) != address(0)) {
             strategy.beforeWithdraw();
@@ -145,7 +148,7 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
         uint256 balanceBefore = IERC20(want).balanceOf(address(this));
         if (balanceBefore < withdrawAmount) {
             uint256 balanceToWithdraw = withdrawAmount.sub(balanceBefore);
-            require(_isStratActive(), 'Vault: STRAT_INACTIVE');
+            require(_isStratActive(), 'WOOFiVaultV2: STRAT_INACTIVE');
             strategy.withdraw(balanceToWithdraw);
             uint256 balanceAfter = IERC20(want).balanceOf(address(this));
             if (withdrawAmount > balanceAfter) {
@@ -154,8 +157,8 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
             }
         }
 
-        if (want == wrappedEther) {
-            IWETH(wrappedEther).withdraw(withdrawAmount);
+        if (want == weth) {
+            IWETH(weth).withdraw(withdrawAmount);
             TransferHelper.safeTransferETH(msg.sender, withdrawAmount);
         } else {
             TransferHelper.safeTransfer(want, msg.sender, withdrawAmount);
@@ -189,26 +192,26 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     /* ----- Admin Functions ----- */
 
     function setupStrat(address _strat) public onlyAdmin {
-        require(_strat != address(0), 'Vault: STRAT_ZERO_ADDR');
-        require(address(strategy) == address(0), 'Vault: STRAT_ALREADY_SET');
-        require(address(this) == IStrategy(_strat).vault(), 'Vault: STRAT_VAULT_INVALID');
-        require(want == IStrategy(_strat).want(), 'Vault: STRAT_WANT_INVALID');
+        require(_strat != address(0), 'WOOFiVaultV2: STRAT_ZERO_ADDR');
+        require(address(strategy) == address(0), 'WOOFiVaultV2: STRAT_ALREADY_SET');
+        require(address(this) == IStrategy(_strat).vault(), 'WOOFiVaultV2: STRAT_VAULT_INVALID');
+        require(want == IStrategy(_strat).want(), 'WOOFiVaultV2: STRAT_WANT_INVALID');
         strategy = IStrategy(_strat);
 
         emit UpgradeStrat(_strat);
     }
 
     function proposeStrat(address _implementation) public onlyAdmin {
-        require(address(this) == IStrategy(_implementation).vault(), 'Vault: STRAT_VAULT_INVALID');
-        require(want == IStrategy(_implementation).want(), 'Vault: STRAT_WANT_INVALID');
+        require(address(this) == IStrategy(_implementation).vault(), 'WOOFiVaultV2: STRAT_VAULT_INVALID');
+        require(want == IStrategy(_implementation).want(), 'WOOFiVaultV2: STRAT_WANT_INVALID');
         stratCandidate = StratCandidate({implementation: _implementation, proposedTime: block.timestamp});
 
         emit NewStratCandidate(_implementation);
     }
 
     function upgradeStrat() public onlyAdmin {
-        require(stratCandidate.implementation != address(0), 'Vault: NO_CANDIDATE');
-        require(stratCandidate.proposedTime.add(approvalDelay) < block.timestamp, 'Vault: TIME_INVALID');
+        require(stratCandidate.implementation != address(0), 'WOOFiVaultV2: NO_CANDIDATE');
+        require(stratCandidate.proposedTime.add(approvalDelay) < block.timestamp, 'WOOFiVaultV2: TIME_INVALID');
 
         emit UpgradeStrat(stratCandidate.implementation);
 
@@ -220,14 +223,14 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
         earn();
     }
 
-    function setApprovalDelay(uint256 newApprovalDelay) external onlyAdmin {
-        require(newApprovalDelay > 0, 'Vault: newApprovalDelay_ZERO');
-        approvalDelay = newApprovalDelay;
+    function setApprovalDelay(uint256 _approvalDelay) external onlyAdmin {
+        require(_approvalDelay > 0, 'WOOFiVaultV2: approvalDelay_ZERO');
+        approvalDelay = _approvalDelay;
     }
 
     function inCaseTokensGetStuck(address stuckToken) external onlyAdmin {
-        require(stuckToken != want, 'Vault: stuckToken_NOT_WANT');
-        require(stuckToken != address(0), 'Vault: stuckToken_ZERO_ADDR');
+        require(stuckToken != want, 'WOOFiVaultV2: stuckToken_NOT_WANT');
+        require(stuckToken != address(0), 'WOOFiVaultV2: stuckToken_ZERO_ADDR');
         uint256 amount = IERC20(stuckToken).balanceOf(address(this));
         if (amount > 0) {
             TransferHelper.safeTransfer(stuckToken, msg.sender, amount);
