@@ -3,8 +3,7 @@
 //
 // When running the script with `npx hardhat run <script>` you'll find the Hardhat
 // Runtime Environment's members available in the global scope.
-import {ethers, run} from "hardhat";
-
+import { ethers, run } from 'hardhat'
 
 let needDeploy = false
 let verifyContract = '0xcd1B9810872aeC66d450c761E93638FB9FE09DB0'
@@ -27,23 +26,23 @@ async function main() {
 
   // We get the contract to deploy
   if (needDeploy) {
-    let wooStakingVaultFactory = await ethers.getContractFactory("WooStakingVault");
-    wooStakingVault = await wooStakingVaultFactory.deploy(...constructorParams);
-    await wooStakingVault.deployed();
-    console.log("Avalanche WooStakingVault:\n",wooStakingVault.address);
+    let wooStakingVaultFactory = await ethers.getContractFactory('WooStakingVault')
+    wooStakingVault = await wooStakingVaultFactory.deploy(...constructorParams)
+    await wooStakingVault.deployed()
+    console.log('Avalanche WooStakingVault:\n', wooStakingVault.address)
   } else {
-    wooStakingVault = {address: verifyContract}
+    wooStakingVault = { address: verifyContract }
   }
 
-  await run("verify:verify", {
+  await run('verify:verify', {
     address: wooStakingVault.address,
-    constructorArguments: constructorParams
+    constructorArguments: constructorParams,
   })
 }
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
 main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+  console.error(error)
+  process.exitCode = 1
+})

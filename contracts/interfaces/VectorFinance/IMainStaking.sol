@@ -44,27 +44,15 @@ interface IMainStaking {
 
     function unstakePTP() external;
 
-    function pendingPtpForPool(address _token)
-        external
-        view
-        returns (uint256 pendingPtp);
+    function pendingPtpForPool(address _token) external view returns (uint256 pendingPtp);
 
     function masterPlatypus() external view returns (address);
 
-    function getLPTokensForShares(uint256 amount, address token)
-        external
-        view
-        returns (uint256);
+    function getLPTokensForShares(uint256 amount, address token) external view returns (uint256);
 
-    function getSharesForDepositTokens(uint256 amount, address token)
-        external
-        view
-        returns (uint256);
+    function getSharesForDepositTokens(uint256 amount, address token) external view returns (uint256);
 
-    function getDepositTokensForShares(uint256 amount, address token)
-        external
-        view
-        returns (uint256);
+    function getDepositTokensForShares(uint256 amount, address token) external view returns (uint256);
 
     function registerPool(
         uint256 _pid,

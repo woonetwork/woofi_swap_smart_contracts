@@ -15,7 +15,6 @@ import '../../../interfaces/IWooAccessManager.sol';
 import '../../../interfaces/IWETH.sol';
 import '../BaseStrategy.sol';
 
-
 /*
 
 ░██╗░░░░░░░██╗░█████╗░░█████╗░░░░░░░███████╗██╗
@@ -88,8 +87,14 @@ contract StrategyPlatypusVector is BaseStrategy {
         reward1ToWantRoute = initReward1ToWantRoute;
         reward2ToWantRoute = initReward2ToWantRoute;
 
-        require(reward1ToWantRoute.length > 0 && reward1ToWantRoute[reward1ToWantRoute.length - 1] == want, 'StrategyPlatypusVector: !route');
-        require(reward2ToWantRoute.length > 0 && reward2ToWantRoute[reward2ToWantRoute.length - 1] == want, 'StrategyPlatypusVector: !route');
+        require(
+            reward1ToWantRoute.length > 0 && reward1ToWantRoute[reward1ToWantRoute.length - 1] == want,
+            'StrategyPlatypusVector: !route'
+        );
+        require(
+            reward2ToWantRoute.length > 0 && reward2ToWantRoute[reward2ToWantRoute.length - 1] == want,
+            'StrategyPlatypusVector: !route'
+        );
 
         _giveAllowances();
     }
