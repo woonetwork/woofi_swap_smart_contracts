@@ -14,7 +14,7 @@ dotenvConfig({ path: resolve(__dirname, './.env') })
 const chainIds = {
   ganache: 1337,
   goerli: 5,
-  hardhat: 31337,
+  hardhat: 43114,
   kovan: 42,
   mainnet: 1,
   rinkeby: 4,
@@ -55,9 +55,9 @@ export default {
     },
     avax_main: {
       url: 'https://api.avax.network/ext/bc/C/rpc',
-      gasPrice: 25000000000,
+      gasPrice: 40000000000,
       chainId: 43114,
-      accounts: [],
+      accounts: [process.env.AVAX_DEPLOYER],
     },
   },
   solidity: {
@@ -88,8 +88,8 @@ export default {
     timeout: 10000,
   },
   gasReporter: {
-    currency: 'BNB',
+    currency: 'AVAX',
     enabled: true,
-    gasPrice: 5,
+    gasPrice: 35,
   },
 }

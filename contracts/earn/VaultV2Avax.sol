@@ -46,7 +46,7 @@ import '../interfaces/IVault.sol';
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
+contract VaultV2Avax is IVault, ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -74,7 +74,8 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     /* ----- Constant Variables ----- */
 
     // WBNB: https://bscscan.com/token/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c
-    address public constant wrappedEther = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    // WAVAX: https://snowtrace.io/address/0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7
+    address public constant wrappedEther = 0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7;
 
     constructor(address initWant, address initAccessManager)
         public
@@ -134,6 +135,10 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     function withdraw(uint256 shares) public override nonReentrant {
         require(shares > 0, 'Vault: shares_ZERO');
         require(shares <= balanceOf(msg.sender), 'Vault: shares_NOT_ENOUGH');
+
+        if (address(strategy) != address(0)) {
+            strategy.beforeWithdraw();
+        }
 
         uint256 withdrawAmount = shares.mul(balance()).div(totalSupply());
         _burn(msg.sender, shares);

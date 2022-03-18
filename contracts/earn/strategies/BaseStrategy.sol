@@ -62,7 +62,9 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
     address public override want;
     address public immutable override vault;
 
+    // Default them to 'true' to make the system more fair, but cost a bit more gas.
     bool public harvestOnDeposit = true;
+    bool public harvestOnWithdraw = true;
 
     /* ----- Constant Variables ----- */
 
@@ -95,6 +97,13 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
     function beforeDeposit() public virtual override {
         require(msg.sender == address(vault), 'BaseStrategy: NOT_VAULT');
         if (harvestOnDeposit) {
+            harvest();
+        }
+    }
+
+    function beforeWithdraw() public virtual override {
+        require(msg.sender == address(vault), 'BaseStrategy: NOT_VAULT');
+        if (harvestOnWithdraw) {
             harvest();
         }
     }
@@ -172,6 +181,10 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
         harvestOnDeposit = newHarvestOnDeposit;
     }
 
+    function setHarvestOnWithdraw(bool newHarvestOnWithdraw) external onlyAdmin {
+        harvestOnWithdraw = newHarvestOnWithdraw;
+    }
+
     function pause() public onlyAdmin {
         _pause();
         _removeAllowances();
@@ -188,7 +201,7 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
     }
 
     function inCaseTokensGetStuck(address stuckToken) external override onlyAdmin {
-        require(stuckToken != address(want), 'BaseStrategy: stuckToken_NOT_WANT');
+        require(stuckToken != want, 'BaseStrategy: stuckToken_NOT_WANT');
         require(stuckToken != address(0), 'BaseStrategy: stuckToken_ZERO_ADDR');
 
         uint256 amount = IERC20(stuckToken).balanceOf(address(this));

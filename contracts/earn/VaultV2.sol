@@ -135,6 +135,10 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
         require(shares > 0, 'Vault: shares_ZERO');
         require(shares <= balanceOf(msg.sender), 'Vault: shares_NOT_ENOUGH');
 
+        if (address(strategy) != address(0)) {
+            strategy.beforeWithdraw();
+        }
+
         uint256 withdrawAmount = shares.mul(balance()).div(totalSupply());
         _burn(msg.sender, shares);
 
