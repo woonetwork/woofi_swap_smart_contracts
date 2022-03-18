@@ -77,7 +77,11 @@ contract WOOFiVaultV2 is IVault, ERC20, Ownable, ReentrancyGuard {
     // WAVAX: https://snowtrace.io/address/0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7
     address public immutable weth;
 
-    constructor(address _weth, address _want, address _accessManager)
+    constructor(
+        address _weth,
+        address _want,
+        address _accessManager
+    )
         public
         ERC20(
             string(abi.encodePacked('WOOFi Earn ', ERC20(_want).name())),
