@@ -56,8 +56,8 @@ contract StrategyGeist is BaseStrategy {
     using SafeMath for uint256;
 
     struct TokenAddresses {
-        address token;   // Deposit Token
-        address gToken;  // Token that minted by lend
+        address token; // Deposit Token
+        address gToken; // Token that minted by lend
     }
 
     /* ----- State Variables ----- */
@@ -73,8 +73,8 @@ contract StrategyGeist is BaseStrategy {
 
     /* ----- Constant Variables ----- */
 
-    address public constant wNative = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83);   // WFTM
-    address public constant reward = address(0xd8321AA83Fb0a4ECd6348D4577431310A6E0814d);    // GEIST
+    address public constant wNative = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); // WFTM
+    address public constant reward = address(0xd8321AA83Fb0a4ECd6348D4577431310A6E0814d); // GEIST
     address public constant uniRouter = address(0xF491e7B69E4244ad4002BC14e878a34207E38c29); // SpookySwapRouter
 
     address public dataProvider = address(0xf3B0611e2E4D2cd6aB4bb3e01aDe211c3f42A8C3);
@@ -95,7 +95,7 @@ contract StrategyGeist is BaseStrategy {
         address[] memory _rewardToWNativeRoute,
         address[][] memory _extraRewardToWNativeRoutes
     ) public BaseStrategy(_vault, _accessManager) {
-        (address gToken,,) = IDataProvider(dataProvider).getReserveTokensAddresses(_want);
+        (address gToken, , ) = IDataProvider(dataProvider).getReserveTokensAddresses(_want);
         wantTokens = TokenAddresses(_want, gToken);
 
         rewardToWNativeRoute = _rewardToWNativeRoute;
@@ -103,7 +103,7 @@ contract StrategyGeist is BaseStrategy {
 
         for (uint256 i; i < extraRewardToWNativeRoutes.length; i++) {
             address _token = extraRewardToWNativeRoutes[i][0];
-            (address _gToken,,) = IDataProvider(dataProvider).getReserveTokensAddresses(_token);
+            (address _gToken, , ) = IDataProvider(dataProvider).getReserveTokensAddresses(_token);
             rewards.push(TokenAddresses(_token, _gToken));
         }
 
@@ -242,9 +242,9 @@ contract StrategyGeist is BaseStrategy {
 
     function addRewardToNativeRoute(address[] memory _rewardToWNativeRoute) external onlyAdmin {
         address _token = _rewardToWNativeRoute[0];
-        (address _gToken,,) = IDataProvider(dataProvider).getReserveTokensAddresses(_token);
+        (address _gToken, , ) = IDataProvider(dataProvider).getReserveTokensAddresses(_token);
 
-        rewards.push(TokenAddresses(_token,_gToken));
+        rewards.push(TokenAddresses(_token, _gToken));
         extraRewardToWNativeRoutes.push(_rewardToWNativeRoute);
 
         TransferHelper.safeApprove(_token, uniRouter, uint256(-1));
