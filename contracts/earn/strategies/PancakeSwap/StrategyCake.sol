@@ -8,6 +8,7 @@ import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
+import '../../../interfaces/PancakeSwap/IMasterChef.sol';
 import '../BaseStrategy.sol';
 
 contract StrategyCake is BaseStrategy {
