@@ -22,6 +22,7 @@ const chainIds = {
 }
 
 const MNEMONIC = process.env.MNEMONIC || 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks.'
+const DEPLOYER = process.env.DEPLOYER || 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks.'
 
 export default {
   defaultNetwork: 'hardhat',
@@ -57,7 +58,7 @@ export default {
       url: 'https://api.avax.network/ext/bc/C/rpc',
       gasPrice: 40000000000,
       chainId: 43114,
-      accounts: [process.env.AVAX_DEPLOYER],
+      accounts: [],
     },
   },
   solidity: {
