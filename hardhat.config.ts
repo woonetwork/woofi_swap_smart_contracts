@@ -60,6 +60,12 @@ export default {
       chainId: 43114,
       accounts: [],
     },
+    fantom_mainnet: {
+      url: 'https://rpc.ftm.tools/',
+      gasPrice: 200000000000,
+      chainId: 250,
+      accounts: [],
+    },
   },
   solidity: {
     version: '0.6.12',
