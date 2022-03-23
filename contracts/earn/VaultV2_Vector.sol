@@ -136,7 +136,7 @@ contract WOOFiVaultV2Vector is IVault, ERC20, Ownable, ReentrancyGuard {
 
         _mint(msg.sender, shares);
 
-        if (amount >= earnThreshold * (10 ** uint256(ERC20(want).decimals()))) {
+        if (amount >= earnThreshold * (10**uint256(ERC20(want).decimals()))) {
             earn();
         }
     }
@@ -238,7 +238,6 @@ contract WOOFiVaultV2Vector is IVault, ERC20, Ownable, ReentrancyGuard {
     function setEarnThreshold(uint256 _earnThreshold) external onlyAdmin {
         earnThreshold = _earnThreshold;
     }
-
 
     function inCaseTokensGetStuck(address stuckToken) external onlyAdmin {
         require(stuckToken != want, 'WOOFiVaultV2: stuckToken_NOT_WANT');
