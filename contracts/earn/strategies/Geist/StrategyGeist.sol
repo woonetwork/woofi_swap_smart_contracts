@@ -62,7 +62,7 @@ contract StrategyGeist is BaseStrategy {
 
     /* ----- State Variables ----- */
 
-    TokenAddresses public wantTokens;
+    TokenAddresses public wantToken;
     TokenAddresses[] public rewards;
 
     address[] public rewardToWNativeRoute;
@@ -96,7 +96,7 @@ contract StrategyGeist is BaseStrategy {
         address[][] memory _extraRewardToWNativeRoutes
     ) public BaseStrategy(_vault, _accessManager) {
         (address gToken, , ) = IDataProvider(dataProvider).getReserveTokensAddresses(_want);
-        wantTokens = TokenAddresses(_want, gToken);
+        wantToken = TokenAddresses(_want, gToken);
 
         rewardToWNativeRoute = _rewardToWNativeRoute;
         extraRewardToWNativeRoutes = _extraRewardToWNativeRoutes;
@@ -121,16 +121,19 @@ contract StrategyGeist is BaseStrategy {
     function harvest() public override whenNotPaused {
         require(msg.sender == tx.origin || msg.sender == address(vault), 'StrategyGeist: EOA_or_vault');
 
-        uint256 gTokenBal = IERC20(wantTokens.gToken).balanceOf(address(this));
+        uint256 reserveWantGTokenBal = IERC20(wantToken.gToken).balanceOf(address(this));
         address[] memory tokens = new address[](1);
-        tokens[0] = wantTokens.gToken;
+        tokens[0] = wantToken.gToken;
+        // Claim pending rewards for one or more pools.
+        // Rewards are not received directly, they are minted by the rewardMinter.
         IIncentivesController(incentivesController).claim(address(this), tokens);
+        // Withdraw full unlocked balance and claim pending rewards
         IMultiFeeDistribution(multiFeeDistribution).exit();
 
-        uint256 outputBal = IERC20(reward).balanceOf(address(this));
-        if (outputBal > 0) {
+        uint256 rewardBal = IERC20(reward).balanceOf(address(this));
+        if (rewardBal > 0) {
             uint256 beforeBal = balanceOfWant();
-            _swapRewards(gTokenBal);
+            _swapRewards(reserveWantGTokenBal);
             uint256 wantHarvested = balanceOfWant().sub(beforeBal);
             uint256 fee = chargePerformanceFee(wantHarvested);
             deposit();
@@ -138,6 +141,9 @@ contract StrategyGeist is BaseStrategy {
             lastHarvest = block.timestamp;
             emit StratHarvest(msg.sender, wantHarvested.sub(fee), balanceOf());
         }
+
+        uint256 wantGTokenBalAfter = IERC20(wantToken.gToken).balanceOf(address(this));
+        require(wantGTokenBalAfter >= reserveWantGTokenBal, 'StrategyGeist: gTokenBalError');
     }
 
     function deposit() public override whenNotPaused nonReentrant {
@@ -206,24 +212,27 @@ contract StrategyGeist is BaseStrategy {
 
     /* ----- Private Functions ----- */
 
-    function _swapRewards(uint256 gTokenBal) private {
-        uint256 toNative = IERC20(reward).balanceOf(address(this));
-        IUniswapRouter(uniRouter).swapExactTokensForTokens(toNative, 0, rewardToWNativeRoute, address(this), now);
+    function _swapRewards(uint256 reserveWantGTokenBal) private {
+        // reward to wNative
+        uint256 rewardBal = IERC20(reward).balanceOf(address(this));
+        IUniswapRouter(uniRouter).swapExactTokensForTokens(rewardBal, 0, rewardToWNativeRoute, address(this), now);
 
         for (uint256 i; i < rewards.length; i++) {
-            toNative = IERC20(rewards[i].gToken).balanceOf(address(this));
-            if (rewards[i].gToken == wantTokens.gToken) {
-                if (toNative > gTokenBal) {
-                    toNative = toNative.sub(gTokenBal);
-                } else {
-                    toNative = 0;
-                }
+            uint256 gTokenToWithdraw = IERC20(rewards[i].gToken).balanceOf(address(this));
+
+            // if reward is wantToken, we have to substrate the reserved gToken balance.
+            if (rewards[i].gToken == wantToken.gToken) {
+                gTokenToWithdraw = gTokenToWithdraw.sub(reserveWantGTokenBal);
             }
-            if (toNative > 0) {
-                ILendingPool(lendingPool).withdraw(rewards[i].token, toNative, address(this));
-                if (rewards[i].token != wNative) {
+
+            if (gTokenToWithdraw > 0) {
+                // gToken to the underlying asset
+                ILendingPool(lendingPool).withdraw(rewards[i].token, gTokenToWithdraw, address(this));
+
+                uint256 tokenToSwap = IERC20(rewards[i].token).balanceOf(address(this));
+                if (rewards[i].token != wNative && rewards[i].token != wantToken.token) {
                     IUniswapRouter(uniRouter).swapExactTokensForTokens(
-                        toNative,
+                        tokenToSwap,
                         0,
                         extraRewardToWNativeRoutes[i],
                         address(this),
@@ -233,8 +242,9 @@ contract StrategyGeist is BaseStrategy {
             }
         }
 
-        if (wNative != want) {
-            IUniswapRouter(uniRouter).swapExactTokensForTokens(toNative, 0, wNativeToWantRoute, address(this), now);
+        uint256 wNativeBal = IERC20(wNative).balanceOf(address(this));
+        if (wNative != want && wNativeBal > 0) {
+            IUniswapRouter(uniRouter).swapExactTokensForTokens(wNativeBal, 0, wNativeToWantRoute, address(this), now);
         }
     }
 
