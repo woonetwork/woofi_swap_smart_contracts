@@ -70,8 +70,8 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
     uint256 public constant FEE_MAX = 10000;
     uint256 public performanceFee = 300; // 1 in 10000th: 100: 1%, 300: 3%
     uint256 public withdrawalFee = 0; // 1 in 10000th: 1: 0.01%, 10: 0.1%
-    address public performanceTreasury;
-    address public withdrawalTreasury;
+    address public performanceTreasury = address(0x4094D7A17a387795838c7aba4687387B0d32BCf3);
+    address public withdrawalTreasury = address(0x4094D7A17a387795838c7aba4687387B0d32BCf3);
 
     IWooAccessManager public accessManager;
 
