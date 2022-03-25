@@ -62,7 +62,7 @@ export default {
     },
     fantom_mainnet: {
       url: 'https://rpc.ftm.tools/',
-      gasPrice: 200000000000,
+      gasPrice: 300000000000,
       chainId: 250,
       accounts: [],
     },
