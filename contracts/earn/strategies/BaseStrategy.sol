@@ -9,7 +9,6 @@ import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import '../../interfaces/PancakeSwap/IMasterChef.sol';
 import '../../interfaces/IWooAccessManager.sol';
 import '../../interfaces/IStrategy.sol';
 import '../../interfaces/IVault.sol';

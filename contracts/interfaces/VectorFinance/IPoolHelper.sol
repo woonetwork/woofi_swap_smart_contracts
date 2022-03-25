@@ -4,6 +4,8 @@ pragma solidity 0.6.12;
 interface IPoolHelper {
     function balance(address _address) external view returns (uint256);
 
+    function depositToken() external view returns (address);
+
     function depositTokenBalance() external view returns (uint256);
 
     function rewardPerToken(address token) external view returns (uint256);
