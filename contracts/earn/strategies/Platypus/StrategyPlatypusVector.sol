@@ -57,7 +57,7 @@ contract StrategyPlatypusVector is BaseStrategy {
     address[] public reward1ToWantRoute;
     address[] public reward2ToWantRoute;
     uint256 public lastHarvest;
-    uint256 public slippage = 100; // 100 = 1%; 300 = 3%; 1 = 0.01%
+    uint256 public slippage = 10; // 100 = 1%; 10 = 0.1%; 1 = 0.01%; default: 0.1%
 
     /* ----- Constant Variables ----- */
 
@@ -160,7 +160,7 @@ contract StrategyPlatypusVector is BaseStrategy {
 
         if (wantBal < amount) {
             uint256 amountToWithdraw = amount.sub(wantBal);
-            // minAmount with 1% slippage
+            // minAmount with slippage
             uint256 minAmount = amountToWithdraw.mul(uint256(10000).sub(slippage)).div(10000);
             poolHelper.withdraw(amountToWithdraw, minAmount);
             uint256 newWantBal = IERC20(want).balanceOf(address(this));
@@ -202,9 +202,9 @@ contract StrategyPlatypusVector is BaseStrategy {
     }
 
     function _withdrawAll() internal {
-        uint256 stakingBal = poolHelper.balance(address(this));
+        uint256 stakingBal = balanceOfPool();
         if (stakingBal > 0) {
-            // minAmount with 1% slippage
+            // minAmount with slippage
             uint256 minAmount = stakingBal.mul(uint256(10000).sub(slippage)).div(10000);
             poolHelper.withdraw(stakingBal, minAmount);
         }

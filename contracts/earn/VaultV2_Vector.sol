@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity =0.6.12;
-pragma experimental ABIEncoderV2;
+pragma solidity 0.6.12;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
@@ -47,7 +46,7 @@ import '../interfaces/IVault.sol';
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-contract WOOFiVaultV2 is IVault, ERC20, Ownable, ReentrancyGuard {
+contract WOOFiVaultV2Vector is IVault, ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -66,6 +65,7 @@ contract WOOFiVaultV2 is IVault, ERC20, Ownable, ReentrancyGuard {
     StratCandidate public stratCandidate;
 
     uint256 public approvalDelay = 48 hours;
+    uint256 public earnThreshold = 3000;
 
     mapping(address => uint256) public costSharePrice;
 
@@ -136,7 +136,9 @@ contract WOOFiVaultV2 is IVault, ERC20, Ownable, ReentrancyGuard {
 
         _mint(msg.sender, shares);
 
-        earn();
+        if (amount >= earnThreshold * (10**uint256(ERC20(want).decimals()))) {
+            earn();
+        }
     }
 
     function withdraw(uint256 shares) public override nonReentrant {
@@ -231,6 +233,10 @@ contract WOOFiVaultV2 is IVault, ERC20, Ownable, ReentrancyGuard {
     function setApprovalDelay(uint256 _approvalDelay) external onlyAdmin {
         require(_approvalDelay > 0, 'WOOFiVaultV2: approvalDelay_ZERO');
         approvalDelay = _approvalDelay;
+    }
+
+    function setEarnThreshold(uint256 _earnThreshold) external onlyAdmin {
+        earnThreshold = _earnThreshold;
     }
 
     function inCaseTokensGetStuck(address stuckToken) external onlyAdmin {

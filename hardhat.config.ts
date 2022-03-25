@@ -22,7 +22,7 @@ const chainIds = {
 }
 
 const MNEMONIC = process.env.MNEMONIC || 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks.'
-const DEPLOYER = process.env.DEPLOYER || 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks.'
+const DEPLOYER = process.env.DEPLOYER
 
 export default {
   defaultNetwork: 'hardhat',
@@ -45,8 +45,8 @@ export default {
     bsc_mainnet: {
       url: 'https://bsc-dataseed.binance.org/',
       chainId: 56,
-      gasPrice: 5000000000,
-      accounts: [],
+      gasPrice: 6000000000,
+      accounts: [DEPLOYER],
     },
     avax_fuji: {
       url: 'https://api.avax-test.network/ext/bc/C/rpc',
@@ -58,7 +58,7 @@ export default {
       url: 'https://api.avax.network/ext/bc/C/rpc',
       gasPrice: 40000000000,
       chainId: 43114,
-      accounts: [],
+      accounts: [DEPLOYER],
     },
     fantom_mainnet: {
       url: 'https://rpc.ftm.tools/',
@@ -89,7 +89,7 @@ export default {
     target: 'ethers-v5',
   },
   etherscan: {
-    apiKey: process.env.SCAN_API,
+    apiKey: process.env.BSC_API,
   },
   mocha: {
     timeout: 10000,
