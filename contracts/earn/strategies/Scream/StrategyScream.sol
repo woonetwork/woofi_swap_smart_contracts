@@ -153,9 +153,7 @@ contract StrategyScream is BaseStrategy {
 
     /* ----- Private Functions ----- */
 
-    function _harvestAndSwap(
-        address[] memory _route
-    ) private {
+    function _harvestAndSwap(address[] memory _route) private {
         address[] memory markets = new address[](1);
         markets[0] = iToken;
         IComptroller(comptroller).claimComp(address(this), markets);
