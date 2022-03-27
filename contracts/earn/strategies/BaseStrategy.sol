@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
+pragma solidity =0.6.12;
+pragma experimental ABIEncoderV2;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
@@ -12,6 +13,7 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 import '../../interfaces/IWooAccessManager.sol';
 import '../../interfaces/IStrategy.sol';
 import '../../interfaces/IVault.sol';
+import '../../interfaces/IVaultV2.sol';
 
 /*
 
