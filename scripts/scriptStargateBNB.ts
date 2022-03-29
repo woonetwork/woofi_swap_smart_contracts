@@ -10,11 +10,11 @@ let treasury = '0x4094D7A17a387795838c7aba4687387B0d32BCf3' // woo_earn_treasury
 let weth = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' // wbnb
 
 let uniRouter = '0x10ED43C718714eb63d5aA57B78B54704E256024E' // pancake
-let pool = '0x98a5737749490856b401DB5Dc27F522fC314A4e1'     // S*BUSD
-let staking = '0x3052A0F6ab15b4AE1df39962d5DdEFacA86DaB47'  // LPStaking
-let stakingPid = 1; // S*BUSD
+let pool = '0x98a5737749490856b401DB5Dc27F522fC314A4e1' // S*BUSD
+let staking = '0x3052A0F6ab15b4AE1df39962d5DdEFacA86DaB47' // LPStaking
+let stakingPid = 1 // S*BUSD
 let reward = '0xB0D502E938ed5f4df2E681fE6E419ff29631d62b'
-let rewardToWantRoute = ["0xB0D502E938ed5f4df2E681fE6E419ff29631d62b", "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56"]
+let rewardToWantRoute = ['0xB0D502E938ed5f4df2E681fE6E419ff29631d62b', '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56']
 
 let needDeploy = false
 let verifyVault = '0xA1436ADa35e593d2376DDE8e2678D3E88714171c'
@@ -40,7 +40,8 @@ async function main() {
       staking,
       stakingPid,
       reward,
-      rewardToWantRoute)
+      rewardToWantRoute
+    )
 
     await strategy.deployed()
     console.log(`Strategy deployed to: ${strategy.address}`)
@@ -84,7 +85,7 @@ async function main() {
     _staking: staking,
     _stakingPid: stakingPid,
     _reward: reward,
-    _rewardToWantRoute: rewardToWantRoute
+    _rewardToWantRoute: rewardToWantRoute,
   }
   let strategyVerificationArgs = {
     address: strategy.address,

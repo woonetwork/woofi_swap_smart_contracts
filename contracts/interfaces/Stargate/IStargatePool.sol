@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.6.12;
 
-
 interface IStargatePool {
-
     /**
      * @dev shared id between chains to represent same pool.
      */

@@ -70,7 +70,7 @@ contract StratStargateStableCompound is BaseStrategy {
 
     address public wantLPToken; // S*BUSD:  deposit busd into pool to get S*BUSD LP token, then further stakes this LP token into LPRouter to get $STG reward
 
-    address public reward;      // STG
+    address public reward; // STG
 
     address[] public rewardToWantRoute;
 
@@ -85,32 +85,29 @@ contract StratStargateStableCompound is BaseStrategy {
     constructor(
         address _vault,
         address _accessManager,
-        address _uniRouter,     // swap router
-        address _pool,          // pool
-        address _staking,       // lp staking - Masterchef
-        uint256 _stakingPid,    // _pid for staking
-        address _reward,        // $stg
+        address _uniRouter, // swap router
+        address _pool, // pool
+        address _staking, // lp staking - Masterchef
+        uint256 _stakingPid, // _pid for staking
+        address _reward, // $stg
         address[] memory _rewardToWantRoute // $stg -> xxx -> want
     ) public BaseStrategy(_vault, _accessManager) {
         wrappedEther = IVaultV2(_vault).weth();
         uniRouter = _uniRouter;
         pool = IStargatePool(_pool);
-        wantLPToken = _pool;    // NOTE: pool is LPErc20Token for staking
+        wantLPToken = _pool; // NOTE: pool is LPErc20Token for staking
         router = IStargateRouter(IStargatePool(_pool).router());
         staking = ILPStaking(_staking);
         stakingPid = _stakingPid;
         reward = _reward;
         rewardToWantRoute = _rewardToWantRoute;
 
-        require(
-            pool.token() == want,
-            'StratStargateStableCompound: !pool_token'
-        );
+        require(pool.token() == want, 'StratStargateStableCompound: !pool_token');
 
         require(
             rewardToWantRoute.length > 0 &&
-            rewardToWantRoute[0] == reward &&
-            rewardToWantRoute[rewardToWantRoute.length - 1] == want,
+                rewardToWantRoute[0] == reward &&
+                rewardToWantRoute[rewardToWantRoute.length - 1] == want,
             'StratStargateStableCompound: !route'
         );
 
@@ -141,8 +138,7 @@ contract StratStargateStableCompound is BaseStrategy {
 
         uint256 rewardBal = IERC20(reward).balanceOf(address(this));
         if (rewardBal > 0 && reward != want) {
-            IJoeRouter(uniRouter).swapExactTokensForTokens(
-                rewardBal, 0, rewardToWantRoute, address(this), now);
+            IJoeRouter(uniRouter).swapExactTokensForTokens(rewardBal, 0, rewardToWantRoute, address(this), now);
         }
 
         uint256 wantHarvested = balanceOfWant().sub(beforeBal);
@@ -174,7 +170,11 @@ contract StratStargateStableCompound is BaseStrategy {
             staking.withdraw(stakingPid, lptokenAmountToWithdraw);
 
             // NOTE: check the redeemed amount
-            router.instantRedeemLocal(uint16(pool.poolId()), IERC20(wantLPToken).balanceOf(address(this)), address(this));
+            router.instantRedeemLocal(
+                uint16(pool.poolId()),
+                IERC20(wantLPToken).balanceOf(address(this)),
+                address(this)
+            );
 
             uint256 newWantBal = IERC20(want).balanceOf(address(this));
             require(newWantBal > wantBal, 'StratStargateStableCompound: !newWantBal');
@@ -203,7 +203,7 @@ contract StratStargateStableCompound is BaseStrategy {
     function _amountLDtoLP(uint256 _amountLD) internal view returns (uint256 amountLP) {
         uint256 totalLiquidity = pool.totalLiquidity();
         uint256 totalSupply = pool.totalSupply();
-        require(totalLiquidity > 0, "Stargate: totalLiquidity_ZERO");
+        require(totalLiquidity > 0, 'Stargate: totalLiquidity_ZERO');
         uint256 amountSD = _amountLD.div(pool.convertRate());
         amountLP = amountSD.mul(totalSupply).div(totalLiquidity); // amountSD / (totalLiquidity / totalSupply)
     }
@@ -211,7 +211,7 @@ contract StratStargateStableCompound is BaseStrategy {
     function _amountLPtoLD(uint256 _amountLP) internal view returns (uint256 amountLD) {
         uint256 totalLiquidity = pool.totalLiquidity();
         uint256 totalSupply = pool.totalSupply();
-        require(totalLiquidity > 0, "Stargate: cant convert LPtoSD when totalSupply == 0");
+        require(totalLiquidity > 0, 'Stargate: cant convert LPtoSD when totalSupply == 0');
         uint256 amountSD = _amountLP.mul(totalLiquidity).div(totalSupply);
         amountLD = amountSD.mul(pool.convertRate());
     }
@@ -246,7 +246,10 @@ contract StratStargateStableCompound is BaseStrategy {
 
             // NOTE: TODO check the redeemed amount
             router.instantRedeemLocal(
-                uint16(pool.poolId()), IERC20(wantLPToken).balanceOf(address(this)), address(this));
+                uint16(pool.poolId()),
+                IERC20(wantLPToken).balanceOf(address(this)),
+                address(this)
+            );
         }
         emit Withdraw(balanceOf());
     }
@@ -294,11 +297,11 @@ contract StratStargateStableCompound is BaseStrategy {
         staking.withdraw(stakingPid, lpStakeAmount);
         uint256 wantLPAmount = IERC20(wantLPToken).balanceOf(address(this));
         router.redeemLocal(
-            _dstChainId,        // dstChainId
-            _srcPoolId,         // srcPoolId
-            _dstPoolId,         // dstPoolId
-            payable(vault),     // refund address
-            wantLPAmount,       // lp token amount
+            _dstChainId, // dstChainId
+            _srcPoolId, // srcPoolId
+            _dstPoolId, // dstPoolId
+            payable(vault), // refund address
+            wantLPAmount, // lp token amount
             _to,
             _lzTxParams
         );
@@ -315,17 +318,16 @@ contract StratStargateStableCompound is BaseStrategy {
         staking.withdraw(stakingPid, lpStakeAmount);
         uint256 wantLPAmount = IERC20(wantLPToken).balanceOf(address(this));
         router.redeemLocal(
-            _dstChainId,        // dstChainId
-            _srcPoolId,         // srcPoolId
-            _dstPoolId,         // dstPoolId
+            _dstChainId, // dstChainId
+            _srcPoolId, // srcPoolId
+            _dstPoolId, // dstPoolId
             payable(address(this)), // refund address
-            wantLPAmount,           // lp amount
+            wantLPAmount, // lp amount
             _to,
             _lzTxParams
         );
         TransferHelper.safeTransfer(want, vault, IERC20(want).balanceOf(address(this)));
     }
-
 
     receive() external payable {}
 }
