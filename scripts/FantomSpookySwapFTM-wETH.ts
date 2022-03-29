@@ -24,13 +24,7 @@ async function main() {
   let strategy
 
   let vaultConstructorParams = [weth, want, accessManager]
-  let strategyConstructorParams = [
-      verifyVault,
-      accessManager,
-      pid,
-      reward1ToWantRoute,
-      reward2ToWantRoute
-  ]
+  let strategyConstructorParams = [verifyVault, accessManager, pid, reward1ToWantRoute, reward2ToWantRoute]
 
   if (needDeploy) {
     let vaultFactory = await ethers.getContractFactory('WOOFiVaultV2')
@@ -60,17 +54,17 @@ async function main() {
 
   await run('verify:verify', {
     address: vault.address,
-    constructorArguments: vaultConstructorParams
+    constructorArguments: vaultConstructorParams,
   })
 
   await run('verify:verify', {
     address: strategy.address,
-    constructorArguments: strategyConstructorParams
+    constructorArguments: strategyConstructorParams,
   })
 }
 
 function delay(ms: number) {
-    return new Promise( resolve => setTimeout(resolve, ms) );
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 main()
