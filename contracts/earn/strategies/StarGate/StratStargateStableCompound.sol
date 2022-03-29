@@ -199,7 +199,8 @@ contract StratStargateStableCompound is BaseStrategy {
         uint256 capLpAmount = _amountSDtoLP(pool.deltaCredit());
 
         // check the redeemed amount with the capped local instant redeem amount
-        if (lpAmount <= capLpAmount) { // NOTE: this means capable of local instant redemption
+        if (lpAmount <= capLpAmount) {
+            // NOTE: this means capable of local instant redemption
             router.instantRedeemLocal(uint16(pool.poolId()), lpAmount, thisAddr);
         } else {
             bytes memory to = abi.encodePacked(thisAddr);
@@ -243,7 +244,7 @@ contract StratStargateStableCompound is BaseStrategy {
     function _amountSDtoLP(uint256 _amountSD) internal view returns (uint256) {
         uint256 totalLiquidity = pool.totalLiquidity();
         uint256 totalSupply = pool.totalSupply();
-        require(totalLiquidity > 0, "Stargate: cant convert SDtoLP when totalLiq == 0");
+        require(totalLiquidity > 0, 'Stargate: cant convert SDtoLP when totalLiq == 0');
         return _amountSD.mul(totalSupply).div(totalLiquidity);
     }
 

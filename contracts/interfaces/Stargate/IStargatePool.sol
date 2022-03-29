@@ -52,6 +52,4 @@ interface IStargatePool {
      * @dev credits accumulated from txn
      */
     function deltaCredit() external view returns (uint256);
-
 }
-
