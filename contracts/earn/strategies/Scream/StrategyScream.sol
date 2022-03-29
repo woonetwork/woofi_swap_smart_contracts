@@ -1,5 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
+pragma experimental ABIEncoderV2;
+
+/*
+
+░██╗░░░░░░░██╗░█████╗░░█████╗░░░░░░░███████╗██╗
+░██║░░██╗░░██║██╔══██╗██╔══██╗░░░░░░██╔════╝██║
+░╚██╗████╗██╔╝██║░░██║██║░░██║█████╗█████╗░░██║
+░░████╔═████║░██║░░██║██║░░██║╚════╝██╔══╝░░██║
+░░╚██╔╝░╚██╔╝░╚█████╔╝╚█████╔╝░░░░░░██║░░░░░██║
+░░░╚═╝░░░╚═╝░░░╚════╝░░╚════╝░░░░░░░╚═╝░░░░░╚═╝
+
+*
+* MIT License
+* ===========
+*
+* Copyright (c) 2020 WooTrade
+*
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+*
+* The above copyright notice and this permission notice shall be included in all
+* copies or substantial portions of the Software.
+*
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
@@ -21,6 +55,7 @@ contract StrategyScream is BaseStrategy {
 
     /* ----- State Variables ----- */
 
+    // scFUSDT: https://ftmscan.com/address/0x02224765bc8d54c21bb51b0951c80315e1c263f9
     address public iToken;
     address[] public rewardToWantRoute;
     uint256 public lastHarvest;
@@ -31,7 +66,7 @@ contract StrategyScream is BaseStrategy {
     address public constant wrappedEther = address(0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83); // WFTM
     address public constant reward = address(0xe0654C8e6fd4D733349ac7E09f6f23DA256bF475); // SCREAM
     address public constant uniRouter = address(0xF491e7B69E4244ad4002BC14e878a34207E38c29); // SpookySwapRouter
-    address public constant comptroller = address(0x260E596DAbE3AFc463e75B6CC05d8c46aCAcFB09);
+    address public constant comptroller = address(0x260E596DAbE3AFc463e75B6CC05d8c46aCAcFB09); // Unitroller that implement Comptroller
 
     /* ----- Events ----- */
 
@@ -169,7 +204,7 @@ contract StrategyScream is BaseStrategy {
         // rewardBal == 0: means the current token reward ended
         // reward == want: no need to swap
         if (rewardBal > 0 && reward != want) {
-            require(_route.length > 0, 'StrategyBenqi: SWAP_ROUTE_INVALID');
+            require(_route.length > 0, 'StrategyScream: SWAP_ROUTE_INVALID');
             IUniswapRouter(uniRouter).swapExactTokensForTokens(rewardBal, 0, _route, address(this), now);
         }
     }
