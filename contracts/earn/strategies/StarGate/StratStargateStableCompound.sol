@@ -76,6 +76,10 @@ contract StratStargateStableCompound is BaseStrategy {
 
     uint256 public lastHarvest;
 
+    uint16 public dstChainId;
+    uint256 public srcPoolId;
+    uint256 public dstPoolId;
+
     /* ----- Events ----- */
 
     event StratHarvest(address indexed harvester, uint256 wantHarvested, uint256 tvl);
@@ -167,14 +171,12 @@ contract StratStargateStableCompound is BaseStrategy {
         if (wantBal < amount) {
             // local amount usd converted to LP token amount
             uint256 lptokenAmountToWithdraw = _amountLDtoLP(amount.sub(wantBal));
+
+            // lp token unstaked from LPStaking, and then parked here in this strat
             staking.withdraw(stakingPid, lptokenAmountToWithdraw);
 
-            // NOTE: check the redeemed amount
-            router.instantRedeemLocal(
-                uint16(pool.poolId()),
-                IERC20(wantLPToken).balanceOf(address(this)),
-                address(this)
-            );
+            // redeem all the want LP tokens out
+            _redeemLocalWantLP();
 
             uint256 newWantBal = IERC20(want).balanceOf(address(this));
             require(newWantBal > wantBal, 'StratStargateStableCompound: !newWantBal');
@@ -189,6 +191,28 @@ contract StratStargateStableCompound is BaseStrategy {
         }
 
         emit Withdraw(balanceOf());
+    }
+
+    function _redeemLocalWantLP() internal {
+        address thisAddr = address(this);
+        uint256 lpAmount = IERC20(wantLPToken).balanceOf(thisAddr);
+        uint256 capLpAmount = _amountSDtoLP(pool.deltaCredit());
+
+        // check the redeemed amount with the capped local instant redeem amount
+        if (lpAmount <= capLpAmount) { // NOTE: this means capable of local instant redemption
+            router.instantRedeemLocal(uint16(pool.poolId()), lpAmount, thisAddr);
+        } else {
+            bytes memory to = abi.encodePacked(thisAddr);
+            router.redeemLocal(
+                dstChainId,
+                srcPoolId,
+                dstPoolId,
+                payable(thisAddr),
+                lpAmount,
+                to,
+                IStargateRouter.lzTxObj(0, 0, to)
+            );
+        }
     }
 
     function balanceOfPool() public view override returns (uint256) {
@@ -214,6 +238,13 @@ contract StratStargateStableCompound is BaseStrategy {
         require(totalLiquidity > 0, 'Stargate: cant convert LPtoSD when totalSupply == 0');
         uint256 amountSD = _amountLP.mul(totalLiquidity).div(totalSupply);
         amountLD = amountSD.mul(pool.convertRate());
+    }
+
+    function _amountSDtoLP(uint256 _amountSD) internal view returns (uint256) {
+        uint256 totalLiquidity = pool.totalLiquidity();
+        uint256 totalSupply = pool.totalSupply();
+        require(totalLiquidity > 0, "Stargate: cant convert SDtoLP when totalLiq == 0");
+        return _amountSD.mul(totalSupply).div(totalLiquidity);
     }
 
     function _amountLDtoSD(uint256 _amountLD) internal view returns (uint256 amountSD) {
@@ -242,19 +273,25 @@ contract StratStargateStableCompound is BaseStrategy {
     function _withdrawAll() internal {
         (uint256 lpStakeAmount, ) = staking.userInfo(stakingPid, address(this));
         if (lpStakeAmount > 0) {
+            // unstake the LP token from LPStaking to this strat
             staking.withdraw(stakingPid, lpStakeAmount);
-
-            // NOTE: TODO check the redeemed amount
-            router.instantRedeemLocal(
-                uint16(pool.poolId()),
-                IERC20(wantLPToken).balanceOf(address(this)),
-                address(this)
-            );
+            // redeem out all the LP tokens
+            _redeemLocalWantLP();
         }
         emit Withdraw(balanceOf());
     }
 
     /* ----- Admin Functions ----- */
+
+    function setRedeemParams(
+        uint16 _dstChainId,
+        uint256 _srcPoolId,
+        uint256 _dstPoolId
+    ) external onlyAdmin {
+        dstChainId = _dstChainId;
+        srcPoolId = _srcPoolId;
+        dstPoolId = _dstPoolId;
+    }
 
     function setBalanceSafeRate(uint8 _balanceSafeRate) external onlyAdmin {
         balanceSafeRate = _balanceSafeRate;

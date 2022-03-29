@@ -47,4 +47,11 @@ interface IStargatePool {
      * @dev total weight for pool percentages
      */
     function totalWeight() external view returns (uint256);
+
+    /**
+     * @dev credits accumulated from txn
+     */
+    function deltaCredit() external view returns (uint256);
+
 }
+
