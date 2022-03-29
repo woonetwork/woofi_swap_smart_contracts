@@ -13,7 +13,7 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 import '../interfaces/IStrategy.sol';
 import '../interfaces/IWETH.sol';
 import '../interfaces/IWooAccessManager.sol';
-import '../interfaces/IVault.sol';
+import '../interfaces/IVaultV2.sol';
 
 /*
 
@@ -47,7 +47,7 @@ import '../interfaces/IVault.sol';
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-contract WOOFiVaultV2 is IVault, ERC20, Ownable, ReentrancyGuard {
+contract WOOFiVaultV2 is IVaultV2, ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -76,7 +76,7 @@ contract WOOFiVaultV2 is IVault, ERC20, Ownable, ReentrancyGuard {
 
     // WBNB: https://bscscan.com/token/0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c
     // WAVAX: https://snowtrace.io/address/0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7
-    address public immutable weth;
+    address public immutable override weth;
 
     constructor(
         address _weth,
