@@ -79,6 +79,7 @@ contract StratStargateStableCompound is BaseStrategy {
     uint16 public dstChainId;
     uint256 public srcPoolId;
     uint256 public dstPoolId;
+    bool public instantRedeemOnly = true;
 
     /* ----- Events ----- */
 
@@ -196,8 +197,13 @@ contract StratStargateStableCompound is BaseStrategy {
     function _redeemLocalWantLP() internal {
         address thisAddr = address(this);
         uint256 lpAmount = IERC20(wantLPToken).balanceOf(thisAddr);
-        uint256 capLpAmount = _amountSDtoLP(pool.deltaCredit());
 
+        if (instantRedeemOnly) {
+            router.instantRedeemLocal(uint16(pool.poolId()), lpAmount, thisAddr);
+            return;
+        }
+
+        uint256 capLpAmount = _amountSDtoLP(pool.deltaCredit());
         // check the redeemed amount with the capped local instant redeem amount
         if (lpAmount <= capLpAmount) {
             // NOTE: this means capable of local instant redemption
@@ -219,6 +225,16 @@ contract StratStargateStableCompound is BaseStrategy {
     function balanceOfPool() public view override returns (uint256) {
         (uint256 lpAmount, ) = staking.userInfo(stakingPid, address(this));
         return _amountLPtoLD(lpAmount); // lp token amount -> usd local decimal amount
+    }
+
+    function maxInstantRedeemLpAmount() public view returns (uint256) {
+        return _amountSDtoLP(pool.deltaCredit());
+    }
+
+    function canInstantRedeemLocalNow() external view returns (bool) {
+        (uint256 lpStakeAmount, ) = staking.userInfo(stakingPid, address(this));
+        uint256 capLpAmount = maxInstantRedeemLpAmount();
+        return lpStakeAmount <= capLpAmount;
     }
 
     /* ----- Internal Functions ----- */
@@ -292,6 +308,10 @@ contract StratStargateStableCompound is BaseStrategy {
         dstChainId = _dstChainId;
         srcPoolId = _srcPoolId;
         dstPoolId = _dstPoolId;
+    }
+
+    function setInstantRedeemOnly(bool _instantRedeemOnly) external onlyAdmin {
+        instantRedeemOnly = _instantRedeemOnly;
     }
 
     function setBalanceSafeRate(uint8 _balanceSafeRate) external onlyAdmin {
