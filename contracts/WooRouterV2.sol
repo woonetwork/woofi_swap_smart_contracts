@@ -79,10 +79,10 @@ contract WooRouterV2 is IWooRouterV2, Ownable, ReentrancyGuard {
 
     /* ----- Query & swap APIs ----- */
 
-    constructor(address weth, address newPool) public {
-        require(weth != address(0), 'WooRouter: weth_ZERO_ADDR');
-        WETH = weth;
-        setPool(newPool);
+    constructor(address _weth, address _pool) public {
+        require(_weth != address(0), 'WooRouter: weth_ZERO_ADDR');
+        WETH = _weth;
+        setPool(_pool);
     }
 
     /// @inheritdoc IWooRouterV2
