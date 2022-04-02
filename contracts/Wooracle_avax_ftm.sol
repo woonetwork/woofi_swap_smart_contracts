@@ -38,7 +38,7 @@ pragma experimental ABIEncoderV2;
 import './libraries/InitializableOwnable.sol';
 import './interfaces/IWooracle.sol';
 
-/// @title Wooracle implementation in Avalanche chain.
+/// @title Wooracle implementation in Fantom and Avalanche chain.
 /// @notice Will be maintained and updated periodically by Woo.network in multichains.
 contract Wooracle is InitializableOwnable, IWooracle {
     /* ----- State variables ----- */
