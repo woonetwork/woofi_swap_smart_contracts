@@ -66,8 +66,8 @@ contract StrategyGeist is BaseStrategy {
     TokenAddresses[] public rewards;
 
     address[] public rewardToWNativeRoute;
-    address[][] public extraRewardToWNativeRoutes;
     address[] public wNativeToWantRoute;
+    address[][] public extraRewardToWNativeRoutes;
 
     uint256 public lastHarvest;
 
@@ -93,12 +93,14 @@ contract StrategyGeist is BaseStrategy {
         address _accessManager,
         address _want,
         address[] memory _rewardToWNativeRoute,
+        address[] memory _wNativeToWantRoute,
         address[][] memory _extraRewardToWNativeRoutes
     ) public BaseStrategy(_vault, _accessManager) {
         (address gToken, , ) = IDataProvider(dataProvider).getReserveTokensAddresses(_want);
         wantToken = TokenAddresses(_want, gToken);
 
         rewardToWNativeRoute = _rewardToWNativeRoute;
+        wNativeToWantRoute = _wNativeToWantRoute;
         extraRewardToWNativeRoutes = _extraRewardToWNativeRoutes;
 
         for (uint256 i; i < extraRewardToWNativeRoutes.length; i++) {
@@ -229,8 +231,8 @@ contract StrategyGeist is BaseStrategy {
                 // gToken to the underlying asset
                 ILendingPool(lendingPool).withdraw(rewards[i].token, gTokenToWithdraw, address(this));
 
-                uint256 tokenToSwap = IERC20(rewards[i].token).balanceOf(address(this));
                 if (rewards[i].token != wNative && rewards[i].token != wantToken.token) {
+                    uint256 tokenToSwap = IERC20(rewards[i].token).balanceOf(address(this));
                     IUniswapRouter(uniRouter).swapExactTokensForTokens(
                         tokenToSwap,
                         0,
