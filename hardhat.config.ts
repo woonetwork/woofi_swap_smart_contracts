@@ -22,7 +22,7 @@ const chainIds = {
 }
 
 const MNEMONIC = process.env.MNEMONIC || 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks.'
-const DEPLOYER = process.env.DEPLOYER || 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks.'
+const DEPLOYER = process.env.DEPLOYER || '8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f' // private key here: 怕不怕？
 
 export default {
   defaultNetwork: 'hardhat',
@@ -45,8 +45,8 @@ export default {
     bsc_mainnet: {
       url: 'https://bsc-dataseed.binance.org/',
       chainId: 56,
-      gasPrice: 5000000000,
-      accounts: [],
+      gasPrice: 6000000000,
+      accounts: [DEPLOYER],
     },
     avax_fuji: {
       url: 'https://api.avax-test.network/ext/bc/C/rpc',
@@ -58,13 +58,13 @@ export default {
       url: 'https://api.avax.network/ext/bc/C/rpc',
       gasPrice: 40000000000,
       chainId: 43114,
-      accounts: [],
+      accounts: [DEPLOYER],
     },
     fantom_mainnet: {
       url: 'https://rpc.ftm.tools/',
-      gasPrice: 300000000000,
+      gasPrice: 137000000000, // gas = 300
       chainId: 250,
-      accounts: [],
+      accounts: [DEPLOYER],
     },
   },
   solidity: {
@@ -89,7 +89,7 @@ export default {
     target: 'ethers-v5',
   },
   etherscan: {
-    apiKey: process.env.SCAN_API,
+    apiKey: process.env.FTM_API,
   },
   mocha: {
     timeout: 10000,

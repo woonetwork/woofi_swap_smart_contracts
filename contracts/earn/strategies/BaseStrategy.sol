@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.6.12;
+pragma solidity =0.6.12;
+pragma experimental ABIEncoderV2;
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
@@ -9,10 +10,10 @@ import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import '../../interfaces/PancakeSwap/IMasterChef.sol';
 import '../../interfaces/IWooAccessManager.sol';
 import '../../interfaces/IStrategy.sol';
 import '../../interfaces/IVault.sol';
+import '../../interfaces/IVaultV2.sol';
 
 /*
 
@@ -71,8 +72,8 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
     uint256 public constant FEE_MAX = 10000;
     uint256 public performanceFee = 300; // 1 in 10000th: 100: 1%, 300: 3%
     uint256 public withdrawalFee = 0; // 1 in 10000th: 1: 0.01%, 10: 0.1%
-    address public performanceTreasury;
-    address public withdrawalTreasury;
+    address public performanceTreasury = address(0x4094D7A17a387795838c7aba4687387B0d32BCf3);
+    address public withdrawalTreasury = address(0x4094D7A17a387795838c7aba4687387B0d32BCf3);
 
     IWooAccessManager public accessManager;
 

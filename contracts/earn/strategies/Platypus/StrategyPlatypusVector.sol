@@ -4,15 +4,11 @@ pragma solidity 0.6.12;
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 import '../../../interfaces/VectorFinance/IPoolHelper.sol';
 import '../../../interfaces/VectorFinance/IMainStaking.sol';
 import '../../../interfaces/BankerJoe/IJoeRouter.sol';
-import '../../../interfaces/IWooAccessManager.sol';
-import '../../../interfaces/IWETH.sol';
 import '../BaseStrategy.sol';
 
 /*
@@ -61,7 +57,7 @@ contract StrategyPlatypusVector is BaseStrategy {
     address[] public reward1ToWantRoute;
     address[] public reward2ToWantRoute;
     uint256 public lastHarvest;
-    uint256 public slippage = 100; // 100 = 1%; 300 = 3%; 1 = 0.01%
+    uint256 public slippage = 10; // 100 = 1%; 10 = 0.1%; 1 = 0.01%; default: 0.1%
 
     /* ----- Constant Variables ----- */
 
@@ -77,16 +73,17 @@ contract StrategyPlatypusVector is BaseStrategy {
     event Withdraw(uint256 tvl);
 
     constructor(
-        address initVault,
-        address initAccessManager,
-        address initPoolHelper,
-        address[] memory initReward1ToWantRoute,
-        address[] memory initReward2ToWantRoute
-    ) public BaseStrategy(initVault, initAccessManager) {
-        poolHelper = IPoolHelper(initPoolHelper);
-        reward1ToWantRoute = initReward1ToWantRoute;
-        reward2ToWantRoute = initReward2ToWantRoute;
+        address _vault,
+        address _accessManager,
+        address _poolHelper,
+        address[] memory _reward1ToWantRoute,
+        address[] memory _reward2ToWantRoute
+    ) public BaseStrategy(_vault, _accessManager) {
+        poolHelper = IPoolHelper(_poolHelper);
+        reward1ToWantRoute = _reward1ToWantRoute;
+        reward2ToWantRoute = _reward2ToWantRoute;
 
+        require(IVault(_vault).want() == poolHelper.depositToken(), 'StrategyPlatypusVector: !poolHelper');
         require(
             reward1ToWantRoute.length > 0 && reward1ToWantRoute[reward1ToWantRoute.length - 1] == want,
             'StrategyPlatypusVector: !route'
@@ -163,7 +160,7 @@ contract StrategyPlatypusVector is BaseStrategy {
 
         if (wantBal < amount) {
             uint256 amountToWithdraw = amount.sub(wantBal);
-            // minAmount with 1% slippage
+            // minAmount with slippage
             uint256 minAmount = amountToWithdraw.mul(uint256(10000).sub(slippage)).div(10000);
             poolHelper.withdraw(amountToWithdraw, minAmount);
             uint256 newWantBal = IERC20(want).balanceOf(address(this));
@@ -205,9 +202,9 @@ contract StrategyPlatypusVector is BaseStrategy {
     }
 
     function _withdrawAll() internal {
-        uint256 stakingBal = poolHelper.balance(address(this));
+        uint256 stakingBal = balanceOfPool();
         if (stakingBal > 0) {
-            // minAmount with 1% slippage
+            // minAmount with slippage
             uint256 minAmount = stakingBal.mul(uint256(10000).sub(slippage)).div(10000);
             poolHelper.withdraw(stakingBal, minAmount);
         }
