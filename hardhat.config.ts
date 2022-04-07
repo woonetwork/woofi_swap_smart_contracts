@@ -41,7 +41,7 @@ export default {
       url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
       chainId: 97,
       gasPrice: 20000000000,
-      accounts: [],
+      accounts: [DEPLOYER],
     },
     bsc_mainnet: {
       url: 'https://bsc-dataseed.binance.org/',
@@ -55,9 +55,9 @@ export default {
       chainId: 43113,
       accounts: [],
     },
-    avax_main: {
+    avax_mainnet: {
       url: 'https://api.avax.network/ext/bc/C/rpc',
-      gasPrice: 80000000000,
+      gasPrice: 60000000000,
       chainId: 43114,
       accounts: [DEPLOYER],
     },
@@ -96,7 +96,7 @@ export default {
     target: 'ethers-v5',
   },
   etherscan: {
-    apiKey: process.env.FTM_API,
+    apiKey: process.env.BSC_API,
   },
   mocha: {
     timeout: 10000,

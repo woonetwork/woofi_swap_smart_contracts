@@ -115,7 +115,7 @@ interface IWooPP {
     /// @return baseAmount the swapped base token amount
     function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
 
-    /// @dev get the quote token address
+    /// @dev get the quote token address (immutable)
     /// @return address of quote token
     function quoteToken() external view returns (address);
 }
