@@ -35,8 +35,6 @@ async function main() {
     // await strategy.deployed()
     // console.log(`Strategy deployed to: ${strategy.address}`)
 
-
-
     // await new Promise((_) => setTimeout(_, 3000))
     // await strategy.setHarvestOnDeposit(false)
     // console.log(`Set harvestOnDeposit to false.`)
@@ -59,7 +57,6 @@ async function main() {
     constructorArguments: routerParams,
   }
   await run('verify:verify', routerVerificationArgs)
-
 }
 
 main()
