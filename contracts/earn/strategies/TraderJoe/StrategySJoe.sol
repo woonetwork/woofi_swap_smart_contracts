@@ -20,13 +20,11 @@ contract StrategySJoe is BaseStrategy {
 
     address public constant staking = address(0x1a731B2299E22FbAC282E7094EdA41046343Cb51);
     address public constant uniRouter = address(0x60aE616a2155Ee3d9A68541Ba4544862310933d4); // JoeRouter02
-    address public constant reward = address(0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E);   // USDC
+    address public constant reward = address(0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E); // USDC
 
     address[] public rewardToWantRoute = [reward, want]; // usdc -> joe
 
-    constructor(address initVault, address initAccessManager)
-        public
-        BaseStrategy(initVault, initAccessManager) {
+    constructor(address initVault, address initAccessManager) public BaseStrategy(initVault, initAccessManager) {
         _giveAllowances();
     }
 
@@ -70,8 +68,7 @@ contract StrategySJoe is BaseStrategy {
 
         uint256 rewardBal = IERC20(reward).balanceOf(address(this));
         if (rewardBal > 0 && reward != want) {
-            IJoeRouter(uniRouter).swapExactTokensForTokens(
-                rewardBal, 0, rewardToWantRoute, address(this), now);
+            IJoeRouter(uniRouter).swapExactTokensForTokens(rewardBal, 0, rewardToWantRoute, address(this), now);
         }
 
         uint256 balanceAfter = IERC20(want).balanceOf(address(this));
