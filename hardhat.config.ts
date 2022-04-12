@@ -56,7 +56,7 @@ export default {
     },
     avax_main: {
       url: 'https://api.avax.network/ext/bc/C/rpc',
-      gasPrice: 40000000000,
+      gasPrice: 80000000000,
       chainId: 43114,
       accounts: [DEPLOYER],
     },
@@ -89,7 +89,7 @@ export default {
     target: 'ethers-v5',
   },
   etherscan: {
-    apiKey: process.env.FTM_API,
+    apiKey: process.env.Avax_API,
   },
   mocha: {
     timeout: 10000,
