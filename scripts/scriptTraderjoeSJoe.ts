@@ -49,15 +49,12 @@ async function main() {
     // await new Promise((_) => setTimeout(_, 3000))
     // await strategy.setHarvestOnDeposit(false)
     // console.log(`Harvest on deposit setup to false`)
-
   } else {
     vault = { address: verifyVault }
     strategy = { address: verifyStrategy }
   }
 
-  let vaultParams = [
-    weth, want, accessManager
-  ]
+  let vaultParams = [weth, want, accessManager]
   let vaultVerificationArgs = {
     address: vault.address,
     constructorArguments: vaultParams,
