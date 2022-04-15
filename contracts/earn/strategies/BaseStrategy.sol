@@ -63,8 +63,9 @@ abstract contract BaseStrategy is Ownable, Pausable, IStrategy, ReentrancyGuard 
     address public override want;
     address public immutable override vault;
 
+    // Default them to 'false' to save the gas cost
+    bool public harvestOnDeposit = false;
     // Default them to 'true' to make the system more fair, but cost a bit more gas.
-    bool public harvestOnDeposit = true;
     bool public harvestOnWithdraw = true;
 
     /* ----- Constant Variables ----- */
