@@ -1,6 +1,7 @@
 import '@typechain/hardhat'
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
+import "@openzeppelin/hardhat-upgrades";
 import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-solhint'
 import 'hardhat-gas-reporter'
@@ -64,6 +65,12 @@ export default {
       url: 'https://rpc.ftm.tools/',
       gasPrice: 200000000000, // gas = 200
       chainId: 250,
+      accounts: [DEPLOYER],
+    },
+    aurora_mainnet: {
+      url: 'https://mainnet.aurora.dev',
+      gasPrice: 30000000, // gas = 0.03
+      chainId: 1313161554,
       accounts: [DEPLOYER],
     },
   },
