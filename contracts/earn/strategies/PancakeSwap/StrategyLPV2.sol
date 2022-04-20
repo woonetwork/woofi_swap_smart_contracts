@@ -173,4 +173,14 @@ contract StrategyLPV2 is BaseStrategy {
             TransferHelper.safeTransfer(want, vault, wantBalance);
         }
     }
+
+    function setRewardToLP0Route(address[] memory _rewardToLP0Route) external onlyAdmin {
+        require(_rewardToLP0Route.length > 0, 'StrategyLPV2: _rewardToLP0Route_LENGTH_ZERO');
+        rewardToLP0Route = _rewardToLP0Route;
+    }
+
+    function setRewardToLP1Route(address[] memory _rewardToLP1Route) external onlyAdmin {
+        require(_rewardToLP1Route.length > 0, 'StrategyLPV2: _rewardToLP1Route_LENGTH_ZERO');
+        rewardToLP1Route = _rewardToLP1Route;
+    }
 }
