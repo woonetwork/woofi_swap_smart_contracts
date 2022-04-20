@@ -51,7 +51,7 @@ abstract contract BaseMaxiVault is PausableUpgradeable, ReentrancyGuardUpgradeab
 
     /* ----- State Variables ----- */
 
-    address public stakingToken;
+    address public depositToken;
     address public rewardToken;
 
     address public wooAccessManager;
@@ -171,7 +171,7 @@ abstract contract BaseMaxiVault is PausableUpgradeable, ReentrancyGuardUpgradeab
 
     function inCaseTokensGetStuck(address _stuckToken) external onlyAdmin {
         require(_stuckToken != address(0), 'BaseMaxiVault: _stuckToken_ZERO_ADDRESS');
-        require(_stuckToken != stakingToken, 'BaseMaxiVault: _stuckToken_MUST_NOT_stakingToken');
+        require(_stuckToken != depositToken, 'BaseMaxiVault: _stuckToken_MUST_NOT_depositToken');
         require(_stuckToken != rewardToken, 'BaseMaxiVault: _stuckToken_MUST_NOT_rewardToken');
 
         uint256 bal = IERC20(_stuckToken).balanceOf(address(this));

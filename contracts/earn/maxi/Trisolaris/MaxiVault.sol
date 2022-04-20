@@ -45,12 +45,12 @@ import '../BaseMaxiVault.sol';
 import '../../../interfaces/Trisolaris/IMasterChef.sol';
 import '../../../interfaces/Trisolaris/ITriBar.sol';
 
-contract WOOFiMaxiVault is ERC20Upgradeable, BaseMaxiVault {
+contract WOOFiMaxiVaultTrisolaris is ERC20Upgradeable, BaseMaxiVault {
     using SafeMathUpgradeable for uint256;
 
     // Info of each user.
     struct UserInfo {
-        uint256 amount;     // How many staking tokens the user has provided.
+        uint256 amount;     // How many deposit tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
         //
         // We do some fancy math here. Basically, any point in time, the amount of reward tokens
@@ -58,7 +58,7 @@ contract WOOFiMaxiVault is ERC20Upgradeable, BaseMaxiVault {
         //
         //   pending reward = (user.amount * pool.accRewardPerShare) - user.rewardDebt
         //
-        // Whenever a user deposits or withdraws staking tokens to a pool. Here's what happens:
+        // Whenever a user deposits or withdraws deposit tokens to a pool. Here's what happens:
         //   1. The pool's `accRewardPerShare` gets updated.
         //   2. User receives the pending reward sent to his/her address.
         //   3. User's `amount` gets updated.
@@ -84,7 +84,7 @@ contract WOOFiMaxiVault is ERC20Upgradeable, BaseMaxiVault {
     event Withdraw(address indexed user, uint256 amount);
     event ClaimReward(address indexed user, uint256 amount);
     event Harvest(address indexed user, uint256 amount);
-    event EmergencyWithdraw(address indexed user, uint256 stakingAmount, uint256 rewardAmount);
+    event EmergencyWithdraw(address indexed user, uint256 depositAmount, uint256 rewardAmount);
 
     /* ----- Initializer ----- */
 
@@ -92,26 +92,26 @@ contract WOOFiMaxiVault is ERC20Upgradeable, BaseMaxiVault {
         uint256 _pid,
         address _masterChef,
         address _rewardBar,
-        address _stakingToken,
+        address _depositToken,
         address _rewardToken,
         address _wooAccessManager
     ) external initializer {
         require(_masterChef != address(0), 'WOOFiMaximizerVault: _masterChef_ZERO_ADDRESS');
         require(_rewardBar != address(0), 'WOOFiMaximizerVault: _rewardBar_ZERO_ADDRESS');
-        require(_stakingToken != address(0), 'WOOFiMaximizerVault: _stakingToken_ZERO_ADDRESS');
+        require(_depositToken != address(0), 'WOOFiMaximizerVault: _depositToken_ZERO_ADDRESS');
         require(_rewardToken != address(0), 'WOOFiMaximizerVault: _rewardToken_ZERO_ADDRESS');
         require(_wooAccessManager != address (0), 'WOOFiMaximizerVault: _wooAccessManager_ZERO_ADDRESS');
 
         __BaseMaxiVault_init(_wooAccessManager);
         __ERC20_init(
-            string(abi.encodePacked('WOOFi Earn Maxi ', ERC20Upgradeable(_stakingToken).name())),
-            string(abi.encodePacked('wem', ERC20Upgradeable(_stakingToken).symbol()))
+            string(abi.encodePacked('WOOFi Earn Maxi ', ERC20Upgradeable(_depositToken).name())),
+            string(abi.encodePacked('wem', ERC20Upgradeable(_depositToken).symbol()))
         );
 
         pid = _pid;
         masterChef = _masterChef;
         rewardBar = _rewardBar;
-        stakingToken = _stakingToken; // LP Token
+        depositToken = _depositToken; // LP Token
         rewardToken = _rewardToken;   // TRI
 
         _giveAllowances();
@@ -128,13 +128,13 @@ contract WOOFiMaxiVault is ERC20Upgradeable, BaseMaxiVault {
 
     function pendingReward(address _user) external view returns (uint256) {
         uint256 pendingInMasterChef = IMasterChef(masterChef).pendingTri(pid, address(this));
-        uint256 calAccRewardPerShare = accRewardPerShare.add(pendingInMasterChef.mul(1e12).div(balance()));
+        uint256 calAccRewardPerShare = balance() > 0 ? accRewardPerShare.add(pendingInMasterChef.mul(1e12).div(balance())) : accRewardPerShare;
         UserInfo memory user = userInfo[_user];
         return user.amount.mul(calAccRewardPerShare).div(1e12).sub(user.rewardDebt);
     }
 
     function depositAll() external override {
-        deposit(IERC20(stakingToken).balanceOf(msg.sender));
+        deposit(IERC20(depositToken).balanceOf(msg.sender));
     }
 
     function withdrawAll() external override {
@@ -148,7 +148,7 @@ contract WOOFiMaxiVault is ERC20Upgradeable, BaseMaxiVault {
 
         UserInfo storage user = userInfo[msg.sender];
         uint256 pendingRewards = user.amount.mul(accRewardPerShare).div(1e12).sub(user.rewardDebt);
-        TransferHelper.safeTransferFrom(stakingToken, msg.sender, address(this), _amount);
+        TransferHelper.safeTransferFrom(depositToken, msg.sender, address(this), _amount);
         IMasterChef(masterChef).deposit(pid, _amount);
         user.amount = user.amount.add(_amount);
         user.rewardDebt = user.amount.mul(accRewardPerShare).div(1e12).sub(pendingRewards);
@@ -163,10 +163,10 @@ contract WOOFiMaxiVault is ERC20Upgradeable, BaseMaxiVault {
         IMasterChef(masterChef).withdraw(pid, _amount);
         _claimReward(); // update user.rewardDebt
         user.amount = user.amount.sub(_amount);
-        uint256 fee = _chargeWithdrawalFee(stakingToken, _amount);
+        uint256 fee = _chargeWithdrawalFee(depositToken, _amount);
 
         _burn(msg.sender, _amount);
-        TransferHelper.safeTransfer(stakingToken, msg.sender, _amount.sub(fee));
+        TransferHelper.safeTransfer(depositToken, msg.sender, _amount.sub(fee));
         emit Withdraw(msg.sender, _amount.sub(fee));
     }
 
@@ -212,12 +212,12 @@ contract WOOFiMaxiVault is ERC20Upgradeable, BaseMaxiVault {
     /* ----- Internal Functions ----- */
 
     function _giveAllowances() internal override {
-        TransferHelper.safeApprove(stakingToken, masterChef, uint256(-1));
+        TransferHelper.safeApprove(depositToken, masterChef, uint256(-1));
         TransferHelper.safeApprove(rewardToken, rewardBar, uint256(-1));
     }
 
     function _removeAllowances() internal override {
-        TransferHelper.safeApprove(stakingToken, masterChef, 0);
+        TransferHelper.safeApprove(depositToken, masterChef, 0);
         TransferHelper.safeApprove(rewardToken, rewardBar, 0);
     }
 
@@ -254,16 +254,21 @@ contract WOOFiMaxiVault is ERC20Upgradeable, BaseMaxiVault {
 
         emit EmergencyWithdraw(
             msg.sender,
-            IERC20(stakingToken).balanceOf(address(this)),
+            IERC20(depositToken).balanceOf(address(this)),
             IERC20(rewardToken).balanceOf(address(this))
         );
     }
 
     function depositToPool() public override onlyAdmin {
-        IMasterChef(masterChef).deposit(pid, IERC20(stakingToken).balanceOf(address(this)));
+        if (balance() > 0) harvest();
+        uint256 depositBal = IERC20(depositToken).balanceOf(address(this));
+        if (depositBal > 0) IMasterChef(masterChef).deposit(pid, depositBal);
     }
 
     function withdrawFromPool() public override onlyAdmin {
-        IMasterChef(masterChef).withdraw(pid, balance());
+        if (balance() > 0) {
+            harvest();
+            IMasterChef(masterChef).withdraw(pid, balance());
+        }
     }
 }
