@@ -50,7 +50,7 @@ contract WOOFiMaxiVaultTrisolaris is ERC20Upgradeable, BaseMaxiVault {
 
     // Info of each user.
     struct UserInfo {
-        uint256 amount;     // How many deposit tokens the user has provided.
+        uint256 amount; // How many deposit tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
         //
         // We do some fancy math here. Basically, any point in time, the amount of reward tokens
@@ -67,7 +67,7 @@ contract WOOFiMaxiVaultTrisolaris is ERC20Upgradeable, BaseMaxiVault {
 
     /* ----- Mapping ----- */
 
-    mapping (address => UserInfo) public userInfo;
+    mapping(address => UserInfo) public userInfo;
 
     /* ----- State Variables ----- */
 
@@ -76,7 +76,7 @@ contract WOOFiMaxiVaultTrisolaris is ERC20Upgradeable, BaseMaxiVault {
 
     // Contract Address
     address public masterChef; // LP Farm
-    address public rewardBar;  // TriBar
+    address public rewardBar; // TriBar
 
     /* ----- Event ----- */
 
@@ -100,7 +100,7 @@ contract WOOFiMaxiVaultTrisolaris is ERC20Upgradeable, BaseMaxiVault {
         require(_rewardBar != address(0), 'WOOFiMaximizerVault: _rewardBar_ZERO_ADDRESS');
         require(_depositToken != address(0), 'WOOFiMaximizerVault: _depositToken_ZERO_ADDRESS');
         require(_rewardToken != address(0), 'WOOFiMaximizerVault: _rewardToken_ZERO_ADDRESS');
-        require(_wooAccessManager != address (0), 'WOOFiMaximizerVault: _wooAccessManager_ZERO_ADDRESS');
+        require(_wooAccessManager != address(0), 'WOOFiMaximizerVault: _wooAccessManager_ZERO_ADDRESS');
 
         __BaseMaxiVault_init(_wooAccessManager);
         __ERC20_init(
@@ -112,7 +112,7 @@ contract WOOFiMaxiVaultTrisolaris is ERC20Upgradeable, BaseMaxiVault {
         masterChef = _masterChef;
         rewardBar = _rewardBar;
         depositToken = _depositToken; // LP Token
-        rewardToken = _rewardToken;   // TRI
+        rewardToken = _rewardToken; // TRI
 
         _giveAllowances();
     }
@@ -128,7 +128,9 @@ contract WOOFiMaxiVaultTrisolaris is ERC20Upgradeable, BaseMaxiVault {
 
     function pendingReward(address _user) external view returns (uint256) {
         uint256 pendingInMasterChef = IMasterChef(masterChef).pendingTri(pid, address(this));
-        uint256 calAccRewardPerShare = balance() > 0 ? accRewardPerShare.add(pendingInMasterChef.mul(1e12).div(balance())) : accRewardPerShare;
+        uint256 calAccRewardPerShare = balance() > 0
+            ? accRewardPerShare.add(pendingInMasterChef.mul(1e12).div(balance()))
+            : accRewardPerShare;
         UserInfo memory user = userInfo[_user];
         return user.amount.mul(calAccRewardPerShare).div(1e12).sub(user.rewardDebt);
     }
@@ -159,7 +161,7 @@ contract WOOFiMaxiVaultTrisolaris is ERC20Upgradeable, BaseMaxiVault {
     function withdraw(uint256 _amount) public override nonReentrant notPaused fairUpdate {
         UserInfo storage user = userInfo[msg.sender];
         require(user.amount >= _amount, 'WOOFiMaxiVault: _amount_EXCEEDS_USER_BALANCE');
-        
+
         IMasterChef(masterChef).withdraw(pid, _amount);
         _claimReward(); // update user.rewardDebt
         user.amount = user.amount.sub(_amount);
@@ -204,7 +206,7 @@ contract WOOFiMaxiVaultTrisolaris is ERC20Upgradeable, BaseMaxiVault {
 
     function getBarPricePerFullShare() public view returns (uint256) {
         uint256 rewardBarBal = IERC20(rewardToken).balanceOf(rewardBar); // TRI balance in TriBar
-        uint256 rewardBarShares = IERC20(rewardBar).totalSupply();       // xTri total supply
+        uint256 rewardBarShares = IERC20(rewardBar).totalSupply(); // xTri total supply
 
         return rewardBarShares == 0 ? 1e18 : rewardBarBal.mul(1e18).div(rewardBarShares);
     }
