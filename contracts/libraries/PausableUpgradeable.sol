@@ -4,12 +4,12 @@ pragma solidity 0.6.12;
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
 abstract contract PausableUpgradeable is OwnableUpgradeable {
-    uint public lastPauseTime;
+    uint256 public lastPauseTime;
     bool public paused;
 
     event PauseChanged(bool isPaused);
 
-    modifier notPaused {
+    modifier notPaused() {
         require(!paused, 'PausableUpgradeable: cannot be performed while the contract is paused');
         _;
     }
@@ -31,5 +31,6 @@ abstract contract PausableUpgradeable is OwnableUpgradeable {
 
         emit PauseChanged(paused);
     }
+
     uint256[50] private __gap;
 }

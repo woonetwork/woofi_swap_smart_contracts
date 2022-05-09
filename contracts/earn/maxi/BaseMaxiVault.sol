@@ -39,7 +39,7 @@ pragma experimental ABIEncoderV2;
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol';
 
 import '../../interfaces/IWooAccessManager.sol';
@@ -64,7 +64,7 @@ abstract contract BaseMaxiVault is PausableUpgradeable, ReentrancyGuardUpgradeab
     /* ----- Constant Variables ----- */
 
     uint256 public constant FEE_DENOMINATOR = 10000;
-    
+
     /* ----- Event ----- */
 
     event PerformanceFeeUpdated(uint256 fee);
@@ -81,7 +81,7 @@ abstract contract BaseMaxiVault is PausableUpgradeable, ReentrancyGuardUpgradeab
         wooAccessManager = _wooAccessManager;
 
         performanceFee = 300; // 1 in 10000th -> 100: 1%, 300: 3%
-        withdrawalFee = 0;    // 1 in 10000th -> 1: 0.01%, 10: 0.1%
+        withdrawalFee = 0; // 1 in 10000th -> 1: 0.01%, 10: 0.1%
         performanceTreasury = 0x4094D7A17a387795838c7aba4687387B0d32BCf3;
         withdrawalTreasury = 0x4094D7A17a387795838c7aba4687387B0d32BCf3;
     }
@@ -89,7 +89,10 @@ abstract contract BaseMaxiVault is PausableUpgradeable, ReentrancyGuardUpgradeab
     /* ----- Modifier ----- */
 
     modifier onlyAdmin() {
-        require(owner() == msg.sender || IWooAccessManager(wooAccessManager).isVaultAdmin(msg.sender), 'WOOFiMaximizerVault: NOT_ADMIN');
+        require(
+            owner() == msg.sender || IWooAccessManager(wooAccessManager).isVaultAdmin(msg.sender),
+            'WOOFiMaximizerVault: NOT_ADMIN'
+        );
         _;
     }
 

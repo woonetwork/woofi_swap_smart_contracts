@@ -48,12 +48,14 @@ import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
+import '@openzeppelin/contracts/utils/EnumerableSet.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateManager {
     using SafeMath for uint256;
     using DecimalMath for uint256;
     using SafeERC20 for IERC20;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     // Note: this is the percent rate of the total swap fee (not the swap volume)
     // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
@@ -61,6 +63,7 @@ contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateMa
     // e.g. suppose:
     //   rebateRate = 1e17 (10%), so the rebate amount is total_swap_fee * 10%.
     mapping(address => uint256) public override rebateRate;
+    EnumerableSet.AddressSet private rebateAddressSet;
 
     // pending rebate amount in quote token
     mapping(address => uint256) public pendingRebate;
@@ -68,7 +71,7 @@ contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateMa
     IWooPP private wooPP;
 
     address public immutable override quoteToken; // USDT
-    address public immutable rewardToken; // WOO
+    address public rewardToken; // Any Token
 
     IWooAccessManager public accessManager;
 
@@ -109,17 +112,34 @@ contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateMa
         // Note: set the pending rebate early to make external interactions safe.
         pendingRebate[msg.sender] = 0;
 
-        uint256 balanceBefore = IERC20(rewardToken).balanceOf(address(this));
-        TransferHelper.safeApprove(quoteToken, address(wooPP), quoteAmount);
-        uint256 wooAmount = wooPP.sellQuote(rewardToken, quoteAmount, 0, address(this), address(0));
-        uint256 balanceAfter = IERC20(rewardToken).balanceOf(address(this));
-        require(balanceAfter.sub(balanceBefore) >= wooAmount, 'WooRebateManager: woo amount INSUFF');
-
-        if (wooAmount > 0) {
-            TransferHelper.safeTransfer(rewardToken, msg.sender, wooAmount);
+        uint256 rewardAmount;
+        if (rewardToken == quoteToken) {
+            rewardAmount = quoteAmount;
+        } else {
+            uint256 balanceBefore = IERC20(rewardToken).balanceOf(address(this));
+            TransferHelper.safeApprove(quoteToken, address(wooPP), quoteAmount);
+            rewardAmount = wooPP.sellQuote(rewardToken, quoteAmount, 0, address(this), address(0));
+            uint256 balanceAfter = IERC20(rewardToken).balanceOf(address(this));
+            require(balanceAfter.sub(balanceBefore) >= rewardAmount, 'WooRebateManager: woo amount INSUFF');
         }
 
-        emit ClaimReward(msg.sender, wooAmount);
+        if (rewardAmount > 0) {
+            TransferHelper.safeTransfer(rewardToken, msg.sender, rewardAmount);
+        }
+
+        emit ClaimReward(msg.sender, rewardAmount);
+    }
+
+    function allRebateAddresses() external view returns (address[] memory) {
+        address[] memory rebateAddresses = new address[](rebateAddressSet.length());
+        for (uint256 i = 0; i < rebateAddressSet.length(); ++i) {
+            rebateAddresses[i] = rebateAddressSet.at(i);
+        }
+        return rebateAddresses;
+    }
+
+    function allRebateAddressesLength() external view returns (uint256) {
+        return rebateAddressSet.length();
     }
 
     /* ----- Admin Functions ----- */
@@ -135,6 +155,11 @@ contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateMa
         require(brokerAddr != address(0), 'WooRebateManager: brokerAddr_ZERO_ADDR');
         require(rate <= 1e18, 'WooRebateManager: INVALID_USER_REWARD_RATE'); // rate <= 100%
         rebateRate[brokerAddr] = rate;
+        if (rate == 0) {
+            rebateAddressSet.remove(brokerAddr);
+        } else {
+            rebateAddressSet.add(brokerAddr);
+        }
         emit RebateRateUpdated(brokerAddr, rate);
     }
 
@@ -147,6 +172,11 @@ contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateMa
     function setAccessManager(address newAccessManager) external onlyOwner {
         require(newAccessManager != address(0), 'WooRebateManager: newAccessManager_ZERO_ADDR');
         accessManager = IWooAccessManager(newAccessManager);
+    }
+
+    function setRewardToken(address newRewardToken) external onlyAdmin {
+        require(newRewardToken != address(0), 'WooRebateManager: rewardToken_ZERO_ADDR');
+        rewardToken = newRewardToken;
     }
 
     function emergencyWithdraw(address token, address to) public onlyOwner {
