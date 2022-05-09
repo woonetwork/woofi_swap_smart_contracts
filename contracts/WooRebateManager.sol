@@ -155,7 +155,11 @@ contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateMa
         require(brokerAddr != address(0), 'WooRebateManager: brokerAddr_ZERO_ADDR');
         require(rate <= 1e18, 'WooRebateManager: INVALID_USER_REWARD_RATE'); // rate <= 100%
         rebateRate[brokerAddr] = rate;
-        rebateAddressSet.add(brokerAddr);
+        if (rate == 0) {
+            rebateAddressSet.remove(brokerAddr);
+        } else {
+            rebateAddressSet.add(brokerAddr);
+        }
         emit RebateRateUpdated(brokerAddr, rate);
     }
 
