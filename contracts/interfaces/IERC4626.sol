@@ -76,20 +76,18 @@ interface IERC4626 {
 
     function previewWithdraw(uint256 assets) external view returns (uint256 shares);
 
-    function maxRedeem(address owner) external view returns (uint256 maxShares);
-
-    function previewRedeem(uint256 shares) external view returns (uint256 assets);
-
     /// @notice Our vault need deposit ether, so `payable` is require
     function deposit(uint256 assets, address receiver) external payable returns (uint256 shares);
 
     function mint(uint256 shares, address receiver) external payable returns (uint256 assets);
 
-    function withdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) external returns (uint256 shares);
+    function withdraw(address receiver, address owner) external returns (uint256 shares);
+    
+    /// @notice Our vault doesn't accept `assets` as parameter
+    // function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
+
     /// @notice Our vault doesn't need `redeem` function in fact
+    // function maxRedeem(address owner) external view returns (uint256 maxShares);
+    // function previewRedeem(uint256 shares) external view returns (uint256 assets);
     // function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets);
 }
