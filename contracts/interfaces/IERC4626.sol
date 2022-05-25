@@ -82,7 +82,7 @@ interface IERC4626 {
     function mint(uint256 shares, address receiver) external payable returns (uint256 assets);
 
     function withdraw(address receiver, address owner) external returns (uint256 shares);
-    
+
     /// @notice Our vault doesn't accept `assets` as parameter
     // function withdraw(uint256 assets, address receiver, address owner) external returns (uint256 shares);
 

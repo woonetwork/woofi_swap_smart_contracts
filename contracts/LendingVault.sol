@@ -93,12 +93,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, IERC4626 {
         uint256 totalInterestAssets
     );
 
-    event Settle(
-        address indexed caller,
-        address indexed user,
-        uint256 assets,
-        uint256 shares
-    );
+    event Settle(address indexed caller, address indexed user, uint256 assets, uint256 shares);
 
     event SetDailyMaxInstantWithdrawAssets(
         uint256 maxInstantWithdrawAssets,
@@ -407,10 +402,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, IERC4626 {
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
-    function withdraw(
-        address receiver,
-        address owner
-    ) external override nonReentrant returns (uint256 shares) {
+    function withdraw(address receiver, address owner) external override nonReentrant returns (uint256 shares) {
         require(receiver != address(0), 'LendingVault: receiver not set');
         // For user assets safety consideration,
         // not allow msg.sender withdraw through msg.sender has ERC-20 approval over the shares of owner
@@ -490,7 +482,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, IERC4626 {
         require(msg.sender == owner, 'LendingVault: msg.sender not owner');
 
         if (isStrategyActive()) IStrategy(strategy).beforeWithdraw();
- 
+
         _burn(owner, shares);
 
         _withdrawStrategyIfNeed(assets);
@@ -571,7 +563,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, IERC4626 {
         _burn(address(this), totalBurnShares);
         // Move this week interests(totalInterestAssets) to `totalSettleAssets` as settlement
         totalSettleAssets = totalSettleAssets.add(totalInterestAssets);
-        
+
         // e.g. totalAssets_ = totalAssets() * 90%, totalAssets_ still has `totalBorrowAssets` and `totalInterestAssets`
         uint256 totalAssets_ = totalAssets().mul(allowBorrowPercentage).div(MAX_PERCENTAGE);
         // Set `totalBorrowAssets` as 0 means the new epoch is ready to borrow
@@ -663,10 +655,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, IERC4626 {
     }
 
     function setInstantWithdrawFeePercentage(uint256 _instantWithdrawFeePercentage) external onlyAdmin {
-        require(
-            _instantWithdrawFeePercentage <= MAX_PERCENTAGE,
-            'LendingVault: _instantWithdrawFeePercentage exceed'
-        );
+        require(_instantWithdrawFeePercentage <= MAX_PERCENTAGE, 'LendingVault: _instantWithdrawFeePercentage exceed');
         instantWithdrawFeePercentage = _instantWithdrawFeePercentage;
     }
 
