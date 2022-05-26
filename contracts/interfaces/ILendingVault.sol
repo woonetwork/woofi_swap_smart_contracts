@@ -51,6 +51,59 @@ interface ILendingVault {
         uint256 shares
     );
 
+    event RequestWithdraw(
+        address indexed caller,
+        address indexed receiver,
+        address indexed owner,
+        uint256 assets,
+        uint256 shares
+    );
+
+    event CancelRequestWithdraw(
+        address indexed caller,
+        address indexed receiver,
+        address indexed owner,
+        uint256 assets,
+        uint256 shares
+    );
+
+    event InstantWithdraw(
+        address indexed caller,
+        address indexed receiver,
+        address indexed owner,
+        uint256 assets,
+        uint256 shares,
+        uint256 fees
+    );
+
+    event ClaimReward(address indexed user, uint256 rewards, uint256 xWOORewards);
+
+    event SettleInterest(
+        address indexed caller,
+        uint256 diff,
+        uint256 rate,
+        uint256 interestAssets,
+        uint256 weeklyInterestAssets
+    );
+
+    event Settle(address indexed caller, address indexed user, uint256 assets, uint256 shares);
+
+    event SetDailyMaxInstantWithdrawAssets(
+        uint256 maxInstantWithdrawAssets,
+        uint256 leftInstantWithdrawAssets,
+        uint256 maxAssets
+    );
+
+    event SetWeeklyMaxInstantWithdrawAssets(uint256 maxAssets);
+
+    event Borrow(uint256 assets);
+
+    event Repay(uint256 assets, bool repaySettle);
+
+    event UpgradeStrategy(address strategy);
+
+    event NewStrategyCandidate(address strategy);
+
     // ***************** //
     // *** FUNCTIONS *** //
     // ***************** //
@@ -75,7 +128,39 @@ interface ILendingVault {
 
     function previewWithdraw(uint256 assets) external view returns (uint256 shares);
 
+    function maxRequestWithdraw(address owner) external view returns (uint256 maxAssets);
+
+    function previewRequestWithdraw(uint256 assets) external view returns (uint256 shares);
+
+    function maxInstantWithdraw(address owner) external view returns (uint256 maxAssets);
+
+    function previewInstantWithdraw(uint256 assets) external view returns (uint256 shares);
+
+    function localAssets() external view returns (uint256 assets);
+
+    function getPricePerFullShare() external view returns (uint256 sharePrice);
+
+    function pendingRewards(address user) external view returns (uint256 rewards);
+
+    function isStrategyActive() external view returns (bool active);
+
     function deposit(uint256 assets, address receiver) external payable returns (uint256 shares);
 
     function withdraw(address receiver, address owner) external returns (uint256 shares);
+
+    function requestWithdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) external returns (uint256 shares);
+
+    function cancelRequestWithdraw(address receiver, address owner) external returns (uint256 shares);
+
+    function instantWithdraw(
+        uint256 assets,
+        address receiver,
+        address owner
+    ) external returns (uint256 shares);
+
+    function claimReward() external;
 }

@@ -46,6 +46,7 @@ import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 import './interfaces/ILendingVault.sol';
+import './interfaces/IWooStakingVault.sol';
 import './interfaces/IWETH.sol';
 import './interfaces/IStrategy.sol';
 import './interfaces/IWooAccessManager.sol';
@@ -55,61 +56,6 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
-
-    // ************** //
-    // *** EVENTS *** //
-    // ************** //
-
-    event RequestWithdraw(
-        address indexed caller,
-        address indexed receiver,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares
-    );
-
-    event CancelRequestWithdraw(
-        address indexed caller,
-        address indexed receiver,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares
-    );
-
-    event InstantWithdraw(
-        address indexed caller,
-        address indexed receiver,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares,
-        uint256 fees
-    );
-
-    event SettleInterest(
-        address indexed caller,
-        uint256 diff,
-        uint256 rate,
-        uint256 interestAssets,
-        uint256 weeklyInterestAssets
-    );
-
-    event Settle(address indexed caller, address indexed user, uint256 assets, uint256 shares);
-
-    event SetDailyMaxInstantWithdrawAssets(
-        uint256 maxInstantWithdrawAssets,
-        uint256 leftInstantWithdrawAssets,
-        uint256 maxAssets
-    );
-
-    event SetWeeklyMaxInstantWithdrawAssets(uint256 maxAssets);
-
-    event Borrow(uint256 assets);
-
-    event Repay(uint256 assets, bool repaySettle);
-
-    event UpgradeStrategy(address strategy);
-
-    event NewStrategyCandidate(address strategy);
 
     // *************** //
     // *** STRUCTS *** //
@@ -121,6 +67,10 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         // ADD in `weeklySettle` and SET 0 in `withdraw`
         uint256 settledAssets;
         uint256 costSharePrice;
+        // For WOO reward
+        uint256 debtRewards;
+        // For WOO reward
+        uint256 pendingRewards;
     }
 
     struct StrategyCandidate {
@@ -277,32 +227,50 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         shares = _convertToShares(assets, true);
     }
 
-    function maxRequestWithdraw(address owner) public view returns (uint256 maxAssets) {
+    function maxRequestWithdraw(address owner) public view override returns (uint256 maxAssets) {
         maxAssets = _convertToAssets(balanceOf(owner), false);
     }
 
-    function previewRequestWithdraw(uint256 assets) public view returns (uint256 shares) {
+    function previewRequestWithdraw(uint256 assets) public view override returns (uint256 shares) {
         shares = _convertToShares(assets, true);
     }
 
-    function maxInstantWithdraw(address owner) public view returns (uint256 maxAssets) {
+    function maxInstantWithdraw(address owner) public view override returns (uint256 maxAssets) {
         uint256 assets = _convertToAssets(balanceOf(owner), false);
         maxAssets = leftInstantWithdrawAssets > assets ? assets : leftInstantWithdrawAssets;
     }
 
-    function previewInstantWithdraw(uint256 assets) public view returns (uint256 shares) {
+    function previewInstantWithdraw(uint256 assets) public view override returns (uint256 shares) {
         shares = _convertToShares(assets, true);
     }
 
-    function localAssets() public view returns (uint256 assets) {
+    function localAssets() public view override returns (uint256 assets) {
         assets = IERC20(asset).balanceOf(address(this)).sub(totalRepaySettledAssets);
     }
 
-    function getPricePerFullShare() public view returns (uint256 sharePrice) {
+    function getPricePerFullShare() public view override returns (uint256 sharePrice) {
         sharePrice = _convertToAssets(1e18, false);
     }
 
-    function isStrategyActive() public view returns (bool active) {
+    function pendingRewards(address user) public view override returns (uint256 rewards) {
+        uint256 totalSupply_ = totalSupply();
+        if (totalSupply_ == 0) {
+            rewards = 0;
+        }
+
+        uint256 latestAccRewardPerShare = IERC20(woo).balanceOf(address(this)).mul(1e12).div(totalSupply_);
+        UserInfo memory userInfo_ = userInfo[user];
+        uint256 shares = balanceOf(user).add(userInfo_.requestedShares);
+
+        uint256 accRewards = shares.mul(latestAccRewardPerShare).div(1e12);
+
+        rewards = userInfo_.pendingRewards;
+        if (accRewards > userInfo_.debtRewards) {
+            rewards = rewards.add(accRewards.sub(userInfo_.debtRewards));
+        }
+    }
+
+    function isStrategyActive() public view override returns (bool active) {
         active = strategy != address(0) && !IStrategy(strategy).paused();
     }
 
@@ -333,6 +301,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         require(assetsAfter.sub(assetsBefore) >= assets, 'LendingVault: assets not enough');
 
         _updateCostSharePrice(assets, shares, receiver);
+        _updateUserRewardInfo(receiver, shares);
         _mint(receiver, shares);
         _farmAtStrategy();
 
@@ -367,7 +336,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         uint256 assets,
         address receiver,
         address owner
-    ) external nonReentrant returns (uint256 shares) {
+    ) external override nonReentrant returns (uint256 shares) {
         require(allowRequestWithdraw, 'LendingVault: Not allow yet, please wait');
         require(receiver != address(0), 'LendingVault: receiver not set');
         // For user assets safety consideration,
@@ -387,7 +356,12 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         emit RequestWithdraw(msg.sender, receiver, owner, assets, shares);
     }
 
-    function cancelRequestWithdraw(address receiver, address owner) external nonReentrant returns (uint256 shares) {
+    function cancelRequestWithdraw(address receiver, address owner)
+        external
+        override
+        nonReentrant
+        returns (uint256 shares)
+    {
         require(allowRequestWithdraw, 'LendingVault: Not allow yet, please wait');
         require(owner != address(0), 'LendingVault: receiver not set');
         // For user assets safety consideration,
@@ -410,7 +384,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         uint256 assets,
         address receiver,
         address owner
-    ) external nonReentrant returns (uint256 shares) {
+    ) external override nonReentrant returns (uint256 shares) {
         require(receiver != address(0), 'LendingVault: receiver not set');
         require(assets <= maxInstantWithdraw(owner), 'LendingVault: owner assets insufficient');
         require((shares = previewInstantWithdraw(assets)) != 0, 'LendingVault: Zero shares');
@@ -421,6 +395,8 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         if (isStrategyActive()) {
             IStrategy(strategy).beforeWithdraw();
         }
+
+        _updateUserRewardInfo(owner, 0);
 
         _burn(owner, shares);
 
@@ -450,6 +426,26 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         }
 
         emit InstantWithdraw(msg.sender, receiver, owner, assets, shares, fees);
+    }
+
+    function claimReward() external override nonReentrant {
+        address user = msg.sender;
+        _updateUserRewardInfo(user, 0);
+
+        UserInfo memory userInfo_ = userInfo[user];
+        uint256 rewards = userInfo_.pendingRewards;
+
+        uint256 xWOORewards = 0;
+        if (rewards > 0) {
+            uint256 xWOOBalBefore = IERC20(wooStakingVault).balanceOf(address(this));
+            IWooStakingVault(wooStakingVault).deposit(rewards);
+            uint256 xWOOBalAfter = IERC20(wooStakingVault).balanceOf(address(this));
+            require(xWOOBalAfter > xWOOBalBefore, 'LendingVault: xWOO balance not enough');
+            xWOORewards = xWOOBalAfter.sub(xWOOBalBefore);
+            TransferHelper.safeTransfer(wooStakingVault, user, xWOORewards);
+        }
+
+        emit ClaimReward(user, rewards, xWOORewards);
     }
 
     // *********************** //
@@ -506,6 +502,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
             address user = requestUsers.at(0);
             UserInfo storage userInfo_ = userInfo[user];
             uint256 shares = userInfo_.requestedShares;
+            _updateUserRewardInfo(user, 0);
             weeklyBurnShares = weeklyBurnShares.add(shares);
             uint256 assets = _convertToAssets(shares, false);
             userInfo_.requestedShares = 0;
@@ -737,6 +734,24 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
             require(isStrategyActive(), 'LendingVault: Strategy inactive');
             IStrategy(strategy).withdraw(withdrawAmount);
         }
+    }
+
+    function _updateUserRewardInfo(address user, uint256 mintShares) internal {
+        uint256 totalSupply_ = totalSupply();
+        if (totalSupply_ == 0) {
+            return;
+        }
+
+        accRewardPerShare = IERC20(woo).balanceOf(address(this)).mul(1e12).div(totalSupply_);
+        UserInfo storage userInfo_ = userInfo[user];
+        uint256 shares = balanceOf(user).add(userInfo_.requestedShares); // This is the actual shares that user own
+
+        uint256 accRewards = shares.mul(accRewardPerShare).div(1e12);
+        require(accRewards >= userInfo_.debtRewards, 'LendingVault: debtRewards exceed');
+        uint256 pendingRewards_ = accRewards.sub(userInfo_.debtRewards);
+
+        userInfo_.debtRewards = (shares.add(mintShares)).mul(accRewardPerShare).div(1e12).sub(pendingRewards_);
+        userInfo_.pendingRewards = userInfo_.pendingRewards.add(pendingRewards_);
     }
 
     // ************************** //
