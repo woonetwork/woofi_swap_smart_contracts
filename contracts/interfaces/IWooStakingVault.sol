@@ -37,7 +37,5 @@ pragma solidity 0.6.12;
 
 /// @title WOOFi WooStakingVault interface.
 interface IWooStakingVault {
-    
     function deposit(uint256 amount) external;
-
 }
