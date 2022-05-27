@@ -46,7 +46,6 @@ import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 import './interfaces/ILendingVault.sol';
-import './interfaces/IWooStakingVault.sol';
 import './interfaces/IWETH.sol';
 import './interfaces/IStrategy.sol';
 import './interfaces/IWooAccessManager.sol';
@@ -62,15 +61,12 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     // *************** //
 
     struct UserInfo {
-        // ADD in `requestWithdraw` and SET 0 in `cancelRequestWithdraw` && `weeklySettle`
+        // 在`requestWithdraw()`加, `cancelRequestWithdraw()`和`weeklySettle()`清零
         uint256 requestedShares;
-        // ADD in `weeklySettle` and SET 0 in `withdraw`
+        // 在`weeklySettle()`加, `withdraw()`清零
         uint256 settledAssets;
+        // 仅在`deposit()`时触发`_updateCostSharePrice()`来更新
         uint256 costSharePrice;
-        // For WOO reward
-        uint256 debtRewards;
-        // For WOO reward
-        uint256 pendingRewards;
     }
 
     struct StrategyCandidate {
@@ -84,7 +80,6 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
 
     address public immutable weth;
     address public immutable override asset;
-    address public immutable woo;
 
     uint256 private constant INTEREST_RATE_COEFF = 31536000; // 365 * 24 * 3600
     uint256 public constant MAX_PERCENTAGE = 10000; // 100%
@@ -93,44 +88,49 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     // *** VARIABLES *** //
     // ***************** //
 
-    // 3rd party protocol auto-compounding strategy
+    // 第三方复投策略(如Alpaca)
     address public strategy;
-    // Treasury for `instantWithdraw`
+    // 在`instantWithdraw()`时抽取fees并transfer到`treasury`
     address public treasury;
     address public wooAccessManager;
 
-    address public wooStakingVault;
-
-    // For `instantWithdraw`, update to 0 each week
+    // `instantWithdraw()`的剩余限额, 每次`instantWithdraw()`都会减少
+    // 每日执行`setDailyMaxInstantWithdrawAssets()`(仅)加大限额
+    // 每周执行`setWeeklyMaxInstantWithdrawAssets()`重置额度
     uint256 public leftInstantWithdrawAssets;
-    // For `instantWithdraw`, update each week
+    // `instantWithdraw()`的最大限额, 用于给前端展示
+    // 每日执行`setDailyMaxInstantWithdrawAssets()`(仅)加大上限
+    // 每周执行`setWeeklyMaxInstantWithdrawAssets()`更新上限
     uint256 public maxInstantWithdrawAssets;
 
+    // 最大允许Market Maker借用`totalAssets()`的百分比
     uint256 public allowBorrowPercentage = 9000; // 90%
+    // `instantWithdraw()`抽取fees的百分比
     uint256 public instantWithdrawFeePercentage = 30; // 0.3%
-    uint256 public interestRatePercentage; // SET by market maker
+    // 未来利率百分比, 通过`setInterestRatePercentage()`更新, 更新之前需要`settleInterest()`结算过去的利息
+    uint256 public interestRatePercentage; // 由Market Maker调用`setInterestRatePercentage()`更新
 
-    // User request the amount of `asset` to claim in the next epoch, no interest anymore
+    // 总结算金额(这部分不再获得利息收益), 包括未还部分, 在`weeklySettle()`加, `withdraw()`减
     uint256 public totalSettledAssets;
-    // Market maker borrow `asset` and pay interest, SET 0 when `settle`
-    uint256 public totalBorrowedAssets;
-    // Market maker borrow interest, SET 0 when `settle`
-    uint256 public totalInterestAssets;
-    // Market maker borrow interest, SET 0 when `settle`
-    uint256 public weeklyInterestAssets;
-    // Market maker repay the `assets` and store in contract locally, waiting for user to withdraw
+    // Market Maker已还的结算金额, 在`repay()`参数repaySettle为true时表示还debtSettledAssets(联系`totalDebtSettledAssets`),
+    // 即在`repay()`处加, 在`withdraw()`减(因为用户取了已经settle的金额)
     uint256 public totalRepaySettledAssets;
-    // Market maker debt after `settle`, will subtract when `repay`
+    // Market Maker欠的结算金额, 在`weeklySettle()`需要还款时加, `repay`参数repaySettle为true时减,
+    // 当`repay()`时还完全部debt(即totalDebtSettledAssets等于0)时, 更新`instantWithdraw()`的每周新限额
     uint256 public totalDebtSettledAssets;
+    // Market Maker总借款金额, 在`borrow()`加, `repay()`和`weeklySettle()`需要还款时减
+    uint256 public totalBorrowedAssets;
+    // 总利息金额(不包括已经结算掉的利率), 仅在`weeklySettle()`加(每周结算完后将没有request的用户利息加上)
+    uint256 public totalInterestAssets;
+    // 本周利息金额, 在`settleInterest()`加, `weeklySettle()`清零
+    uint256 public weeklyInterestAssets;
 
-    // Record last `settleInterest` timestamp for calculating interest
-    uint256 public lastSettleInterest;
-    // Record last `weeklySettle` timestamp for safety consideration
-    uint256 public lastWeeklySettle;
+    // 记录上次执行`settleInterest()`的时间戳
+    uint256 public lastSettleInterestTimestamp;
+    // 记录上次执行`weeklySettle()`的时间戳
+    uint256 public lastWeeklySettleTimestamp;
 
-    uint256 public accRewardPerShare;
-
-    uint256 public weeklySettleDiff = 6.5 days; // 561600
+    uint256 public weeklySettleDiff = 6.5 days; // 561600秒
 
     uint256 public approvalDelay = 48 hours;
 
@@ -145,12 +145,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     // *** CONSTRUCTOR *** //
     // ******************* //
 
-    constructor(
-        address _weth,
-        address _asset,
-        address _woo,
-        address _wooStakingVault
-    )
+    constructor(address _weth, address _asset)
         public
         ERC20(
             string(abi.encodePacked('WOOFi ', ERC20(_asset).name())),
@@ -159,12 +154,10 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     {
         weth = _weth;
         asset = _asset;
-        woo = _woo;
-        wooStakingVault = _wooStakingVault;
         // solhint-disable-next-line not-rely-on-time
-        lastSettleInterest = block.timestamp;
+        lastSettleInterestTimestamp = block.timestamp;
         // solhint-disable-next-line not-rely-on-time
-        lastWeeklySettle = block.timestamp;
+        lastWeeklySettleTimestamp = block.timestamp;
     }
 
     // ***************** //
@@ -187,10 +180,9 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     function totalAssets() public view override returns (uint256 totalManagedAssets) {
         uint256 localAssets_ = localAssets();
         uint256 strategyAssets = IStrategy(strategy).balanceOf();
+        uint256 wooPoolAssets = totalBorrowedAssets.add(totalInterestAssets).add(weeklyInterestAssets);
 
-        totalManagedAssets = localAssets_.add(strategyAssets).add(totalBorrowedAssets).add(totalInterestAssets).add(
-            weeklyInterestAssets
-        );
+        totalManagedAssets = localAssets_.add(strategyAssets).add(wooPoolAssets);
     }
 
     /// @inheritdoc ILendingVault
@@ -219,12 +211,6 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     }
 
     /// @inheritdoc ILendingVault
-    function previewDeposit(uint256 assets) public view override returns (uint256 shares) {
-        require(!paused(), 'LendingVault: Vault paused');
-        shares = _convertToShares(assets, false);
-    }
-
-    /// @inheritdoc ILendingVault
     function maxWithdraw(address user) public view override returns (uint256 maxAssets) {
         UserInfo memory userInfo_ = userInfo[user];
         maxAssets = userInfo_.settledAssets;
@@ -236,38 +222,9 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     }
 
     /// @inheritdoc ILendingVault
-    function previewRequestWithdraw(uint256 assets) public view override returns (uint256 shares) {
-        shares = _convertToShares(assets, true);
-    }
-
-    /// @inheritdoc ILendingVault
     function maxInstantWithdraw(address user) public view override returns (uint256 maxAssets) {
         uint256 assets = _convertToAssets(balanceOf(user), false);
         maxAssets = leftInstantWithdrawAssets > assets ? assets : leftInstantWithdrawAssets;
-    }
-
-    /// @inheritdoc ILendingVault
-    function previewInstantWithdraw(uint256 assets) public view override returns (uint256 shares) {
-        shares = _convertToShares(assets, true);
-    }
-
-    /// @inheritdoc ILendingVault
-    function pendingRewards(address user) public view override returns (uint256 rewards) {
-        uint256 totalSupply_ = totalSupply();
-        if (totalSupply_ == 0) {
-            rewards = 0;
-        }
-
-        uint256 latestAccRewardPerShare = IERC20(woo).balanceOf(address(this)).mul(1e12).div(totalSupply_);
-        UserInfo memory userInfo_ = userInfo[user];
-        uint256 shares = balanceOf(user).add(userInfo_.requestedShares);
-
-        uint256 accRewards = shares.mul(latestAccRewardPerShare).div(1e12);
-
-        rewards = userInfo_.pendingRewards;
-        if (accRewards > userInfo_.debtRewards) {
-            rewards = rewards.add(accRewards.sub(userInfo_.debtRewards));
-        }
     }
 
     /// @inheritdoc ILendingVault
@@ -281,7 +238,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
 
     /// @inheritdoc ILendingVault
     function deposit(uint256 assets) external payable override nonReentrant whenNotPaused returns (uint256 shares) {
-        require((shares = previewDeposit(assets)) != 0, 'LendingVault: Zero shares');
+        require((shares = _convertToShares(assets, false)) != 0, 'LendingVault: Zero shares');
 
         uint256 assetsBefore = localAssets();
         if (asset == weth) {
@@ -295,7 +252,6 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         require(assetsAfter.sub(assetsBefore) >= assets, 'LendingVault: assets not enough');
 
         _updateCostSharePrice(msg.sender, assets, shares);
-        _updateUserRewardInfo(msg.sender, shares);
         _mint(msg.sender, shares);
         _farmAtStrategy();
 
@@ -326,16 +282,16 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     function requestWithdraw(uint256 assets) external override nonReentrant returns (uint256 shares) {
         require(allowRequestWithdraw, 'LendingVault: Not allow yet, please wait');
         require(assets <= maxRequestWithdraw(msg.sender), 'LendingVault: msg.sender assets insufficient');
-        require((shares = previewRequestWithdraw(assets)) != 0, 'LendingVault: Zero shares');
+        require((shares = _convertToShares(assets, true)) != 0, 'LendingVault: Zero shares');
 
-        // Get shares from msg.sender to contract, burn these shares when user `withdraw`
+        // 将用户的shares存入Vault, 让Vault暂时保管(不会burn, 在`weeklySettle()`时才会burn)
         TransferHelper.safeTransferFrom(address(this), msg.sender, address(this), shares);
 
         UserInfo storage userInfo_ = userInfo[msg.sender];
         userInfo_.requestedShares = userInfo_.requestedShares.add(shares);
         requestUsers.add(msg.sender);
 
-        // `assets` is not the final result, share price will increase until next epoch
+        // 此处`assets`仅表示request时存入的shares价值多少assets, 最终得到的assets需在`weeklySettle()`后才准确
         emit RequestWithdraw(msg.sender, assets, shares);
     }
 
@@ -358,13 +314,11 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     /// @inheritdoc ILendingVault
     function instantWithdraw(uint256 assets) external override nonReentrant returns (uint256 shares) {
         require(assets <= maxInstantWithdraw(msg.sender), 'LendingVault: msg.sender assets insufficient');
-        require((shares = previewInstantWithdraw(assets)) != 0, 'LendingVault: Zero shares');
+        require((shares = _convertToShares(assets, true)) != 0, 'LendingVault: Zero shares');
 
         if (isStrategyActive()) {
             IStrategy(strategy).beforeWithdraw();
         }
-
-        _updateUserRewardInfo(msg.sender, 0);
 
         _burn(msg.sender, shares);
 
@@ -396,46 +350,26 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         emit InstantWithdraw(msg.sender, assets, shares, fees);
     }
 
-    /// @inheritdoc ILendingVault
-    function claimReward() external override nonReentrant {
-        _updateUserRewardInfo(msg.sender, 0);
-
-        UserInfo memory userInfo_ = userInfo[msg.sender];
-        uint256 rewards = userInfo_.pendingRewards;
-
-        uint256 xWOORewards = 0;
-        if (rewards > 0) {
-            uint256 xWOOBalBefore = IERC20(wooStakingVault).balanceOf(address(this));
-            IWooStakingVault(wooStakingVault).deposit(rewards);
-            uint256 xWOOBalAfter = IERC20(wooStakingVault).balanceOf(address(this));
-            require(xWOOBalAfter > xWOOBalBefore, 'LendingVault: xWOO balance not enough');
-            xWOORewards = xWOOBalAfter.sub(xWOOBalBefore);
-            TransferHelper.safeTransfer(wooStakingVault, msg.sender, xWOORewards);
-        }
-
-        emit ClaimReward(msg.sender, rewards, xWOORewards);
-    }
-
     // *********************** //
     // *** ADMIN FUNCTIONS *** //
     // *********************** //
 
     function settleInterest() public onlyAdmin {
         // solhint-disable-next-line not-rely-on-time
-        uint256 currentSettleInterest = block.timestamp;
-        require(currentSettleInterest >= lastSettleInterest, 'LendingVault: Timestamp exceed');
+        uint256 currentSettleInterestTimestamp = block.timestamp;
+        require(currentSettleInterestTimestamp >= lastSettleInterestTimestamp, 'LendingVault: Timestamp exceed');
 
-        uint256 diff = currentSettleInterest.sub(lastSettleInterest);
+        uint256 diff = currentSettleInterestTimestamp.sub(lastSettleInterestTimestamp);
         uint256 rate = diff.mul(1e18).mul(interestRatePercentage).div(INTEREST_RATE_COEFF).div(MAX_PERCENTAGE);
         uint256 interestAssets = totalBorrowedAssets.mul(rate).div(1e18);
 
         weeklyInterestAssets = weeklyInterestAssets.add(interestAssets);
-        lastSettleInterest = currentSettleInterest;
+        lastSettleInterestTimestamp = currentSettleInterestTimestamp;
 
         emit SettleInterest(msg.sender, diff, rate, interestAssets, weeklyInterestAssets);
     }
 
-    /// @notice Controlled by backend script to weekly/settle update
+    /// @notice 不用程序直接触发, 可以通过`weeklySettle()`和`repay()`顺带触发
     function setWeeklyMaxInstantWithdrawAssets() public onlyAdmin returns (uint256 maxAssets) {
         maxAssets = totalAssets().mul(MAX_PERCENTAGE.sub(allowBorrowPercentage)).div(MAX_PERCENTAGE);
         leftInstantWithdrawAssets = maxAssets;
@@ -454,9 +388,9 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         weeklySettleDiff = _weeklySettleDiff;
     }
 
-    /// @notice Trigger in the next epoch
+    /// @notice 程序周一UTC0点触发
     function weeklySettle() external onlyAdmin {
-        require(lastWeeklySettle.add(weeklySettleDiff) < block.timestamp, 'LendingVault: Not ready to settle');
+        require(lastWeeklySettleTimestamp.add(weeklySettleDiff) < block.timestamp, 'LendingVault: Not ready to settle');
 
         if (isStrategyActive()) {
             IStrategy(strategy).beforeWithdraw();
@@ -470,7 +404,6 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
             address user = requestUsers.at(0);
             UserInfo storage userInfo_ = userInfo[user];
             uint256 shares = userInfo_.requestedShares;
-            _updateUserRewardInfo(user, 0);
             weeklyBurnShares = weeklyBurnShares.add(shares);
             uint256 assets = _convertToAssets(shares, false);
             userInfo_.requestedShares = 0;
@@ -481,9 +414,10 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
             emit WeeklySettle(msg.sender, user, assets, shares);
         }
         uint256 totalAssets_ = totalAssets();
+        // 将`weeklyInterestAssets`分成两部分, request部分的利息已经在上述for循环里结算给用户(这部分不会再享受到后续利息)
+        // 而剩下的部分`leftInterestAssets`将累计到`totalInterestAssets`, 然后清空`weeklyInterestAssets`并burn掉已结算用户的总shares(等于总request的shares)
         uint256 leftInterestAssets = weeklyInterestAssets.mul(totalAssets_.sub(weeklySettledAssets)).div(totalAssets_);
         totalInterestAssets = totalInterestAssets.add(leftInterestAssets);
-        // SET 0 to `weeklyInterestAssets` means the new epoch is ready to accumulate the interest
         weeklyInterestAssets = 0;
         _burn(address(this), weeklyBurnShares);
 
@@ -493,14 +427,14 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         if (weeklySettledAssets > allowBorrowAssets.sub(totalBorrowedAssets)) {
             uint256 debtSettledAssets = weeklySettledAssets.sub(totalAssets_.sub(totalBorrowedAssets));
             totalBorrowedAssets = totalBorrowedAssets.sub(debtSettledAssets);
-            // Don't update instant withdraw limit when debt exist
+            // 需要还款时(有debt)不能执行`setWeeklyMaxInstantWithdrawAssets()`
             totalDebtSettledAssets = totalDebtSettledAssets.add(debtSettledAssets);
         } else {
-            // Automatic update instant withdraw limit when debt not exist in this settlement
+            // 不需要还款时可以直接执行`setWeeklyMaxInstantWithdrawAssets()`, 因为Vault有足够的金额给用户进行新一周的`instantWithdraw()`
             setWeeklyMaxInstantWithdrawAssets();
         }
 
-        lastWeeklySettle = block.timestamp;
+        lastWeeklySettleTimestamp = block.timestamp;
     }
 
     function borrow(uint256 assets) external onlyAdmin {
@@ -536,7 +470,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
             if (repaySettle) {
                 totalRepaySettledAssets = totalRepaySettledAssets.add(assets);
                 totalDebtSettledAssets = totalDebtSettledAssets.sub(assets);
-                // When debt equal to 0, update instant withdraw limit
+                // 还清欠款后需要更新`instantWithdraw()`每周新限额
                 if (totalDebtSettledAssets == 0) {
                     setWeeklyMaxInstantWithdrawAssets();
                 }
@@ -559,7 +493,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         wooAccessManager = _wooAccessManager;
     }
 
-    /// @notice Controlled by backend script to daily update
+    /// @notice 程序每天UTC0点更新(除了周一UTC0点)
     function setDailyMaxInstantWithdrawAssets() external onlyAdmin returns (uint256 maxAssets) {
         maxAssets = totalAssets().mul(MAX_PERCENTAGE.sub(allowBorrowPercentage)).div(MAX_PERCENTAGE);
         if (maxAssets > maxInstantWithdrawAssets) {
@@ -702,24 +636,6 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
             require(isStrategyActive(), 'LendingVault: Strategy inactive');
             IStrategy(strategy).withdraw(withdrawAmount);
         }
-    }
-
-    function _updateUserRewardInfo(address user, uint256 mintShares) internal {
-        uint256 totalSupply_ = totalSupply();
-        if (totalSupply_ == 0) {
-            return;
-        }
-
-        accRewardPerShare = IERC20(woo).balanceOf(address(this)).mul(1e12).div(totalSupply_);
-        UserInfo storage userInfo_ = userInfo[user];
-        uint256 shares = balanceOf(user).add(userInfo_.requestedShares); // This is the actual shares that user own
-
-        uint256 accRewards = shares.mul(accRewardPerShare).div(1e12);
-        require(accRewards >= userInfo_.debtRewards, 'LendingVault: debtRewards exceed');
-        uint256 pendingRewards_ = accRewards.sub(userInfo_.debtRewards);
-
-        userInfo_.debtRewards = (shares.add(mintShares)).mul(accRewardPerShare).div(1e12).sub(pendingRewards_);
-        userInfo_.pendingRewards = userInfo_.pendingRewards.add(pendingRewards_);
     }
 
     // ************************** //

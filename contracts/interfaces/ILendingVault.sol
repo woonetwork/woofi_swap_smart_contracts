@@ -51,8 +51,6 @@ interface ILendingVault {
 
     event InstantWithdraw(address indexed user, uint256 assets, uint256 shares, uint256 fees);
 
-    event ClaimReward(address indexed user, uint256 rewards, uint256 xWOORewards);
-
     event SettleInterest(
         address indexed caller,
         uint256 diff,
@@ -116,11 +114,6 @@ interface ILendingVault {
     /// @return maxAssets Result of `asset` deposit limitations to user.
     function maxDeposit(address user) external view returns (uint256 maxAssets);
 
-    /// @dev Simulate the `shares` get from actual `deposit`, revert when Vault paused.
-    /// @param assets Amount of `asset` to deposit in Vault.
-    /// @return shares Amount of `share` get from Vault after deposit.
-    function previewDeposit(uint256 assets) external view returns (uint256 shares);
-
     /// @dev Total withdrawable amount of `asset` from user execute `withdraw`,
     /// @param user Address of Vault user.
     /// @return maxAssets Result of `asset` that user can withdraw.
@@ -132,26 +125,11 @@ interface ILendingVault {
     /// @return maxAssets Result of `dev` above.
     function maxRequestWithdraw(address user) external view returns (uint256 maxAssets);
 
-    /// @dev Simulate the `shares` transfer to Vault after actual `requestWithdraw`.
-    /// @param assets Amount of `asset` to request withdraw.
-    /// @return shares Amount of `share` need transfer to Vault after `requestWithdraw`.
-    function previewRequestWithdraw(uint256 assets) external view returns (uint256 shares);
-
     /// @dev Max amount of `asset` that user can withdraw immediately(not SUBTRACT fees here),
     /// related to user `shares` and weekly limit of `instantWithdraw`.
     /// @param user Address of Vault user.
     /// @return maxAssets Result of `dev` above.
     function maxInstantWithdraw(address user) external view returns (uint256 maxAssets);
-
-    /// @dev Simulate instant withdraw amount of `asset` need to burn how many `share`.
-    /// @param assets Amount of `asset` to instantWithdraw.
-    /// @return shares Amount of `share` need to burn after `instantWithdraw`.
-    function previewInstantWithdraw(uint256 assets) external view returns (uint256 shares);
-
-    /// @dev Calculate amount of `WOO` that user able to claim.
-    /// @param user Address of Vault user.
-    /// @return rewards Amount of `WOO` that user able to claim.
-    function pendingRewards(address user) external view returns (uint256 rewards);
 
     /// @dev Check if the `strategy` is active,
     /// only true if `strategy != address(0)` and strategy not paused.
@@ -183,7 +161,4 @@ interface ILendingVault {
     /// @param assets Amount of `asset` to withdraw.
     /// @return shares The withdrew amount repesented in shares.
     function instantWithdraw(uint256 assets) external returns (uint256 shares);
-
-    /// @dev Claim WOO rewards, decide on how many shares that user own.
-    function claimReward() external;
 }
