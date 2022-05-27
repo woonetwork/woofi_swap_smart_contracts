@@ -81,7 +81,7 @@ interface IWooStakingVault {
     /// @dev Get the `stakedToken` balance in Vault, SUBTRACT total `stakedToken` amount of user reserved withdraw.
     /// @return wooBalance Result of `dev`.
     function balance() external view returns (uint256 wooBalance);
-    
+
     /// @dev Deposit an amount of `stakedToken`.
     /// @param amount Amount of `stakedToken` to deposit.
     function deposit(uint256 amount) external;
