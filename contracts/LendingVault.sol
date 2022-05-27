@@ -112,11 +112,11 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
 
     // User request the amount of `asset` to claim in the next epoch, no interest anymore
     uint256 public totalSettledAssets;
-    // Market maker borrow `asset` and pay interest, set to 0 when `settle`
+    // Market maker borrow `asset` and pay interest, SET 0 when `settle`
     uint256 public totalBorrowedAssets;
-    // Market maker borrow interest, set to 0 when `settle`
+    // Market maker borrow interest, SET 0 when `settle`
     uint256 public totalInterestAssets;
-    // Market maker borrow interest, set to 0 when `settle`
+    // Market maker borrow interest, SET 0 when `settle`
     uint256 public weeklyInterestAssets;
     // Market maker repay the `assets` and store in contract locally, waiting for user to withdraw
     uint256 public totalRepaySettledAssets;
@@ -183,6 +183,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     // *** PUBLIC FUNCTIONS *** //
     // ************************ //
 
+    /// @inheritdoc ILendingVault
     function totalAssets() public view override returns (uint256 totalManagedAssets) {
         uint256 localAssets_ = localAssets();
         uint256 strategyAssets = IStrategy(strategy).balanceOf();
@@ -192,66 +193,65 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         );
     }
 
+    /// @inheritdoc ILendingVault
+    function localAssets() public view override returns (uint256 assets) {
+        assets = IERC20(asset).balanceOf(address(this)).sub(totalRepaySettledAssets);
+    }
+
+    /// @inheritdoc ILendingVault
+    function getPricePerFullShare() public view override returns (uint256 sharePrice) {
+        sharePrice = _convertToAssets(1e18, false);
+    }
+
+    /// @inheritdoc ILendingVault
     function convertToShares(uint256 assets) public view override returns (uint256 shares) {
         shares = _convertToShares(assets, false);
     }
 
+    /// @inheritdoc ILendingVault
     function convertToAssets(uint256 shares) public view override returns (uint256 assets) {
         assets = _convertToAssets(shares, false);
     }
 
+    /// @inheritdoc ILendingVault
     function maxDeposit(address) public view override returns (uint256 maxAssets) {
         maxAssets = paused() ? 0 : uint256(-1);
     }
 
+    /// @inheritdoc ILendingVault
     function previewDeposit(uint256 assets) public view override returns (uint256 shares) {
         require(!paused(), 'LendingVault: Vault paused');
         shares = _convertToShares(assets, false);
     }
 
-    function maxMint(address) public view override returns (uint256 maxShares) {
-        maxShares = paused() ? 0 : uint256(-1);
-    }
-
-    function previewMint(uint256 shares) public view override returns (uint256 assets) {
-        require(!paused(), 'LendingVault: Vault paused');
-        assets = _convertToAssets(shares, true);
-    }
-
-    function maxWithdraw(address owner) public view override returns (uint256 maxAssets) {
-        UserInfo memory userInfo_ = userInfo[owner];
+    /// @inheritdoc ILendingVault
+    function maxWithdraw(address user) public view override returns (uint256 maxAssets) {
+        UserInfo memory userInfo_ = userInfo[user];
         maxAssets = userInfo_.settledAssets;
     }
 
-    function previewWithdraw(uint256 assets) public view override returns (uint256 shares) {
-        shares = _convertToShares(assets, true);
+    /// @inheritdoc ILendingVault
+    function maxRequestWithdraw(address user) public view override returns (uint256 maxAssets) {
+        maxAssets = _convertToAssets(balanceOf(user), false);
     }
 
-    function maxRequestWithdraw(address owner) public view override returns (uint256 maxAssets) {
-        maxAssets = _convertToAssets(balanceOf(owner), false);
-    }
-
+    /// @inheritdoc ILendingVault
     function previewRequestWithdraw(uint256 assets) public view override returns (uint256 shares) {
         shares = _convertToShares(assets, true);
     }
 
-    function maxInstantWithdraw(address owner) public view override returns (uint256 maxAssets) {
-        uint256 assets = _convertToAssets(balanceOf(owner), false);
+    /// @inheritdoc ILendingVault
+    function maxInstantWithdraw(address user) public view override returns (uint256 maxAssets) {
+        uint256 assets = _convertToAssets(balanceOf(user), false);
         maxAssets = leftInstantWithdrawAssets > assets ? assets : leftInstantWithdrawAssets;
     }
 
+    /// @inheritdoc ILendingVault
     function previewInstantWithdraw(uint256 assets) public view override returns (uint256 shares) {
         shares = _convertToShares(assets, true);
     }
 
-    function localAssets() public view override returns (uint256 assets) {
-        assets = IERC20(asset).balanceOf(address(this)).sub(totalRepaySettledAssets);
-    }
-
-    function getPricePerFullShare() public view override returns (uint256 sharePrice) {
-        sharePrice = _convertToAssets(1e18, false);
-    }
-
+    /// @inheritdoc ILendingVault
     function pendingRewards(address user) public view override returns (uint256 rewards) {
         uint256 totalSupply_ = totalSupply();
         if (totalSupply_ == 0) {
@@ -270,6 +270,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         }
     }
 
+    /// @inheritdoc ILendingVault
     function isStrategyActive() public view override returns (bool active) {
         active = strategy != address(0) && !IStrategy(strategy).paused();
     }
@@ -278,7 +279,8 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     // *** EXTERNAL FUNCTIONS *** //
     // ************************** //
 
-    function deposit(uint256 assets, address receiver)
+    /// @inheritdoc ILendingVault
+    function deposit(uint256 assets)
         external
         payable
         override
@@ -286,7 +288,6 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         whenNotPaused
         returns (uint256 shares)
     {
-        require(receiver != address(0), 'LendingVault: receiver not set');
         require((shares = previewDeposit(assets)) != 0, 'LendingVault: Zero shares');
 
         uint256 assetsBefore = localAssets();
@@ -300,21 +301,17 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         uint256 assetsAfter = localAssets();
         require(assetsAfter.sub(assetsBefore) >= assets, 'LendingVault: assets not enough');
 
-        _updateCostSharePrice(assets, shares, receiver);
-        _updateUserRewardInfo(receiver, shares);
-        _mint(receiver, shares);
+        _updateCostSharePrice(msg.sender, assets, shares);
+        _updateUserRewardInfo(msg.sender, shares);
+        _mint(msg.sender, shares);
         _farmAtStrategy();
 
-        emit Deposit(msg.sender, receiver, assets, shares);
+        emit Deposit(msg.sender, assets, shares);
     }
 
-    function withdraw(address receiver, address owner) external override nonReentrant returns (uint256 shares) {
-        require(receiver != address(0), 'LendingVault: receiver not set');
-        // For user assets safety consideration,
-        // not allow msg.sender withdraw through msg.sender has ERC-20 approval over the shares of owner
-        require(msg.sender == owner, 'LendingVault: msg.sender not owner');
-
-        UserInfo storage userInfo_ = userInfo[owner];
+    /// @inheritdoc ILendingVault
+    function withdraw() external override nonReentrant {
+        UserInfo storage userInfo_ = userInfo[msg.sender];
         uint256 assets = userInfo_.settledAssets;
         require(totalSettledAssets >= assets, 'LendingVault: Not settle, please wait');
         require(totalRepaySettledAssets >= assets, 'LendingVault: Not repay, please wait');
@@ -324,81 +321,64 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
 
         if (asset == weth) {
             IWETH(weth).withdraw(assets);
-            TransferHelper.safeTransferETH(receiver, assets);
+            TransferHelper.safeTransferETH(msg.sender, assets);
         } else {
-            TransferHelper.safeTransfer(asset, receiver, assets);
+            TransferHelper.safeTransfer(asset, msg.sender, assets);
         }
 
-        emit Withdraw(msg.sender, receiver, owner, assets, shares);
+        emit Withdraw(msg.sender, assets);
     }
 
-    function requestWithdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) external override nonReentrant returns (uint256 shares) {
+    /// @inheritdoc ILendingVault
+    function requestWithdraw(uint256 assets) external override nonReentrant returns (uint256 shares) {
         require(allowRequestWithdraw, 'LendingVault: Not allow yet, please wait');
-        require(receiver != address(0), 'LendingVault: receiver not set');
-        // For user assets safety consideration,
-        // not allow msg.sender withdraw through msg.sender has ERC-20 approval over the shares of owner
-        require(msg.sender == owner, 'LendingVault: msg.sender not owner');
-        require(assets <= maxRequestWithdraw(owner), 'LendingVault: owner assets insufficient');
+        require(assets <= maxRequestWithdraw(msg.sender), 'LendingVault: msg.sender assets insufficient');
         require((shares = previewRequestWithdraw(assets)) != 0, 'LendingVault: Zero shares');
 
-        // Get shares from owner to contract, burn these shares when user `withdraw`
-        TransferHelper.safeTransferFrom(address(this), owner, address(this), shares);
+        // Get shares from msg.sender to contract, burn these shares when user `withdraw`
+        TransferHelper.safeTransferFrom(address(this), msg.sender, address(this), shares);
 
-        UserInfo storage userInfo_ = userInfo[receiver];
+        UserInfo storage userInfo_ = userInfo[msg.sender];
         userInfo_.requestedShares = userInfo_.requestedShares.add(shares);
-        requestUsers.add(receiver);
+        requestUsers.add(msg.sender);
 
         // `assets` is not the final result, share price will increase until next epoch
-        emit RequestWithdraw(msg.sender, receiver, owner, assets, shares);
+        emit RequestWithdraw(msg.sender, assets, shares);
     }
 
-    function cancelRequestWithdraw(address receiver, address owner)
+    /// @inheritdoc ILendingVault
+    function cancelRequestWithdraw()
         external
         override
         nonReentrant
         returns (uint256 shares)
     {
         require(allowRequestWithdraw, 'LendingVault: Not allow yet, please wait');
-        require(owner != address(0), 'LendingVault: receiver not set');
-        // For user assets safety consideration,
-        // not allow msg.sender withdraw through msg.sender has ERC-20 approval over the shares of owner
-        require(msg.sender == owner, 'LendingVault: msg.sender not owner');
-        UserInfo storage userInfo_ = userInfo[owner];
+        UserInfo storage userInfo_ = userInfo[msg.sender];
         require((shares = userInfo_.requestedShares) != 0, 'LendingVault: Zero shares');
 
         userInfo_.requestedShares = 0;
-        requestUsers.remove(owner);
+        requestUsers.remove(msg.sender);
 
-        TransferHelper.safeTransfer(address(this), receiver, shares);
+        TransferHelper.safeTransfer(address(this), msg.sender, shares);
 
         uint256 assets = _convertToAssets(shares, false);
         // `assets` is not the final result, share price will increase until next epoch
-        emit CancelRequestWithdraw(msg.sender, receiver, owner, assets, shares);
+        emit CancelRequestWithdraw(msg.sender, assets, shares);
     }
 
-    function instantWithdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) external override nonReentrant returns (uint256 shares) {
-        require(receiver != address(0), 'LendingVault: receiver not set');
-        require(assets <= maxInstantWithdraw(owner), 'LendingVault: owner assets insufficient');
+    /// @inheritdoc ILendingVault
+    function instantWithdraw(uint256 assets) external override nonReentrant returns (uint256 shares) {
+        require(assets <= maxInstantWithdraw(msg.sender), 'LendingVault: msg.sender assets insufficient');
         require((shares = previewInstantWithdraw(assets)) != 0, 'LendingVault: Zero shares');
-        // For user assets safety consideration,
-        // not allow msg.sender withdraw through msg.sender has ERC-20 approval over the shares of owner
-        require(msg.sender == owner, 'LendingVault: msg.sender not owner');
 
         if (isStrategyActive()) {
             IStrategy(strategy).beforeWithdraw();
         }
 
-        _updateUserRewardInfo(owner, 0);
+        _updateUserRewardInfo(msg.sender, 0);
 
-        _burn(owner, shares);
+        _burn(msg.sender, shares);
 
         _withdrawStrategyIfNeed(assets);
         require(assets <= localAssets(), 'LendingVault: assets exceed');
@@ -414,25 +394,25 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
 
         if (asset == weth) {
             IWETH(weth).withdraw(assets);
-            TransferHelper.safeTransferETH(receiver, assets.sub(fees));
+            TransferHelper.safeTransferETH(msg.sender, assets.sub(fees));
             if (fees > 0) {
                 TransferHelper.safeTransferETH(treasury, fees);
             }
         } else {
-            TransferHelper.safeTransfer(asset, receiver, assets.sub(fees));
+            TransferHelper.safeTransfer(asset, msg.sender, assets.sub(fees));
             if (fees > 0) {
                 TransferHelper.safeTransfer(asset, treasury, fees);
             }
         }
 
-        emit InstantWithdraw(msg.sender, receiver, owner, assets, shares, fees);
+        emit InstantWithdraw(msg.sender, assets, shares, fees);
     }
 
+    /// @inheritdoc ILendingVault
     function claimReward() external override nonReentrant {
-        address user = msg.sender;
-        _updateUserRewardInfo(user, 0);
+        _updateUserRewardInfo(msg.sender, 0);
 
-        UserInfo memory userInfo_ = userInfo[user];
+        UserInfo memory userInfo_ = userInfo[msg.sender];
         uint256 rewards = userInfo_.pendingRewards;
 
         uint256 xWOORewards = 0;
@@ -442,10 +422,10 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
             uint256 xWOOBalAfter = IERC20(wooStakingVault).balanceOf(address(this));
             require(xWOOBalAfter > xWOOBalBefore, 'LendingVault: xWOO balance not enough');
             xWOORewards = xWOOBalAfter.sub(xWOOBalBefore);
-            TransferHelper.safeTransfer(wooStakingVault, user, xWOORewards);
+            TransferHelper.safeTransfer(wooStakingVault, msg.sender, xWOORewards);
         }
 
-        emit ClaimReward(user, rewards, xWOORewards);
+        emit ClaimReward(msg.sender, rewards, xWOORewards);
     }
 
     // *********************** //
@@ -510,7 +490,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
             weeklySettledAssets = weeklySettledAssets.add(assets);
             totalSettledAssets = totalSettledAssets.add(assets);
             requestUsers.remove(user);
-            emit Settle(msg.sender, user, assets, shares);
+            emit WeeklySettle(msg.sender, user, assets, shares);
         }
         uint256 totalAssets_ = totalAssets();
         uint256 leftInterestAssets = weeklyInterestAssets.mul(totalAssets_.sub(weeklySettledAssets)).div(totalAssets_);
@@ -708,12 +688,12 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     }
 
     function _updateCostSharePrice(
+        address user,
         uint256 assets,
-        uint256 shares,
-        address receiver
+        uint256 shares
     ) internal {
-        uint256 sharesBefore = balanceOf(receiver);
-        UserInfo storage userInfo_ = userInfo[receiver];
+        uint256 sharesBefore = balanceOf(user);
+        UserInfo storage userInfo_ = userInfo[user];
         uint256 costBefore = userInfo_.costSharePrice;
 
         userInfo_.costSharePrice = (sharesBefore.mul(costBefore).add(assets.mul(1e18))).div(sharesBefore.add(shares));

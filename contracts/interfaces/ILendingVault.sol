@@ -41,36 +41,16 @@ interface ILendingVault {
     // *** EVENTS *** //
     // ************** //
 
-    event Deposit(address indexed caller, address indexed owner, uint256 assets, uint256 shares);
+    event Deposit(address indexed user, uint256 assets, uint256 shares);
 
-    event Withdraw(
-        address indexed caller,
-        address indexed receiver,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares
-    );
+    event Withdraw(address indexed user, uint256 assets);
 
-    event RequestWithdraw(
-        address indexed caller,
-        address indexed receiver,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares
-    );
+    event RequestWithdraw(address indexed user, uint256 assets, uint256 shares);
 
-    event CancelRequestWithdraw(
-        address indexed caller,
-        address indexed receiver,
-        address indexed owner,
-        uint256 assets,
-        uint256 shares
-    );
+    event CancelRequestWithdraw(address indexed user, uint256 assets, uint256 shares);
 
     event InstantWithdraw(
-        address indexed caller,
-        address indexed receiver,
-        address indexed owner,
+        address indexed user,
         uint256 assets,
         uint256 shares,
         uint256 fees
@@ -86,7 +66,7 @@ interface ILendingVault {
         uint256 weeklyInterestAssets
     );
 
-    event Settle(address indexed caller, address indexed user, uint256 assets, uint256 shares);
+    event WeeklySettle(address indexed caller, address indexed user, uint256 assets, uint256 shares);
 
     event SetDailyMaxInstantWithdrawAssets(
         uint256 maxInstantWithdrawAssets,
@@ -108,59 +88,107 @@ interface ILendingVault {
     // *** FUNCTIONS *** //
     // ***************** //
 
+    /// @dev ERC20 token for deposit && two withdraw ways(instant/request).
+    /// @return assetTokenAddress Address of ERC20 token.
     function asset() external view returns (address assetTokenAddress);
 
+    /// @dev Total amount of `asset` in Vault for share converting.
+    /// @return totalManagedAssets Total amount of `asset`.
     function totalAssets() external view returns (uint256 totalManagedAssets);
 
-    function convertToShares(uint256 assets) external view returns (uint256 shares);
-
-    function convertToAssets(uint256 shares) external view returns (uint256 assets);
-
-    function maxDeposit(address receiver) external view returns (uint256 maxAssets);
-
-    function previewDeposit(uint256 assets) external view returns (uint256 shares);
-
-    function maxMint(address receiver) external view returns (uint256 maxShares);
-
-    function previewMint(uint256 shares) external view returns (uint256 assets);
-
-    function maxWithdraw(address owner) external view returns (uint256 maxAssets);
-
-    function previewWithdraw(uint256 assets) external view returns (uint256 shares);
-
-    function maxRequestWithdraw(address owner) external view returns (uint256 maxAssets);
-
-    function previewRequestWithdraw(uint256 assets) external view returns (uint256 shares);
-
-    function maxInstantWithdraw(address owner) external view returns (uint256 maxAssets);
-
-    function previewInstantWithdraw(uint256 assets) external view returns (uint256 shares);
-
+    /// @dev Amount of `asset` in Vault locally,
+    /// SUBTRACT the amount of `asset` that market maker repay for weekly settle.
+    /// @return assets Amount of `asset` in Vault locally.
     function localAssets() external view returns (uint256 assets);
 
+    /// @dev Calculate the share price for convert unit shares(1e18) to assets.
+    /// @return sharePrice Result of unit shares(1e18) convert to assets.
     function getPricePerFullShare() external view returns (uint256 sharePrice);
 
+    /// @dev According to `totalAssets` and `totalSupply`, convert `assets` to `shares`.
+    /// @param assets Amount of `asset` convert to `shares`
+    /// @return shares Result of `assets` convert to `shares`.
+    function convertToShares(uint256 assets) external view returns (uint256 shares);
+
+    /// @dev According to `totalAssets` and `totalSupply`, convert `shares` to `assets`.
+    /// @param shares Amount of `share` convert to `assets`
+    /// @return assets Result of `shares` convert to `assets`.
+    function convertToAssets(uint256 shares) external view returns (uint256 assets);
+
+    /// @dev Limit of total `deposit` amount of `asset` from user,
+    /// `uint256(-1)` means no limit, `0` means Vault paused.
+    /// @param user Address of Vault user.
+    /// @return maxAssets Result of `asset` deposit limitations to user.
+    function maxDeposit(address user) external view returns (uint256 maxAssets);
+
+    /// @dev Simulate the `shares` get from actual `deposit`, revert when Vault paused.
+    /// @param assets Amount of `asset` to deposit in Vault.
+    /// @return shares Amount of `share` get from Vault after deposit.
+    function previewDeposit(uint256 assets) external view returns (uint256 shares);
+
+    /// @dev Total withdrawable amount of `asset` from user execute `withdraw`,
+    /// @param user Address of Vault user.
+    /// @return maxAssets Result of `asset` that user can withdraw.
+    function maxWithdraw(address user) external view returns (uint256 maxAssets);
+
+    /// @dev Max amount of `asset` that convert user shares to assets when `requestWithdraw`,
+    /// only for safety check, not the final result until `weeklySettle` is done.
+    /// @param user Address of Vault user.
+    /// @return maxAssets Result of `dev` above.
+    function maxRequestWithdraw(address user) external view returns (uint256 maxAssets);
+
+    /// @dev Simulate the `shares` transfer to Vault after actual `requestWithdraw`.
+    /// @param assets Amount of `asset` to request withdraw.
+    /// @return shares Amount of `share` need transfer to Vault after `requestWithdraw`.
+    function previewRequestWithdraw(uint256 assets) external view returns (uint256 shares);
+
+    /// @dev Max amount of `asset` that user can withdraw immediately(not SUBTRACT fees here),
+    /// related to user `shares` and weekly limit of `instantWithdraw`.
+    /// @param user Address of Vault user.
+    /// @return maxAssets Result of `dev` above.
+    function maxInstantWithdraw(address user) external view returns (uint256 maxAssets);
+
+    /// @dev Simulate instant withdraw amount of `asset` need to burn how many `share`.
+    /// @param assets Amount of `asset` to instantWithdraw.
+    /// @return shares Amount of `share` need to burn after `instantWithdraw`.
+    function previewInstantWithdraw(uint256 assets) external view returns (uint256 shares);
+
+    /// @dev Calculate amount of `WOO` that user able to claim.
+    /// @param user Address of Vault user.
+    /// @return rewards Amount of `WOO` that user able to claim.
     function pendingRewards(address user) external view returns (uint256 rewards);
 
+    /// @dev Check if the `strategy` is active,
+    /// only true if `strategy != address(0)` and strategy not paused.
+    /// @return active Status of `strategy`, `true` means strategy working, `false` means not working now.
     function isStrategyActive() external view returns (bool active);
 
-    function deposit(uint256 assets, address receiver) external payable returns (uint256 shares);
+    /// @dev Deposit an amount of `asset` represented in `assets`.
+    /// @param assets Amount of `asset` to deposit.
+    /// @return shares The deposited amount repesented in shares.
+    function deposit(uint256 assets) external payable returns (uint256 shares);
 
-    function withdraw(address receiver, address owner) external returns (uint256 shares);
+    /// @dev Withdraw total settled amount of `asset` from a user account,
+    /// not accept `assets` as parameter,
+    /// represented by the last epoch requested withdraw shares.
+    function withdraw() external;
 
-    function requestWithdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) external returns (uint256 shares);
+    /// @dev Request withdraw an amount of `asset` from a user account(no fees),
+    /// represented in `shares` and keep in Vault(safeTransferFrom).
+    /// @param assets Amount of `asset` to request withdraw.
+    /// @return shares The request withdrew amount repesented in shares.
+    function requestWithdraw(uint256 assets) external returns (uint256 shares);
 
-    function cancelRequestWithdraw(address receiver, address owner) external returns (uint256 shares);
+    /// @dev Cancel total requested amount of `share` from a user account(no fees),
+    /// and payback the total requested amount of `share`(safeTransfer).
+    /// @return shares The request withdrew shares that been canceled.
+    function cancelRequestWithdraw() external returns (uint256 shares);
 
-    function instantWithdraw(
-        uint256 assets,
-        address receiver,
-        address owner
-    ) external returns (uint256 shares);
+    /// @dev Withdraw an amount of `asset` from a user account immediately(fees exist).
+    /// @param assets Amount of `asset` to withdraw.
+    /// @return shares The withdrew amount repesented in shares.
+    function instantWithdraw(uint256 assets) external returns (uint256 shares);
 
+    /// @dev Claim WOO rewards, decide on how many shares that user own.
     function claimReward() external;
 }
