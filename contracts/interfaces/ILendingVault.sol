@@ -49,12 +49,7 @@ interface ILendingVault {
 
     event CancelRequestWithdraw(address indexed user, uint256 assets, uint256 shares);
 
-    event InstantWithdraw(
-        address indexed user,
-        uint256 assets,
-        uint256 shares,
-        uint256 fees
-    );
+    event InstantWithdraw(address indexed user, uint256 assets, uint256 shares, uint256 fees);
 
     event ClaimReward(address indexed user, uint256 rewards, uint256 xWOORewards);
 

@@ -280,14 +280,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     // ************************** //
 
     /// @inheritdoc ILendingVault
-    function deposit(uint256 assets)
-        external
-        payable
-        override
-        nonReentrant
-        whenNotPaused
-        returns (uint256 shares)
-    {
+    function deposit(uint256 assets) external payable override nonReentrant whenNotPaused returns (uint256 shares) {
         require((shares = previewDeposit(assets)) != 0, 'LendingVault: Zero shares');
 
         uint256 assetsBefore = localAssets();
@@ -347,12 +340,7 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
     }
 
     /// @inheritdoc ILendingVault
-    function cancelRequestWithdraw()
-        external
-        override
-        nonReentrant
-        returns (uint256 shares)
-    {
+    function cancelRequestWithdraw() external override nonReentrant returns (uint256 shares) {
         require(allowRequestWithdraw, 'LendingVault: Not allow yet, please wait');
         UserInfo storage userInfo_ = userInfo[msg.sender];
         require((shares = userInfo_.requestedShares) != 0, 'LendingVault: Zero shares');
