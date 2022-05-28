@@ -115,16 +115,7 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         uint256 balance = IERC20(quoteToken).balanceOf(address(this));
         require(balance > 0, 'WooFeeManager: balance_ZERO');
 
-        // Step 1: distribute the rebate balance
-        if (rebateAmount > 0) {
-            TransferHelper.safeApprove(quoteToken, address(rebateManager), rebateAmount);
-            TransferHelper.safeTransfer(quoteToken, address(rebateManager), rebateAmount);
-
-            balance = balance.sub(rebateAmount);
-            rebateAmount = 0;
-        }
-
-        // Step 2: distribute the vault balance
+        // Step 1: distribute the vault balance. Currently, 80% of fee (2 bps) goes to vault manager.
         uint256 vaultAmount = balance.mulFloor(vaultRewardRate);
         if (vaultAmount > 0) {
             TransferHelper.safeApprove(quoteToken, address(vaultManager), vaultAmount);
@@ -132,11 +123,19 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
             balance = balance.sub(vaultAmount);
         }
 
-        // Step 3: balance left for treasury
-        if (balance > 0) {
-            TransferHelper.safeApprove(quoteToken, treasury, balance);
-            TransferHelper.safeTransfer(quoteToken, treasury, balance);
+        // Step 2: distribute the rebate balance.
+        if (rebateAmount > 0) {
+            TransferHelper.safeApprove(quoteToken, address(rebateManager), rebateAmount);
+            TransferHelper.safeTransfer(quoteToken, address(rebateManager), rebateAmount);
+
+            // NOTE: if balance not enought: certain rebate rates are set incorrectly.
+            balance = balance.sub(rebateAmount);
+            rebateAmount = 0;
         }
+
+        // Step 3: balance left for treasury
+        TransferHelper.safeApprove(quoteToken, treasury, balance);
+        TransferHelper.safeTransfer(quoteToken, treasury, balance);
     }
 
     function setFeeRate(address token, uint256 newFeeRate) external override onlyAdmin {
