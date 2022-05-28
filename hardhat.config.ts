@@ -96,7 +96,7 @@ export default {
     target: 'ethers-v5',
   },
   etherscan: {
-    apiKey: process.env.Avax_API,
+    apiKey: process.env.FTM_API,
   },
   mocha: {
     timeout: 10000,

@@ -302,7 +302,7 @@ export class WooPP {
       quoteSold = quoteInfo.reserve.minus(quoteTarget)
     }
 
-    if (baseSold.multipliedBy(p).div(BASE).lt(quoteSold)) {
+    if (baseSold.multipliedBy(p).div(BASE).gt(quoteSold)) {
       baseSold = baseSold.minus(quoteSold.multipliedBy(BASE).div(p))
       quoteSold = new BigNumber(0)
     } else {
