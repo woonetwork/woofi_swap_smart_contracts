@@ -71,7 +71,8 @@ const ONE = utils.parseEther('1')
 
 const SWAP_FEE_RATE = utils.parseEther('0.00025') // 2.5 bps
 const BROKER1_REBATE_RATE = utils.parseEther('0.2') // 20% fee -> 0.5 bps
-const BROKER2_REBATE_RATE = utils.parseEther('0.4') // 40% fee -> 1.0 bps
+const BROKER2_REBATE_RATE = utils.parseEther('0.2') // 20% fee -> 0.5 bps
+const VAULT_REWARD_RATE = utils.parseEther('0.8') // 80%
 
 const VAULT1_WEIGHT = 20
 const VAULT2_WEIGHT = 80
@@ -171,6 +172,7 @@ describe('Rebate Fee Vault Integration Test', () => {
 
     await feeManager.setFeeRate(btcToken.address, SWAP_FEE_RATE)
     await feeManager.setFeeRate(wooToken.address, SWAP_FEE_RATE)
+    await feeManager.setVaultRewardRate(VAULT_REWARD_RATE)
 
     await accessManager.setRebateAdmin(feeManager.address, true)
 
@@ -227,11 +229,11 @@ describe('Rebate Fee Vault Integration Test', () => {
 
     const fee1 = vol1.mul(SWAP_FEE_RATE).div(ONE)
     const rebate1 = fee1.mul(BROKER1_REBATE_RATE).div(ONE)
-    const reward1 = fee1.sub(rebate1)
+    const reward1 = fee1.mul(VAULT_REWARD_RATE).div(ONE)
 
     const fee2 = vol2.mul(SWAP_FEE_RATE).div(ONE)
     const rebate2 = fee2.mul(BROKER2_REBATE_RATE).div(ONE)
-    const reward2 = fee2.sub(rebate2)
+    const reward2 = fee2.mul(VAULT_REWARD_RATE).div(ONE)
 
     expect((await usdtToken.balanceOf(rebateManager.address)).div(BASE)).to.eq(0)
     expect((await rebateManager.pendingRebate(broker1.address)).div(BASE)).to.eq(rebate1.div(BASE))
@@ -248,9 +250,14 @@ describe('Rebate Fee Vault Integration Test', () => {
     const vaultRewards = reward1.add(reward2)
     const vaultReward1 = vaultRewards.mul(VAULT1_WEIGHT).div(TOTAL_WEIGHT)
     const vaultReward2 = vaultRewards.mul(VAULT2_WEIGHT).div(TOTAL_WEIGHT)
-    expect((await vaultManager.pendingAllReward()).div(BASE)).to.eq(vaultRewards.div(BASE))
-    expect((await vaultManager.pendingReward(vault1.address)).div(BASE)).to.eq(vaultReward1.div(BASE))
-    expect((await vaultManager.pendingReward(vault2.address)).div(BASE)).to.eq(vaultReward2.div(BASE))
+    let pendingAllRewards = await vaultManager.pendingAllReward()
+    // Make sure USDT balance in VaultManager is equal to pendingAllRewards
+    expect(await usdtToken.balanceOf(vaultManager.address)).to.eq(pendingAllRewards)
+    // For calculation round down reason, vaultRewards add 1
+    expect(pendingAllRewards.div(BASE)).to.eq(vaultRewards.div(BASE).add(1))
+
+    expect((await vaultManager.pendingReward(vault1.address)).div(BASE)).to.gte(vaultReward1.div(BASE))
+    expect((await vaultManager.pendingReward(vault2.address)).div(BASE)).to.gte(vaultReward2.div(BASE))
 
     expect((await wooToken.balanceOf(vault1.address)).div(BASE)).to.eq(0)
     expect((await wooToken.balanceOf(vault2.address)).div(BASE)).to.eq(0)
@@ -264,7 +271,7 @@ describe('Rebate Fee Vault Integration Test', () => {
     await feeManager.distributeFees()
 
     // NOTE: distribute -> swap quote to reward token -> generate a little pending reward
-    const newPendingReward = prevPendingReward.mul(SWAP_FEE_RATE).div(ONE)
+    const newPendingReward = prevPendingReward.mul(SWAP_FEE_RATE).div(ONE).mul(VAULT_REWARD_RATE).div(ONE)
     expect((await vaultManager.pendingAllReward()).div(BASE)).to.eq(newPendingReward.div(BASE))
     expect((await vaultManager.pendingReward(vault1.address)).div(BASE)).to.eq(
       newPendingReward.mul(VAULT1_WEIGHT).div(TOTAL_WEIGHT).div(BASE)
