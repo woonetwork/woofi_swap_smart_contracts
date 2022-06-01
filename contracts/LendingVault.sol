@@ -455,6 +455,11 @@ contract LendingVault is ERC20, Ownable, ReentrancyGuard, Pausable, ILendingVaul
         emit Borrow(assets);
     }
 
+    /// @dev 用于Market Maker还款的函数, 任何时间点需要还款时可以调用, 但需要注意参数
+    /// @param assets 还款金额, 不需要一次性还清, 如欠10000, 可以只传assets=1000, 表示本次repay还1000
+    /// @param repaySettle 决定是否还`totalDebtSettledAssets`(清算debt)
+    /// 若为true, 表示还金额为assets的清算debt, 虽然可以多次调用repay还清算debt, 但最终要求把清算debt还完(即totalDebtSettledAssets为0).
+    /// 若为false, 则表示Market Maker用不上借出资金时, 可以把钱还回Vault, 然后Vault会将资金转送到strategy进行farm(不是清算debt).
     function repay(uint256 assets, bool repaySettle) external onlyAdmin {
         if (assets > 0) {
             require(
