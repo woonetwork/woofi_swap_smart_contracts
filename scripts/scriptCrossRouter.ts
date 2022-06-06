@@ -8,7 +8,6 @@ let strategyContractName = 'StratStargateStableCompound'
 let accessManager = '0xd6d6A0828a80E1832cD4C3585aDED8971087fCb8' // ftm access manager
 let treasury = '0x4094D7A17a387795838c7aba4687387B0d32BCf3' // woo_earn_treasury
 
-
 let uniRouter = '0xF491e7B69E4244ad4002BC14e878a34207E38c29' // Spookyswap Router
 let pool = '0x12edeA9cd262006cC3C4E77c90d2CD2DD4b1eb97' // S*USDC on ftm
 let staking = '0x224D8Fd7aB6AD4c6eb4611Ce56EF35Dec2277F03' // LPStaking on ftm
@@ -20,10 +19,9 @@ let needDeploy = true
 let verifyRouter = ''
 // let verifyRouter = '0x53D2728A6cCeB9f025Eb22C41c1d6406Fa04D8DE'     // BSC woo cross router
 
-
 // --- BSC --- //
-let weth = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'           // wbnb
-let wooPP = '0xbf365Ce9cFcb2d5855521985E351bA3bcf77FD3F'          // bsc wooPP
+let weth = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' // wbnb
+let wooPP = '0xbf365Ce9cFcb2d5855521985E351bA3bcf77FD3F' // bsc wooPP
 let stargateRouter = '0x4a364f8c717cAAD9A442737Eb7b8A55cc6cf18D8' // bsc stargate router
 
 // --- Avalanche --- //
