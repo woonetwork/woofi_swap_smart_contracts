@@ -10,10 +10,10 @@ import './interfaces/Stargate/IStargateRouter.sol';
 import './interfaces/Stargate/IStargateReceiver.sol';
 
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/math/SafeMathUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/token/ERC20/SafeERC20Upgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/math/SafeMath.sol';
+import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
+import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
 /// @title Woo Router implementation.
@@ -21,9 +21,9 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 /// Ref links:
 /// chain id: https://stargateprotocol.gitbook.io/stargate/developers/contract-addresses/mainnet
 /// poold id: https://stargateprotocol.gitbook.io/stargate/developers/pool-ids
-contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, ReentrancyGuardUpgradeable {
-    using SafeMathUpgradeable for uint256;
-    using SafeERC20Upgradeable for IERC20;
+contract WooCrossChainRouter is IStargateReceiver, Ownable, ReentrancyGuard {
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
     event WooCrossSwapOnSrcChain(
         uint256 indexed refId,
@@ -61,14 +61,11 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
 
     receive() external payable {}
 
-    function initialize(
+    constructor (
         address _weth,
         address _wooPool,
         address _stargateRouter
-    ) external initializer {
-        __Ownable_init();
-        __ReentrancyGuard_init();
-
+    ) public {
         WETH = _weth;
         wooPool = IWooPP(_wooPool);
         quoteToken = wooPool.quoteToken();
