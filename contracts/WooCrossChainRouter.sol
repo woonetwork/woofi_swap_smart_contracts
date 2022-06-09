@@ -190,15 +190,7 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
             );
         }
 
-        emit WooCrossSwapOnSrcChain(
-            refId,
-            msg.sender,
-            to,
-            fromToken,
-            bridgeAmount,
-            srcMinQuoteAmount,
-            fromAmount
-        );
+        emit WooCrossSwapOnSrcChain(refId, msg.sender, to, fromToken, bridgeAmount, srcMinQuoteAmount, fromAmount);
     }
 
     function quoteLayerZeroFee(
@@ -273,10 +265,28 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
                 try wooPool.sellQuote(toToken, quoteAmount, minToAmount, to, address(0)) returns (
                     uint256 realToAmount
                 ) {
-                    emit WooCrossSwapOnDstChain(refId, msg.sender, to, toToken, quoteAmount, minToAmount, realToAmount, true);
+                    emit WooCrossSwapOnDstChain(
+                        refId,
+                        msg.sender,
+                        to,
+                        toToken,
+                        quoteAmount,
+                        minToAmount,
+                        realToAmount,
+                        true
+                    );
                 } catch {
                     TransferHelper.safeTransfer(_token, to, amountLD);
-                    emit WooCrossSwapOnDstChain(refId, msg.sender, to, _token, quoteAmount, minToAmount, amountLD, false);
+                    emit WooCrossSwapOnDstChain(
+                        refId,
+                        msg.sender,
+                        to,
+                        _token,
+                        quoteAmount,
+                        minToAmount,
+                        amountLD,
+                        false
+                    );
                 }
             }
         }

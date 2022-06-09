@@ -1,13 +1,13 @@
-import { ethers, run, upgrades } from "hardhat";
+import { ethers, run, upgrades } from 'hardhat'
 
 let firstDeploy = false // will be upgrade implementation when equal to `false` and impl contract code updated.
 
-const proxy = '0xFB9311af76C4fb11E0e91fE00B7652c0F17A4774';
+const proxy = '0xFB9311af76C4fb11E0e91fE00B7652c0F17A4774'
 
 // For record contract address only, or verify contract if nobody verify on chain before.
-const proxyAdmin = '0xb83e58090cDa34160366e36E41Ea7ACD609B3fE3';
+const proxyAdmin = '0xb83e58090cDa34160366e36E41Ea7ACD609B3fE3'
 // For record contract address only, or verify contract.
-const impl = '0xffD63b06985D1e95a53C56993312dCca2446B624';
+const impl = '0xffD63b06985D1e95a53C56993312dCca2446B624'
 
 const contractName = 'WooCrossChainRouter'
 
@@ -19,33 +19,33 @@ const stargateRouter = '0xAf5191B0De278C7286d6C7CC6ab6BB8A73bA2Cd6'
 async function main() {
   const params = [weth, wooPool, stargateRouter]
 
-  const factory = await ethers.getContractFactory(contractName);
+  const factory = await ethers.getContractFactory(contractName)
   if (firstDeploy) {
-    const proxyContract = await upgrades.deployProxy(factory, params);
-    await proxyContract.deployed();
+    const proxyContract = await upgrades.deployProxy(factory, params)
+    await proxyContract.deployed()
 
-    const proxyAddress = proxyContract.address;
-    const implAddress = await upgrades.erc1967.getImplementationAddress(proxyAddress);
-    const adminAddress = await upgrades.erc1967.getAdminAddress(proxyAddress);
+    const proxyAddress = proxyContract.address
+    const implAddress = await upgrades.erc1967.getImplementationAddress(proxyAddress)
+    const adminAddress = await upgrades.erc1967.getAdminAddress(proxyAddress)
 
-    console.log("Proxy deployed to:", proxyAddress);
-    console.log("Implementation deployed to:", implAddress);
-    console.log("ProxyAdmin deployed to:", adminAddress);
+    console.log('Proxy deployed to:', proxyAddress)
+    console.log('Implementation deployed to:', implAddress)
+    console.log('ProxyAdmin deployed to:', adminAddress)
 
-    await run('verify:verify', {address: implAddress});
+    await run('verify:verify', { address: implAddress })
   } else {
-    await upgrades.upgradeProxy(proxy, factory); // Set `proxy` above after first deployed.
+    await upgrades.upgradeProxy(proxy, factory) // Set `proxy` above after first deployed.
 
-    const implAddress = await upgrades.erc1967.getImplementationAddress(proxy);
-    console.log("Implementation deployed to:", implAddress);
+    const implAddress = await upgrades.erc1967.getImplementationAddress(proxy)
+    console.log('Implementation deployed to:', implAddress)
 
     await new Promise((_) => setTimeout(_, 3000))
     // await run('verify:verify', {address: proxyAdmin});
-    await run('verify:verify', {address: implAddress});
+    await run('verify:verify', { address: implAddress })
   }
 }
 
 main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+  console.error(error)
+  process.exitCode = 1
+})
