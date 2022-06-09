@@ -48,7 +48,6 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
     );
 
     address constant ETH_PLACEHOLDER_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    
 
     IStargateRouter public stargateRouter;
     IWooPP public wooPool;
