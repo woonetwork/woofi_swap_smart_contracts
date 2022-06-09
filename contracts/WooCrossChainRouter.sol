@@ -191,15 +191,7 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
             );
         }
 
-        emit WooCrossSwapOnSrcChain(
-            refId,
-            msg.sender,
-            to,
-            fromToken,
-            fromAmount,
-            srcMinQuoteAmount,
-            bridgeAmount
-        );
+        emit WooCrossSwapOnSrcChain(refId, msg.sender, to, fromToken, fromAmount, srcMinQuoteAmount, bridgeAmount);
     }
 
     function quoteLayerZeroFee(
@@ -245,7 +237,17 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
             // NOTE: The bridged token is not WooPP's quote token.
             // So Cannot do the swap; just return it to users.
             TransferHelper.safeTransfer(_token, to, amountLD);
-            emit WooCrossSwapOnDstChain(refId, msg.sender, to, _token, amountLD, toToken, _token, minToAmount, amountLD);
+            emit WooCrossSwapOnDstChain(
+                refId,
+                msg.sender,
+                to,
+                _token,
+                amountLD,
+                toToken,
+                _token,
+                minToAmount,
+                amountLD
+            );
             return;
         }
 
@@ -257,27 +259,75 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
             try wooPool.sellQuote(WETH, quoteAmount, minToAmount, address(this), to) returns (uint256 realToAmount) {
                 IWETH(WETH).withdraw(realToAmount);
                 TransferHelper.safeTransferETH(to, realToAmount);
-                emit WooCrossSwapOnDstChain(refId, msg.sender, to, _token, amountLD, toToken, ETH_PLACEHOLDER_ADDR, minToAmount, realToAmount);
+                emit WooCrossSwapOnDstChain(
+                    refId,
+                    msg.sender,
+                    to,
+                    _token,
+                    amountLD,
+                    toToken,
+                    ETH_PLACEHOLDER_ADDR,
+                    minToAmount,
+                    realToAmount
+                );
             } catch {
                 // transfer _token/amountLD to msg.sender because the swap failed for some reason.
                 // this is not the ideal scenario, but the contract needs to deliver them eth or USDC.
                 TransferHelper.safeTransfer(_token, to, amountLD);
-                emit WooCrossSwapOnDstChain(refId, msg.sender, to, _token, amountLD, toToken, _token, minToAmount, amountLD);
+                emit WooCrossSwapOnDstChain(
+                    refId,
+                    msg.sender,
+                    to,
+                    _token,
+                    amountLD,
+                    toToken,
+                    _token,
+                    minToAmount,
+                    amountLD
+                );
             }
         } else {
             if (_token == toToken) {
                 // Stargate bridged token == toToken: NO swap is needed!
                 TransferHelper.safeTransfer(toToken, to, amountLD);
-                emit WooCrossSwapOnDstChain(refId, msg.sender, to, _token, amountLD, toToken, toToken, minToAmount, amountLD);
+                emit WooCrossSwapOnDstChain(
+                    refId,
+                    msg.sender,
+                    to,
+                    _token,
+                    amountLD,
+                    toToken,
+                    toToken,
+                    minToAmount,
+                    amountLD
+                );
             } else {
                 // swap to the ERC20 token
-                try wooPool.sellQuote(toToken, quoteAmount, minToAmount, to, to) returns (
-                    uint256 realToAmount
-                ) {
-                    emit WooCrossSwapOnDstChain(refId, msg.sender, to, _token, amountLD, toToken, toToken, minToAmount, realToAmount);
+                try wooPool.sellQuote(toToken, quoteAmount, minToAmount, to, to) returns (uint256 realToAmount) {
+                    emit WooCrossSwapOnDstChain(
+                        refId,
+                        msg.sender,
+                        to,
+                        _token,
+                        amountLD,
+                        toToken,
+                        toToken,
+                        minToAmount,
+                        realToAmount
+                    );
                 } catch {
                     TransferHelper.safeTransfer(_token, to, amountLD);
-                    emit WooCrossSwapOnDstChain(refId, msg.sender, to, _token, amountLD, toToken, _token, minToAmount, amountLD);
+                    emit WooCrossSwapOnDstChain(
+                        refId,
+                        msg.sender,
+                        to,
+                        _token,
+                        amountLD,
+                        toToken,
+                        _token,
+                        minToAmount,
+                        amountLD
+                    );
                 }
             }
         }
