@@ -61,7 +61,7 @@ contract WooCrossChainRouter is IStargateReceiver, Ownable, ReentrancyGuard {
 
     receive() external payable {}
 
-    constructor (
+    constructor(
         address _weth,
         address _wooPool,
         address _stargateRouter
