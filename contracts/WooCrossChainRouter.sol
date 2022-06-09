@@ -48,12 +48,14 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
     );
 
     address constant ETH_PLACEHOLDER_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    
 
     IStargateRouter public stargateRouter;
     IWooPP public wooPool;
     address public quoteToken;
     address public WETH;
     uint256 public bridgeSlippage; // 1 in 10000th: default 1%
+    uint256 public dstGasForCall;
 
     mapping(uint16 => address) public wooCrossRouters; // dstChainId => woo router
     mapping(uint16 => uint256) public quotePoolIds; // chainId => woofi_quote_token_pool_id
@@ -74,6 +76,7 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
         stargateRouter = IStargateRouter(_stargateRouter);
 
         bridgeSlippage = 100;
+        dstGasForCall = 180000;
 
         // usdc: 1, usdt: 2, busd: 5
         quotePoolIds[1] = 1; // ethereum: usdc
@@ -113,6 +116,10 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
     function setBridgeSlippage(uint256 _bridgeSlippage) external onlyOwner {
         require(_bridgeSlippage <= 10000, 'WooCrossChainRouter: !_bridgeSlippage');
         bridgeSlippage = _bridgeSlippage;
+    }
+
+    function setDstGasForCall(uint256 _dstGasForCall) external onlyOwner {
+        dstGasForCall = _dstGasForCall;
     }
 
     function setQuotePoolId(uint16 _chainId, uint256 _quotePoolId) external onlyOwner {
@@ -185,7 +192,7 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
                 payable(msg.sender),
                 bridgeAmount,
                 minBridgeAmount,
-                IStargateRouter.lzTxObj(600000, 0, '0x'), // 600000 is the max gas required for wooPP swap.
+                IStargateRouter.lzTxObj(dstGasForCall, 0, '0x'), // dstGasForCall: 600000 is the max gas required for wooPP swap.
                 dstWooCrossRouter,
                 payloadData
             );
@@ -214,7 +221,7 @@ contract WooCrossChainRouter is IStargateReceiver, OwnableUpgradeable, Reentranc
                 1, // https://stargateprotocol.gitbook.io/stargate/developers/function-types
                 toAddress,
                 payloadData,
-                IStargateRouter.lzTxObj(600000, 0, '0x')
+                IStargateRouter.lzTxObj(dstGasForCall, 0, '0x')
             );
     }
 
