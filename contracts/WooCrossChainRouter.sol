@@ -54,10 +54,12 @@ contract WooCrossChainRouter is IStargateReceiver, Ownable, ReentrancyGuard {
     address public quoteToken;
     address public WETH;
     uint256 public bridgeSlippage; // 1 in 10000th: default 1%
-    uint256 public dstGasForCall;
+    uint256 public dstGasForSwapCall;
+    uint256 public dstGasForNoSwapCall;
 
     mapping(uint16 => address) public wooCrossRouters; // dstChainId => woo router
     mapping(uint16 => uint256) public quotePoolIds; // chainId => woofi_quote_token_pool_id
+    mapping(uint16 => address) public wooppQuoteTokens; // dstChainId => wooPP quote token
 
     receive() external payable {}
 
@@ -72,7 +74,10 @@ contract WooCrossChainRouter is IStargateReceiver, Ownable, ReentrancyGuard {
         stargateRouter = IStargateRouter(_stargateRouter);
 
         bridgeSlippage = 100;
-        dstGasForCall = 180000;
+
+        // from test result: https://docs.google.com/spreadsheets/d/1TdGKNQ68HAic2jgMs40pKp7kM6AfKGHjIKkyVGwolIU
+        dstGasForSwapCall = 360000;
+        dstGasForNoSwapCall = 80000;
 
         // usdc: 1, usdt: 2, busd: 5
         quotePoolIds[1] = 1; // ethereum: usdc
@@ -82,6 +87,14 @@ contract WooCrossChainRouter is IStargateReceiver, Ownable, ReentrancyGuard {
         quotePoolIds[10] = 1; // Arbitrum: usdc
         quotePoolIds[11] = 1; // Optimism: usdc
         quotePoolIds[12] = 1; // Fantom: usdc
+
+        wooppQuoteTokens[2] = address(0x55d398326f99059fF775485246999027B3197955); // bsc_wooPP: usdt
+        wooppQuoteTokens[6] = address(0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E); // avax_wooPP: usdc
+        wooppQuoteTokens[12] = address(0x04068DA6C83AFCFA0e13ba15A6696662335D5B75); // ftm_wooPP: usdc
+    }
+
+    function setWooppQuoteTokens(uint16 _chainId, address _token) public onlyOwner {
+        wooppQuoteTokens[_chainId] = _token;
     }
 
     /*
@@ -114,8 +127,12 @@ contract WooCrossChainRouter is IStargateReceiver, Ownable, ReentrancyGuard {
         bridgeSlippage = _bridgeSlippage;
     }
 
-    function setDstGasForCall(uint256 _dstGasForCall) external onlyOwner {
-        dstGasForCall = _dstGasForCall;
+    function setDstGasForSwapCall(uint256 _dstGasForSwapCall) external onlyOwner {
+        dstGasForSwapCall = _dstGasForSwapCall;
+    }
+
+    function setDstGasForNoSwapCall(uint256 _dstGasForNoSwapCall) external onlyOwner {
+        dstGasForNoSwapCall = _dstGasForNoSwapCall;
     }
 
     function setQuotePoolId(uint16 _chainId, uint256 _quotePoolId) external onlyOwner {
@@ -178,19 +195,18 @@ contract WooCrossChainRouter is IStargateReceiver, Ownable, ReentrancyGuard {
 
             bytes memory dstWooCrossRouter = abi.encodePacked(wooCrossRouters[dstChainId]);
             uint256 minBridgeAmount = bridgeAmount.mul(uint256(10000).sub(bridgeSlippage)).div(10000);
-            uint256 srcPoolId = quotePoolIds[srcChainId];
-            uint256 dstPoolId = quotePoolIds[dstChainId];
+            uint256 dstGas = (toToken == wooppQuoteTokens[dstChainId]) ? dstGasForNoSwapCall : dstGasForSwapCall;
 
             stargateRouter.swap{value: gasValue}(
-                dstChainId,
-                srcPoolId,
-                dstPoolId,
-                payable(msg.sender),
-                bridgeAmount,
-                minBridgeAmount,
-                IStargateRouter.lzTxObj(dstGasForCall, 0, '0x'), // dstGasForCall: 600000 is the max gas required for wooPP swap.
-                dstWooCrossRouter,
-                payloadData
+                dstChainId, // dst chain id
+                quotePoolIds[srcChainId], // quote token's pool id on dst chain
+                quotePoolIds[dstChainId], // quote token's pool id on src chain
+                payable(msg.sender), // rebate address
+                bridgeAmount, // swap amount on src chain
+                minBridgeAmount, // min received amount on dst chain
+                IStargateRouter.lzTxObj(dstGas, 0, '0x'), // config: dstGas, dstNativeToken, dstNativeTokenToAddress
+                dstWooCrossRouter, // smart contract to call on dst chain
+                payloadData // payload to piggyback
             );
         }
 
@@ -211,13 +227,14 @@ contract WooCrossChainRouter is IStargateReceiver, Ownable, ReentrancyGuard {
             dstMinToAmount, // minToAmount on destination chain
             to // to address
         );
+        uint256 dstGas = (toToken == wooppQuoteTokens[dstChainId]) ? dstGasForNoSwapCall : dstGasForSwapCall;
         return
             stargateRouter.quoteLayerZeroFee(
                 dstChainId,
                 1, // https://stargateprotocol.gitbook.io/stargate/developers/function-types
                 toAddress,
                 payloadData,
-                IStargateRouter.lzTxObj(dstGasForCall, 0, '0x')
+                IStargateRouter.lzTxObj(dstGas, 0, '0x')
             );
     }
 
