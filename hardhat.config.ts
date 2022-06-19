@@ -63,8 +63,14 @@ export default {
     },
     fantom_mainnet: {
       url: 'https://rpc.ftm.tools/',
-      gasPrice: 200000000000, // gas = 200
+      gasPrice: 20000000000, // gas = 100
       chainId: 250,
+      accounts: [DEPLOYER],
+    },
+    fantom_testnet: {
+      url: 'https://rpc.testnet.fantom.network/',
+      gasPrice: 100000000000, // gas = 100
+      chainId: 0xfa2,
       accounts: [DEPLOYER],
     },
     aurora_mainnet: {
@@ -96,7 +102,7 @@ export default {
     target: 'ethers-v5',
   },
   etherscan: {
-    apiKey: process.env.BSC_API,
+    apiKey: process.env.FTM_API,
   },
   mocha: {
     timeout: 10000,
