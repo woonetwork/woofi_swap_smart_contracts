@@ -160,6 +160,8 @@ contract StrategyTraderJoeDualLP is BaseStrategy {
     function _addLiquidity() private {
         uint256 rewardHalf = IERC20(reward).balanceOf(address(this)).div(2);
         uint256 secondRewardHalf = IERC20(secondReward).balanceOf(address(this)).div(2);
+        require(rewardHalf > 0, 'StrategyLP: INSUFFICIENT_REWARD');
+        require(secondRewardHalf > 0, 'StrategyLP: INSUFFICIENT_REWARD');
 
         if (lpToken0 != reward) {
             IUniswapRouter(uniRouter).swapExactTokensForTokens(rewardHalf, 0, rewardToLP0Route, address(this), now);
