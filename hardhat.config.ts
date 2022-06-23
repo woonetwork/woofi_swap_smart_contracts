@@ -57,7 +57,7 @@ export default {
     },
     avax_mainnet: {
       url: 'https://api.avax.network/ext/bc/C/rpc',
-      gasPrice: 60000000000,
+      gasPrice: 26500000000,
       chainId: 43114,
       accounts: [DEPLOYER],
     },
