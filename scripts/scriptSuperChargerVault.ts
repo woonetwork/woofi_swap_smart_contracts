@@ -3,7 +3,6 @@ import { ethers, run } from 'hardhat'
 
 let want = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75' // usdc
 
-
 let accessManager = '0xd6d6A0828a80E1832cD4C3585aDED8971087fCb8' // ftm access manager
 let treasury = '0x4094D7A17a387795838c7aba4687387B0d32BCf3' // woo_earn_treasury
 let weth = '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83' // wftm
@@ -16,7 +15,6 @@ let ftmVault = '0x5dB04B6335c26ee147AfBEc161Aff6E90239b4B8'
 
 let usdcToken = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75'
 let usdcVault = '0xFCE921ac02999E701BdE7e697b0EF64F2Da115dB'
-
 
 async function main() {
   let vault
@@ -57,7 +55,6 @@ async function main() {
     await new Promise((_) => setTimeout(_, 1000))
     await vault.init(usdcVault, lendingManager.address, withdrawManager.address)
     console.log(`superChargerVault inited`)
-
   } else {
     vault = { address: '0xc1340Df0AB0A14dFccD8291EA58FE781eDA6c98c' }
     lendingManager = { address: '0x1E94B587a5C79Fa1A4355f17D37Cc4143B103b90' }

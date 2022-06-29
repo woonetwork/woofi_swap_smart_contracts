@@ -48,9 +48,7 @@ import './WooSuperChargerVault.sol';
 import '../interfaces/IWETH.sol';
 import '../interfaces/IWooAccessManager.sol';
 
-
 contract WooLendingManager is Ownable, ReentrancyGuard {
-
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -60,18 +58,17 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
 
     WooSuperChargerVault public superChargerVault;
 
-    uint256 public weeklyRepayAmount;   // Repay amount required, per week
+    uint256 public weeklyRepayAmount; // Repay amount required, per week
     uint256 public borrowedPrincipal;
     uint256 public borrowedInterest;
-    uint256 public interestRate;        // 1 in 10000th. 1 = 0.01% (1 bp), 10 = 0.1% (10 bps)
-    uint256 public lastAccuredTs;       // Timestamp of last accured interests
+    uint256 public interestRate; // 1 in 10000th. 1 = 0.01% (1 bp), 10 = 0.1% (10 bps)
+    uint256 public lastAccuredTs; // Timestamp of last accured interests
 
     mapping(address => bool) public isLender;
 
     address constant ETH_PLACEHOLDER_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    constructor() public {
-    }
+    constructor() public {}
 
     function init(
         address _weth,
@@ -87,7 +84,8 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
     }
 
     modifier onlyAdmin() {
-        require(owner() == msg.sender || IWooAccessManager(accessManager).isVaultAdmin(msg.sender),
+        require(
+            owner() == msg.sender || IWooAccessManager(accessManager).isVaultAdmin(msg.sender),
             'LendingVault: Not admin'
         );
         _;
@@ -115,7 +113,15 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         return borrowedPrincipal.add(borrowedInterest);
     }
 
-    function debtState() external view returns (uint256 total, uint256 principal, uint256 interest) {
+    function debtState()
+        external
+        view
+        returns (
+            uint256 total,
+            uint256 principal,
+            uint256 interest
+        )
+    {
         total = debt();
         principal = borrowedPrincipal;
         interest = borrowedInterest;
@@ -161,8 +167,7 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
     }
 
     function repayWeekly() external onlyLender returns (uint256 repaidAmount) {
-        if (weeklyRepayAmount > 0)
-            repay(weeklyRepayAmount);
+        if (weeklyRepayAmount > 0) repay(weeklyRepayAmount);
         return weeklyRepayAmount;
     }
 

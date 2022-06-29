@@ -40,18 +40,26 @@ import { WSAECONNABORTED } from 'constants'
 import { BigNumberish } from '@ethersproject/bignumber'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 
-import { WooFeeManager, IERC20, WooVaultManager, WooAccessManager, WooSuperChargerVault, WooLendingManager, WooWithdrawManager, WOOFiVaultV2, VoidStrategy } from '../typechain'
+import {
+  WooFeeManager,
+  IERC20,
+  WooVaultManager,
+  WooAccessManager,
+  WooSuperChargerVault,
+  WooLendingManager,
+  WooWithdrawManager,
+  WOOFiVaultV2,
+  VoidStrategy,
+} from '../typechain'
 
 import WooAccessManagerArtifact from '../artifacts/contracts/WooAccessManager.sol/WooAccessManager.json'
 import WooSuperChargerVaultArtifact from '../artifacts/contracts/earn/WooSuperChargerVault.sol/WooSuperChargerVault.json'
 import WooLendingManagerArtifact from '../artifacts/contracts/earn/WooLendingManager.sol/WooLendingManager.json'
 import WooWithdrawManagerArtifact from '../artifacts/contracts/earn/WooWithdrawManager.sol/WooWithdrawManager.json'
 
-
 import WOOFiVaultV2Artifact from '../artifacts/contracts/earn/VaultV2.sol/WOOFiVaultV2.json'
 import VoidStrategyArtifact from '../artifacts/contracts/earn/strategies/VoidStrategy.sol/VoidStrategy.json'
 import { access } from 'fs'
-
 
 use(solidity)
 
@@ -100,9 +108,16 @@ describe('WooSuperChargerVault USDC', () => {
 
     accessManager = (await deployContract(owner, WooAccessManagerArtifact, [])) as WooAccessManager
 
-    reserveVault = (await deployContract(owner, WOOFiVaultV2Artifact, [wftm.address, want.address, accessManager.address])) as WOOFiVaultV2
+    reserveVault = (await deployContract(owner, WOOFiVaultV2Artifact, [
+      wftm.address,
+      want.address,
+      accessManager.address,
+    ])) as WOOFiVaultV2
 
-    strategy = (await deployContract(owner, VoidStrategyArtifact, [reserveVault.address, accessManager.address])) as VoidStrategy
+    strategy = (await deployContract(owner, VoidStrategyArtifact, [
+      reserveVault.address,
+      accessManager.address,
+    ])) as VoidStrategy
 
     await wftm.mint(owner.address, utils.parseEther('10000'))
     await usdcToken.mint(owner.address, utils.parseEther('5000'))
@@ -110,7 +125,11 @@ describe('WooSuperChargerVault USDC', () => {
 
   describe('ctor, init & basic func', () => {
     beforeEach('Deploy WooVaultManager', async () => {
-      superChargerVault = (await deployContract(owner, WooSuperChargerVaultArtifact, [wftm.address, want.address, accessManager.address])) as WooSuperChargerVault
+      superChargerVault = (await deployContract(owner, WooSuperChargerVaultArtifact, [
+        wftm.address,
+        want.address,
+        accessManager.address,
+      ])) as WooSuperChargerVault
 
       lendingManager = (await deployContract(owner, WooLendingManagerArtifact, [])) as WooLendingManager
       await lendingManager.init(wftm.address, want.address, accessManager.address, superChargerVault.address)
@@ -168,17 +187,16 @@ describe('WooSuperChargerVault USDC', () => {
       expect(await superChargerVault.instantWithdrawCap()).to.eq(amount.div(10))
       expect(await superChargerVault.instantWithdrawnAmount()).to.eq(0)
 
-      await expect(superChargerVault.deposit(0))
-        .to.be.revertedWith('WooSuperChargerVault: !amount')
-      await expect(superChargerVault.instantWithdraw(0))
-        .to.be.revertedWith('WooSuperChargerVault: !amount')
-      await expect(superChargerVault.instantWithdraw(amount.div(2)))
-        .to.be.revertedWith('WooSuperChargerVault: OUT_OF_CAP')
+      await expect(superChargerVault.deposit(0)).to.be.revertedWith('WooSuperChargerVault: !amount')
+      await expect(superChargerVault.instantWithdraw(0)).to.be.revertedWith('WooSuperChargerVault: !amount')
+      await expect(superChargerVault.instantWithdraw(amount.div(2))).to.be.revertedWith(
+        'WooSuperChargerVault: OUT_OF_CAP'
+      )
 
       // InstantWithdraw
 
       let bal1 = await want.balanceOf(owner.address)
-      let instantWithdrawAmount = amount.div(20)  // instant withdraw = 100 / 20 = 5
+      let instantWithdrawAmount = amount.div(20) // instant withdraw = 100 / 20 = 5
       await superChargerVault.instantWithdraw(instantWithdrawAmount)
       let bal2 = await want.balanceOf(owner.address)
 
@@ -235,10 +253,8 @@ describe('WooSuperChargerVault USDC', () => {
 
       // Request Withdrawn
 
-      await expect(superChargerVault.requestWithdraw(0))
-        .to.be.revertedWith('WooSuperChargerVault: !amount')
-      await expect(superChargerVault.requestWithdraw(utils.parseEther('1000')))
-        .to.be.revertedWith('')
+      await expect(superChargerVault.requestWithdraw(0)).to.be.revertedWith('WooSuperChargerVault: !amount')
+      await expect(superChargerVault.requestWithdraw(utils.parseEther('1000'))).to.be.revertedWith('')
 
       // Double check the status
 
@@ -270,8 +286,9 @@ describe('WooSuperChargerVault USDC', () => {
       expect(await superChargerVault.requestedTotalAmount()).to.eq(rwAmount)
       expect(await superChargerVault.requestedWithdrawAmount(owner.address)).to.eq(rwAmount)
 
-      await expect(superChargerVault.connect(user1).startWeeklySettle())
-        .to.be.revertedWith('WooSuperChargerVault: !ADMIN')
+      await expect(superChargerVault.connect(user1).startWeeklySettle()).to.be.revertedWith(
+        'WooSuperChargerVault: !ADMIN'
+      )
 
       await superChargerVault.startWeeklySettle()
 
@@ -283,8 +300,9 @@ describe('WooSuperChargerVault USDC', () => {
 
       // No need to repay, so just end the weekly settle
 
-      await expect(superChargerVault.connect(user1).endWeeklySettle())
-        .to.be.revertedWith('WooSuperChargerVault: !ADMIN')
+      await expect(superChargerVault.connect(user1).endWeeklySettle()).to.be.revertedWith(
+        'WooSuperChargerVault: !ADMIN'
+      )
 
       await superChargerVault.endWeeklySettle()
 
@@ -347,7 +365,7 @@ describe('WooSuperChargerVault USDC', () => {
 
       // Check lending manager status
       await lendingManager.setLender(owner.address, true)
-      await lendingManager.setInterestRate(1000)  // APR - 10%
+      await lendingManager.setInterestRate(1000) // APR - 10%
       expect(await lendingManager.weeklyRepayAmount()).to.eq(0)
       expect(await lendingManager.borrowedPrincipal()).to.eq(0)
       expect(await lendingManager.borrowedInterest()).to.eq(0)
@@ -357,8 +375,7 @@ describe('WooSuperChargerVault USDC', () => {
       expect(await lendingManager.isLender(user1.address)).to.eq(false)
 
       // Borrow
-      await expect(lendingManager.connect(user1.address).borrow(100))
-        .to.be.revertedWith('WooLendingManager: !lender')
+      await expect(lendingManager.connect(user1.address).borrow(100)).to.be.revertedWith('WooLendingManager: !lender')
 
       let borrowAmount = utils.parseEther('20')
       let bal1 = await want.balanceOf(owner.address)
@@ -405,19 +422,15 @@ describe('WooSuperChargerVault USDC', () => {
       expect((await superChargerVault.debtBalance()).div(ONE)).to.eq(15)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(10)
 
-      console.log('superCharger balance: ',
-        utils.formatEther(await superChargerVault.balance()))
-      console.log('superCharger reserveBalance: ',
-        utils.formatEther(await superChargerVault.reserveBalance()))
+      console.log('superCharger balance: ', utils.formatEther(await superChargerVault.balance()))
+      console.log('superCharger reserveBalance: ', utils.formatEther(await superChargerVault.reserveBalance()))
 
-      console.log('lendingManager debt: ',
-        utils.formatEther(await lendingManager.debt()))
-      console.log('lendingManager weeklyRepayAmount: ',
-        utils.formatEther(await lendingManager.weeklyRepayAmount()))
+      console.log('lendingManager debt: ', utils.formatEther(await lendingManager.debt()))
+      console.log('lendingManager weeklyRepayAmount: ', utils.formatEther(await lendingManager.weeklyRepayAmount()))
 
       // Settle
 
-      await superChargerVault.startWeeklySettle();
+      await superChargerVault.startWeeklySettle()
 
       expect(await superChargerVault.isSettling()).to.eq(true)
       expect(await lendingManager.weeklyRepayAmount()).to.eq(0)
@@ -425,7 +438,7 @@ describe('WooSuperChargerVault USDC', () => {
       expect((await superChargerVault.debtBalance()).div(ONE)).to.eq(15)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(10)
 
-      await superChargerVault.endWeeklySettle();
+      await superChargerVault.endWeeklySettle()
 
       expect(await superChargerVault.isSettling()).to.eq(false)
       expect(await lendingManager.weeklyRepayAmount()).to.eq(0)
@@ -444,7 +457,6 @@ describe('WooSuperChargerVault USDC', () => {
       // 4. weekly settle
       // 5. repaid weekly amount
 
-
       let amount = utils.parseEther('100')
       await want.approve(superChargerVault.address, amount)
       await superChargerVault.deposit(amount)
@@ -459,7 +471,7 @@ describe('WooSuperChargerVault USDC', () => {
 
       // Check lending manager status
       await lendingManager.setLender(owner.address, true)
-      await lendingManager.setInterestRate(1000)  // APR - 10%
+      await lendingManager.setInterestRate(1000) // APR - 10%
 
       // Borrow - 50 in total
       await lendingManager.borrow(utils.parseEther('20')) // borrow 20 want token
@@ -469,19 +481,15 @@ describe('WooSuperChargerVault USDC', () => {
       expect((await superChargerVault.balance()).div(ONE)).to.eq(100)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(40)
 
-      console.log('superCharger balance: ',
-        utils.formatEther(await superChargerVault.balance()))
-      console.log('superCharger reserveBalance: ',
-        utils.formatEther(await superChargerVault.reserveBalance()))
+      console.log('superCharger balance: ', utils.formatEther(await superChargerVault.balance()))
+      console.log('superCharger reserveBalance: ', utils.formatEther(await superChargerVault.reserveBalance()))
 
-      console.log('lendingManager debt: ',
-        utils.formatEther(await lendingManager.debt()))
-      console.log('lendingManager weeklyRepayAmount: ',
-        utils.formatEther(await lendingManager.weeklyRepayAmount()))
+      console.log('lendingManager debt: ', utils.formatEther(await lendingManager.debt()))
+      console.log('lendingManager weeklyRepayAmount: ', utils.formatEther(await lendingManager.weeklyRepayAmount()))
 
       // Settle
 
-      await superChargerVault.startWeeklySettle();
+      await superChargerVault.startWeeklySettle()
 
       expect(await superChargerVault.isSettling()).to.eq(true)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(40)
@@ -493,7 +501,7 @@ describe('WooSuperChargerVault USDC', () => {
       await want.approve(lendingManager.address, repayAmount)
       await lendingManager.repayWeekly()
 
-      await superChargerVault.endWeeklySettle();
+      await superChargerVault.endWeeklySettle()
 
       expect(await superChargerVault.isSettling()).to.eq(false)
       expect(await lendingManager.weeklyRepayAmount()).to.eq(0)
@@ -503,10 +511,8 @@ describe('WooSuperChargerVault USDC', () => {
 
       expect((await withdrawManager.withdrawAmount(owner.address)).div(ONE)).to.eq(40)
 
-      console.log('share_price: ',
-        utils.formatEther(await superChargerVault.getPricePerFullShare()))
-      console.log('balance: ',
-        utils.formatEther(await superChargerVault.balance()))
+      console.log('share_price: ', utils.formatEther(await superChargerVault.getPricePerFullShare()))
+      console.log('balance: ', utils.formatEther(await superChargerVault.balance()))
 
       // Request 30 again
 
@@ -516,7 +522,7 @@ describe('WooSuperChargerVault USDC', () => {
 
       // Settle
 
-      await superChargerVault.startWeeklySettle();
+      await superChargerVault.startWeeklySettle()
 
       expect(await superChargerVault.isSettling()).to.eq(true)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(30)
@@ -529,16 +535,15 @@ describe('WooSuperChargerVault USDC', () => {
       await want.approve(lendingManager.address, repayAmount)
       await lendingManager.repayWeekly()
 
-      await superChargerVault.endWeeklySettle();
+      await superChargerVault.endWeeklySettle()
 
       expect(await superChargerVault.isSettling()).to.eq(false)
       expect(await lendingManager.weeklyRepayAmount()).to.eq(0)
 
-      expect((await superChargerVault.debtBalance()).div(ONE)).to.eq(50-23)
+      expect((await superChargerVault.debtBalance()).div(ONE)).to.eq(50 - 23)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(0)
 
-      expect((await withdrawManager.withdrawAmount(owner.address)).div(ONE)).to.eq(40+30)
+      expect((await withdrawManager.withdrawAmount(owner.address)).div(ONE)).to.eq(40 + 30)
     })
-
   })
 })

@@ -53,9 +53,7 @@ import '../interfaces/IVaultV2.sol';
 import './WooWithdrawManager.sol';
 import './WooLendingManager.sol';
 
-
 contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
-
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -79,26 +77,29 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     IWooAccessManager public immutable accessManager;
 
     mapping(address => uint256) public costSharePrice;
-    mapping(address => uint256) public requestedWithdrawShares;    // Requested withdrawn amount (in assets, NOT shares)
+    mapping(address => uint256) public requestedWithdrawShares; // Requested withdrawn amount (in assets, NOT shares)
     uint256 public requestedTotalShares;
     EnumerableSet.AddressSet private requestUsers;
 
-    uint256 public instantWithdrawCap;                              // Max instant withdraw amount (in assets, per week)
-    uint256 public instantWithdrawnAmount;                          // Withdrawn amout already consumed (in assets, per week)
+    uint256 public instantWithdrawCap; // Max instant withdraw amount (in assets, per week)
+    uint256 public instantWithdrawnAmount; // Withdrawn amout already consumed (in assets, per week)
 
     bool public isSettling;
 
     address public treasury = 0x815D4517427Fc940A90A5653cdCEA1544c6283c9;
-    uint256 public instantWithdrawFeeRate = 30;                     // 1 in 10000th. default: 30 -> 0.3%
+    uint256 public instantWithdrawFeeRate = 30; // 1 in 10000th. default: 30 -> 0.3%
 
     constructor(
         address _weth,
         address _want,
         address _accessManager
-    ) public ERC20(
-        string(abi.encodePacked('WOOFi Super Charger ', ERC20(_want).name())),
-        string(abi.encodePacked('we', ERC20(_want).symbol()))
-    ) {
+    )
+        public
+        ERC20(
+            string(abi.encodePacked('WOOFi Super Charger ', ERC20(_want).name())),
+            string(abi.encodePacked('we', ERC20(_want).symbol()))
+        )
+    {
         require(_weth != address(0), 'WooSuperChargerVault: !weth');
         require(_want != address(0), 'WooSuperChargerVault: !want');
         require(_accessManager != address(0), 'WooSuperChargerVault: !accessManager');
@@ -164,9 +165,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
 
     function _updateInstantWithdrawData(uint256 newWithdrawnAmount) private {
         instantWithdrawCap = balance().div(10);
-        instantWithdrawnAmount = newWithdrawnAmount < instantWithdrawCap
-            ? newWithdrawnAmount
-            : instantWithdrawCap;
+        instantWithdrawnAmount = newWithdrawnAmount < instantWithdrawCap ? newWithdrawnAmount : instantWithdrawCap;
     }
 
     function instantWithdraw(uint256 amount) external nonReentrant {
@@ -223,10 +222,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     }
 
     function reserveBalance() public view returns (uint256) {
-        return _assets(
-            IERC20(address(reserveVault)).balanceOf(address(this)),
-            reserveVault.getPricePerFullShare()
-        );
+        return _assets(IERC20(address(reserveVault)).balanceOf(address(this)), reserveVault.getPricePerFullShare());
     }
 
     function debtBalance() public view returns (uint256) {
@@ -272,9 +268,10 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         uint256 requestedAmount = requestedTotalAmount();
         uint256 afterBal = balance().sub(requestedAmount);
 
-        return reserveBal >= requestedAmount.add(afterBal.div(10))
-            ? 0
-            : requestedAmount.add(afterBal.div(10)).sub(reserveBal);
+        return
+            reserveBal >= requestedAmount.add(afterBal.div(10))
+                ? 0
+                : requestedAmount.add(afterBal.div(10)).sub(reserveBal);
     }
 
     function startWeeklySettle() external onlyAdmin {
