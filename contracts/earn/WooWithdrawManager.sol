@@ -48,9 +48,7 @@ import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 import '../interfaces/IWETH.sol';
 import '../interfaces/IWooAccessManager.sol';
 
-
 contract WooWithdrawManager is Ownable, ReentrancyGuard {
-
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -69,8 +67,7 @@ contract WooWithdrawManager is Ownable, ReentrancyGuard {
 
     address constant ETH_PLACEHOLDER_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    constructor() public {
-    }
+    constructor() public {}
 
     function init(
         address _weth,
@@ -85,7 +82,8 @@ contract WooWithdrawManager is Ownable, ReentrancyGuard {
     }
 
     modifier onlyAdmin() {
-        require(owner() == msg.sender || IWooAccessManager(accessManager).isVaultAdmin(msg.sender),
+        require(
+            owner() == msg.sender || IWooAccessManager(accessManager).isVaultAdmin(msg.sender),
             'WooWithdrawManager: !owner'
         );
         _;
@@ -108,8 +106,7 @@ contract WooWithdrawManager is Ownable, ReentrancyGuard {
 
     function withdraw() external nonReentrant {
         uint256 amount = withdrawAmount[msg.sender];
-        if (amount == 0)
-            return;
+        if (amount == 0) return;
         withdrawAmount[msg.sender] = 0;
         if (want == weth) {
             IWETH(weth).withdraw(amount);
