@@ -239,9 +239,9 @@ contract WooCrossChainRouter is IStargateReceiver, Ownable, ReentrancyGuard {
     }
 
     function sgReceive(
-        uint16 _chainId,
-        bytes memory _srcAddress,
-        uint256 _nonce,
+        uint16 /*_chainId*/,
+        bytes memory /*_srcAddress*/,
+        uint256 /*_nonce*/,
         address _token,
         uint256 amountLD,
         bytes memory payload
