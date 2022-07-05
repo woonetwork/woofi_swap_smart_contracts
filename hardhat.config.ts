@@ -102,7 +102,7 @@ export default {
     target: 'ethers-v5',
   },
   etherscan: {
-    apiKey: process.env.FTM_API,
+    apiKey: process.env.BSC_API,
   },
   mocha: {
     timeout: 10000,

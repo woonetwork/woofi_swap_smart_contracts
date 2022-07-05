@@ -1,22 +1,42 @@
 import { access } from 'fs'
 import { ethers, run } from 'hardhat'
 
-let want = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75' // usdc
+// --- Fantom --- //
+// let want = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75' // usdc
 
-let accessManager = '0xd6d6A0828a80E1832cD4C3585aDED8971087fCb8' // ftm access manager
+// let accessManager = '0xd6d6A0828a80E1832cD4C3585aDED8971087fCb8' // ftm access manager
+// let treasury = '0x4094D7A17a387795838c7aba4687387B0d32BCf3' // woo_earn_treasury
+// let weth = '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83' // wftm
+
+// let needDeploy = true
+// let verifyRouter = ''
+
+// let wooPP = '0x9503E7517D3C5bc4f9E4A1c6AE4f8B33AC2546f2'
+// let ftmVault = '0x5dB04B6335c26ee147AfBEc161Aff6E90239b4B8'
+
+// let usdcToken = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75'
+// let usdcVault = '0xFCE921ac02999E701BdE7e697b0EF64F2Da115dB'
+
+// let wooPP = '0xFCE921ac02999E701BdE7e697b0EF64F2Da115dB' // TODO: update it
+
+
+// --- BSC --- //
+let accessManager = '0xa9eDb6F411e49358B515dE26543815770a739FB0' // woo access manager (BSC)
 let treasury = '0x4094D7A17a387795838c7aba4687387B0d32BCf3' // woo_earn_treasury
-let weth = '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83' // wftm
+let weth = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c' // wbnb
 
 let needDeploy = true
-let verifyRouter = ''
 
-let wooPP = '0x9503E7517D3C5bc4f9E4A1c6AE4f8B33AC2546f2'
-let ftmVault = '0x5dB04B6335c26ee147AfBEc161Aff6E90239b4B8'
+let wooPP = '0xbf365Ce9cFcb2d5855521985E351bA3bcf77FD3F'
+let bnbVault = '0x85f16155c6c7dA460969DDB33dbD2c7E90Ca07EC'
+let usdtToken = '0x55d398326f99059fF775485246999027B3197955'
+let usdtVault = '0xE897b4200E3B2380469E8Dd3F987Dc62A7ADeAD7'
 
-let usdcToken = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75'
-let usdcVault = '0xFCE921ac02999E701BdE7e697b0EF64F2Da115dB'
+// SuperVault config
 
-let wooPP = '0xFCE921ac02999E701BdE7e697b0EF64F2Da115dB' // TODO: update it
+let want = weth // wbnb
+let reserveVault = bnbVault
+
 
 async function main() {
   let vault
@@ -55,7 +75,7 @@ async function main() {
     console.log(`withdrawManager inited`)
 
     await new Promise((_) => setTimeout(_, 1000))
-    await vault.init(usdcVault, lendingManager.address, withdrawManager.address)
+    await vault.init(reserveVault, lendingManager.address, withdrawManager.address)
     console.log(`superChargerVault inited`)
   } else {
     vault = { address: '0xc1340Df0AB0A14dFccD8291EA58FE781eDA6c98c' }
