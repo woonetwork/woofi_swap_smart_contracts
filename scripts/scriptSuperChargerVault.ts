@@ -18,7 +18,6 @@ let usdcVault = '0xFCE921ac02999E701BdE7e697b0EF64F2Da115dB'
 
 let wooPP = '0xFCE921ac02999E701BdE7e697b0EF64F2Da115dB' // TODO: update it
 
-
 async function main() {
   let vault
   let lendingManager

@@ -132,7 +132,13 @@ describe('WooSuperChargerVault USDC', () => {
       ])) as WooSuperChargerVault
 
       lendingManager = (await deployContract(owner, WooLendingManagerArtifact, [])) as WooLendingManager
-      await lendingManager.init(wftm.address, want.address, accessManager.address, wooPP.address, superChargerVault.address)
+      await lendingManager.init(
+        wftm.address,
+        want.address,
+        accessManager.address,
+        wooPP.address,
+        superChargerVault.address
+      )
 
       withdrawManager = (await deployContract(owner, WooWithdrawManagerArtifact, [])) as WooWithdrawManager
       await withdrawManager.init(wftm.address, want.address, accessManager.address, superChargerVault.address)
@@ -365,7 +371,7 @@ describe('WooSuperChargerVault USDC', () => {
 
       // Check lending manager status
       await lendingManager.setBorrower(owner.address, true)
-      await lendingManager.setInterestRate(1000)  // APR - 10%
+      await lendingManager.setInterestRate(1000) // APR - 10%
       expect(await lendingManager.weeklyRepayAmount()).to.eq(0)
       expect(await lendingManager.borrowedPrincipal()).to.eq(0)
       expect(await lendingManager.borrowedInterest()).to.eq(0)
@@ -375,8 +381,7 @@ describe('WooSuperChargerVault USDC', () => {
       expect(await lendingManager.isBorrower(user1.address)).to.eq(false)
 
       // Borrow
-      await expect(lendingManager.connect(user1.address).borrow(100))
-        .to.be.revertedWith('WooLendingManager: !borrower')
+      await expect(lendingManager.connect(user1.address).borrow(100)).to.be.revertedWith('WooLendingManager: !borrower')
 
       let borrowAmount = utils.parseEther('20')
       let bal1 = await want.balanceOf(wooPP.address)
@@ -473,7 +478,7 @@ describe('WooSuperChargerVault USDC', () => {
 
       // Check lending manager status
       await lendingManager.setBorrower(owner.address, true)
-      await lendingManager.setInterestRate(1000)  // APR - 10%
+      await lendingManager.setInterestRate(1000) // APR - 10%
 
       // Borrow - 50 in total
       await lendingManager.borrow(utils.parseEther('20')) // borrow 20 want token

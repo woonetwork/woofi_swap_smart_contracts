@@ -136,7 +136,13 @@ describe('WooSuperChargerVault WFTM', () => {
       ])) as WooSuperChargerVault
 
       lendingManager = (await deployContract(owner, WooLendingManagerArtifact, [])) as WooLendingManager
-      await lendingManager.init(wftm.address, want.address, accessManager.address, wooPP.address, superChargerVault.address)
+      await lendingManager.init(
+        wftm.address,
+        want.address,
+        accessManager.address,
+        wooPP.address,
+        superChargerVault.address
+      )
 
       withdrawManager = (await deployContract(owner, WooWithdrawManagerArtifact, [])) as WooWithdrawManager
       await withdrawManager.init(wftm.address, want.address, accessManager.address, superChargerVault.address)
@@ -279,7 +285,7 @@ describe('WooSuperChargerVault WFTM', () => {
 
       // Check lending manager status
       await lendingManager.setBorrower(owner.address, true)
-      await lendingManager.setInterestRate(1000)  // APR - 10%
+      await lendingManager.setInterestRate(1000) // APR - 10%
 
       // Borrow - 50 in total
       await lendingManager.borrow(utils.parseEther('20')) // borrow 20 want token
@@ -403,10 +409,10 @@ describe('WooSuperChargerVault WFTM', () => {
       // Total reserve vault: 130 tokens
 
       let newVault = (await deployContract(owner, WOOFiVaultV2Artifact, [
-          wftm.address,
-          want.address,
-          accessManager.address,
-        ])) as WOOFiVaultV2
+        wftm.address,
+        want.address,
+        accessManager.address,
+      ])) as WOOFiVaultV2
 
       let newStrat = (await deployContract(owner, VoidStrategyArtifact, [
         newVault.address,
