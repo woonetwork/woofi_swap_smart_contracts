@@ -19,7 +19,6 @@ import { ethers, run } from 'hardhat'
 
 // let wooPP = '0xFCE921ac02999E701BdE7e697b0EF64F2Da115dB' // TODO: update it
 
-
 // --- BSC --- //
 let accessManager = '0xa9eDb6F411e49358B515dE26543815770a739FB0' // woo access manager (BSC)
 let treasury = '0x4094D7A17a387795838c7aba4687387B0d32BCf3' // woo_earn_treasury
@@ -36,7 +35,6 @@ let usdtVault = '0xE897b4200E3B2380469E8Dd3F987Dc62A7ADeAD7'
 
 let want = weth // wbnb
 let reserveVault = bnbVault
-
 
 async function main() {
   let vault
