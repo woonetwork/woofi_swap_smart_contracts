@@ -63,6 +63,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     event InstantWithdraw(address indexed user, uint256 assets, uint256 shares, uint256 fees);
     event WeeklySettleStarted(address indexed caller, uint256 totalRequestedShares, uint256 weeklyRepayAmount);
     event WeeklySettleEnded(address indexed caller, uint256 totalBalance, uint256 debtBalance, uint256 reserveBalance);
+    event ReserveVaultMigrated(address indexed user, address indexed oldVault, address indexed newVault);
 
     /* ----- State Variables ----- */
 
@@ -136,7 +137,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
 
     /* ----- External Functions ----- */
 
-    function deposit(uint256 amount) external payable nonReentrant {
+    function deposit(uint256 amount) external payable whenNotPaused nonReentrant {
         require(amount > 0, 'WooSuperChargerVault: !amount');
 
         lendingManager.accureInterest();
@@ -168,7 +169,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         instantWithdrawnAmount = newWithdrawnAmount < instantWithdrawCap ? newWithdrawnAmount : instantWithdrawCap;
     }
 
-    function instantWithdraw(uint256 amount) external nonReentrant {
+    function instantWithdraw(uint256 amount) external whenNotPaused nonReentrant {
         require(amount > 0, 'WooSuperChargerVault: !amount');
         require(!isSettling, 'WooSuperChargerVault: NOT_ALLOWED_IN_SETTLING');
 
@@ -194,7 +195,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         emit InstantWithdraw(msg.sender, amount, reserveShares, fee);
     }
 
-    function requestWithdraw(uint256 amount) external nonReentrant {
+    function requestWithdraw(uint256 amount) external whenNotPaused nonReentrant {
         require(amount > 0, 'WooSuperChargerVault: !amount');
         require(!isSettling, 'WooSuperChargerVault: CANNOT_WITHDRAW_IN_SETTLING');
 
@@ -238,19 +239,19 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         return totalSupply() == 0 ? 1e18 : balance().mul(1e18).div(totalSupply());
     }
 
-    // --- For Lenders --- //
+    // --- For WooLendingManager --- //
 
-    function borrowFromLender(uint256 amount, address lender) external onlyLendingManager {
+    function borrowFromLendingManager(uint256 amount, address fundAddr) external onlyLendingManager {
         require(!isSettling);
         uint256 sharesToWithdraw = _sharesUp(amount, reserveVault.getPricePerFullShare());
         reserveVault.withdraw(sharesToWithdraw);
         if (want == weth) {
             IWETH(weth).deposit{value: amount}();
         }
-        TransferHelper.safeTransfer(want, lender, amount);
+        TransferHelper.safeTransfer(want, fundAddr, amount);
     }
 
-    function repayFromLender(uint256 amount) external onlyLendingManager {
+    function repayFromLendingManager(uint256 amount) external onlyLendingManager {
         TransferHelper.safeTransferFrom(want, msg.sender, address(this), amount);
         if (want == weth) {
             IWETH(weth).withdraw(amount);
@@ -263,7 +264,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
 
     // --- Admin operations --- //
 
-    function weeklyRepayment() public view returns (uint256) {
+    function weeklyRepayAmount() public view returns (uint256) {
         uint256 reserveBal = reserveBalance();
         uint256 requestedAmount = requestedTotalAmount();
         uint256 afterBal = balance().sub(requestedAmount);
@@ -278,9 +279,9 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         require(!isSettling);
         isSettling = true;
         lendingManager.accureInterest();
-        uint256 weeklyRepayAmount = weeklyRepayment();
-        lendingManager.setRepayAmount(weeklyRepayAmount);
-        emit WeeklySettleStarted(msg.sender, 0, weeklyRepayAmount);
+        uint256 _weeklyRepayAmount = weeklyRepayAmount();
+        lendingManager.setRepayAmount(_weeklyRepayAmount);
+        emit WeeklySettleStarted(msg.sender, 0, _weeklyRepayAmount);
     }
 
     function endWeeklySettle() public onlyAdmin {
@@ -317,6 +318,27 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         emit WeeklySettleEnded(msg.sender, totalBalance, lendingManager.debt(), reserveBalance());
     }
 
+    function migrateReserveVault(address _vault) external onlyOwner {
+        require(_vault != address(0), '!_vault');
+
+        uint256 preBal = (want == weth) ? address(this).balance : available();
+        reserveVault.withdraw(IERC20(address(reserveVault)).balanceOf(address(this)));
+        uint256 afterBal = (want == weth) ? address(this).balance : available();
+        uint256 reserveAmount = afterBal.sub(preBal);
+
+        address oldVault = address(reserveVault);
+        reserveVault = IVaultV2(_vault);
+        require(reserveVault.want() == want, 'INVALID_WANT');
+        if (want == weth) {
+            reserveVault.deposit{value: reserveAmount}(reserveAmount);
+        } else {
+            TransferHelper.safeApprove(want, address(reserveVault), reserveAmount);
+            reserveVault.deposit(reserveAmount);
+        }
+
+        emit ReserveVaultMigrated(msg.sender, oldVault, _vault);
+    }
+
     function inCaseTokenGotStuck(address stuckToken) external onlyOwner {
         require(stuckToken != want);
         if (stuckToken == ETH_PLACEHOLDER_ADDR) {
@@ -327,12 +349,28 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         }
     }
 
+    function setLendingManager(address _lendingManager) external onlyOwner {
+        lendingManager = WooLendingManager(_lendingManager);
+    }
+
+    function setWithdrawManager(address payable _withdrawManager) external onlyOwner {
+        withdrawManager = WooWithdrawManager(_withdrawManager);
+    }
+
     function setTreasury(address _treasury) external onlyOwner {
         treasury = _treasury;
     }
 
     function setInstantWithdrawFeeRate(uint256 _feeRate) external onlyOwner {
         instantWithdrawFeeRate = _feeRate;
+    }
+
+    function pause() public onlyAdmin {
+        _pause();
+    }
+
+    function unpause() external onlyAdmin {
+        _unpause();
     }
 
     receive() external payable {}

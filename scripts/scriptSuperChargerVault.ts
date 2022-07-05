@@ -16,6 +16,9 @@ let ftmVault = '0x5dB04B6335c26ee147AfBEc161Aff6E90239b4B8'
 let usdcToken = '0x04068DA6C83AFCFA0e13ba15A6696662335D5B75'
 let usdcVault = '0xFCE921ac02999E701BdE7e697b0EF64F2Da115dB'
 
+let wooPP = '0xFCE921ac02999E701BdE7e697b0EF64F2Da115dB' // TODO: update it
+
+
 async function main() {
   let vault
   let lendingManager
@@ -35,11 +38,11 @@ async function main() {
     console.log(`lendingManager deployed to: ${lendingManager.address}`)
 
     await new Promise((_) => setTimeout(_, 1000))
-    await lendingManager.init(weth, want, accessManager, vault.address)
+    await lendingManager.init(weth, want, accessManager, wooPP, vault.address)
     console.log(`lendingManager inited`)
 
     await new Promise((_) => setTimeout(_, 1000))
-    await lendingManager.setLender('0x3e131c1aD2BE479b411FFD7087214ca877B3c58c', true) // test lender
+    await lendingManager.setBorrower('0x3e131c1aD2BE479b411FFD7087214ca877B3c58c', true) // test lender
     console.log(`lendingManager set lender`)
 
     await new Promise((_) => setTimeout(_, 1000))
