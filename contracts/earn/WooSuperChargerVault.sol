@@ -159,19 +159,19 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
 
         _mint(msg.sender, shares);
 
-        _updateInstantWithdrawData(instantWithdrawnAmount);
+        instantWithdrawCap = instantWithdrawCap.add(amount.div(10));
 
         emit Deposit(msg.sender, amount, shares);
-    }
-
-    function _updateInstantWithdrawData(uint256 newWithdrawnAmount) private {
-        instantWithdrawCap = balance().div(10);
-        instantWithdrawnAmount = newWithdrawnAmount < instantWithdrawCap ? newWithdrawnAmount : instantWithdrawCap;
     }
 
     function instantWithdraw(uint256 amount) external whenNotPaused nonReentrant {
         require(amount > 0, 'WooSuperChargerVault: !amount');
         require(!isSettling, 'WooSuperChargerVault: NOT_ALLOWED_IN_SETTLING');
+
+        if (instantWithdrawnAmount >= instantWithdrawCap) {
+            // NOTE: no more instant withdraw quota.
+            return;
+        }
 
         require(amount <= instantWithdrawCap.sub(instantWithdrawnAmount), 'WooSuperChargerVault: OUT_OF_CAP');
         lendingManager.accureInterest();
@@ -190,7 +190,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
             TransferHelper.safeTransfer(want, msg.sender, amount.sub(fee));
         }
 
-        _updateInstantWithdrawData(instantWithdrawnAmount.add(amount));
+        instantWithdrawnAmount = instantWithdrawnAmount.add(amount);
 
         emit InstantWithdraw(msg.sender, amount, reserveShares, fee);
     }
@@ -285,8 +285,8 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     }
 
     function endWeeklySettle() public onlyAdmin {
-        require(isSettling);
-        require(lendingManager.weeklyRepayAmount() == 0);
+        require(isSettling, 'SETTLING');
+        require(lendingManager.weeklyRepayAmount() == 0, 'WEEKLY_REPAY_NEEDED');
 
         isSettling = false;
         uint256 amount = requestedTotalAmount();

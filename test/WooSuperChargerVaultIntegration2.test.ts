@@ -194,6 +194,7 @@ describe('WooSuperChargerVault WFTM', () => {
       await want.approve(superChargerVault.address, amount1)
       await superChargerVault.deposit(amount1, { value: amount1 })
       amount = amount.add(amount1)
+      let cap = amount.div(10)
 
       console.log(utils.formatEther(await superChargerVault.balanceOf(owner.address)))
       console.log(utils.formatEther(await superChargerVault.balance()))
@@ -209,7 +210,7 @@ describe('WooSuperChargerVault WFTM', () => {
       expect(await superChargerVault.debtBalance()).to.eq(0)
       expect(await superChargerVault.available()).to.eq(0)
 
-      expect(await superChargerVault.instantWithdrawCap()).to.eq(amount.div(10))
+      expect(await superChargerVault.instantWithdrawCap()).to.eq(cap)
       expect(await superChargerVault.instantWithdrawnAmount()).to.eq(0)
 
       await expect(superChargerVault.deposit(0)).to.be.revertedWith('WooSuperChargerVault: !amount')
@@ -249,18 +250,18 @@ describe('WooSuperChargerVault WFTM', () => {
       expect(await superChargerVault.debtBalance()).to.eq(0)
       expect(await superChargerVault.available()).to.eq(0)
 
-      expect(await superChargerVault.instantWithdrawCap()).to.eq(amount.div(10))
+      expect(await superChargerVault.instantWithdrawCap()).to.eq(cap)
       expect(await superChargerVault.instantWithdrawnAmount()).to.eq(instantWithdrawAmount)
 
       // Instant withdraw all capped amount
-      instantWithdrawAmount = amount.div(10).sub(instantWithdrawAmount)
-      amount = amount.sub(instantWithdrawAmount)
-      await superChargerVault.instantWithdraw(instantWithdrawAmount)
+      let instantWithdrawAmount2 = amount.div(10).sub(instantWithdrawAmount)
+      amount = amount.sub(instantWithdrawAmount2)
+      await superChargerVault.instantWithdraw(instantWithdrawAmount2)
       expect(await superChargerVault.balance()).to.eq(amount)
       expect(await superChargerVault.reserveBalance()).to.eq(amount)
 
-      expect(await superChargerVault.instantWithdrawCap()).to.eq(amount.div(10))
-      expect(await superChargerVault.instantWithdrawnAmount()).to.eq(amount.div(10))
+      expect(await superChargerVault.instantWithdrawCap()).to.eq(cap)
+      expect(await superChargerVault.instantWithdrawnAmount()).to.eq(instantWithdrawAmount2.add(instantWithdrawAmount))
     })
 
     it('Integration Test: request withdraw, borrow, weekly settle, withdraw', async () => {
