@@ -63,8 +63,14 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
     WooSuperChargerVault public superChargerVault;
 
     uint256 public weeklyRepayAmount; // Repay amount required, per week
+
     uint256 public borrowedPrincipal;
     uint256 public borrowedInterest;
+
+    uint256 public perfFee;
+    uint256 public perfRate = 1000; // 1 in 10000th. 1000 = 10%
+    address public treasury;
+
     uint256 public interestRate; // 1 in 10000th. 1 = 0.01% (1 bp), 10 = 0.1% (10 bps)
     uint256 public lastAccuredTs; // Timestamp of last accured interests
 
@@ -87,6 +93,7 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         wooPP = _wooPP;
         superChargerVault = WooSuperChargerVault(_superChargerVault);
         lastAccuredTs = block.timestamp;
+        treasury = 0x4094D7A17a387795838c7aba4687387B0d32BCf3;
     }
 
     modifier onlyAdmin() {
@@ -117,6 +124,11 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
 
     function setBorrower(address _borrower, bool _isBorrower) external onlyOwner {
         isBorrower[_borrower] = _isBorrower;
+    }
+
+    function setPerfRate(uint256 _rate) external onlyAdmin {
+        require(_rate < 10000);
+        perfRate = _rate;
     }
 
     function debt() public view returns (uint256 assets) {
@@ -151,8 +163,17 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         // 31536000 = 365 * 24 * 3600 (1 year of seconds)
         uint256 interest = borrowedPrincipal.mul(interestRate).mul(duration).div(31536000).div(10000);
 
-        borrowedInterest = borrowedInterest.add(interest);
+        uint256 fee = interest.mul(perfRate).div(10000);
+        perfFee = perfFee.add(fee);
+
+        borrowedInterest = borrowedInterest.add(interest.sub(fee));
         lastAccuredTs = block.timestamp;
+    }
+
+    function claimPerfFee() external onlyAdmin {
+        uint256 transferAmount = perfFee;
+        perfFee = 0;
+        TransferHelper.safeTransfer(want, treasury, transferAmount);
     }
 
     function setInterestRate(uint256 _rate) external onlyBorrower {
@@ -160,6 +181,11 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         uint256 oldInterest = interestRate;
         interestRate = _rate;
         emit InterestRateUpdated(msg.sender, oldInterest, _rate);
+    }
+
+    function setTreasury(address _treasury) external onlyAdmin {
+        require(_treasury != address(0), 'WooLendingManager: !_treasury');
+        treasury = _treasury;
     }
 
     function borrow(uint256 amount) external onlyBorrower {
