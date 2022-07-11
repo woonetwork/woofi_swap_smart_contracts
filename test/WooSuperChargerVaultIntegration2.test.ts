@@ -303,7 +303,10 @@ describe('WooSuperChargerVault WFTM', () => {
       console.log('superCharger reserveBalance: ', utils.formatEther(await superChargerVault.reserveBalance()))
 
       console.log('lendingManager debt: ', utils.formatEther(await lendingManager.debt()))
-      console.log('superChargerVault weeklyNeededAmountForWithdraw: ', utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw()))
+      console.log(
+        'superChargerVault weeklyNeededAmountForWithdraw: ',
+        utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw())
+      )
 
       // Settle
 
@@ -414,7 +417,10 @@ describe('WooSuperChargerVault WFTM', () => {
       console.log('superCharger reserveBalance: ', utils.formatEther(await superChargerVault.reserveBalance()))
 
       console.log('lendingManager debt: ', utils.formatEther(await lendingManager.debt()))
-      console.log('superChargerVault weeklyNeededAmountForWithdraw: ', utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw()))
+      console.log(
+        'superChargerVault weeklyNeededAmountForWithdraw: ',
+        utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw())
+      )
 
       // Settle
 

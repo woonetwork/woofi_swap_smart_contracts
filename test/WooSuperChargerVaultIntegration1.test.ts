@@ -440,7 +440,10 @@ describe('WooSuperChargerVault USDC', () => {
       console.log('superCharger reserveBalance: ', utils.formatEther(await superChargerVault.reserveBalance()))
 
       console.log('lendingManager debt: ', utils.formatEther(await lendingManager.debt()))
-      console.log('lendingManager weeklyNeededAmountForWithdraw: ', utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw()))
+      console.log(
+        'lendingManager weeklyNeededAmountForWithdraw: ',
+        utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw())
+      )
 
       // Settle
 
@@ -499,7 +502,10 @@ describe('WooSuperChargerVault USDC', () => {
       console.log('superCharger reserveBalance: ', utils.formatEther(await superChargerVault.reserveBalance()))
 
       console.log('lendingManager debt: ', utils.formatEther(await lendingManager.debt()))
-      console.log('lendingManager weeklyNeededAmountForWithdraw: ', utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw()))
+      console.log(
+        'lendingManager weeklyNeededAmountForWithdraw: ',
+        utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw())
+      )
 
       // Settle
 
@@ -562,7 +568,6 @@ describe('WooSuperChargerVault USDC', () => {
       expect((await withdrawManager.withdrawAmount(owner.address)).div(ONE)).to.eq(40 + 30)
     })
 
-
     it('Integration Test3: multiple deposits and requests withdraw', async () => {
       // Steps:
       // multiple deposits and multiple withdrawals; verify the result.
@@ -604,7 +609,10 @@ describe('WooSuperChargerVault USDC', () => {
       console.log('superCharger reserveBalance: ', utils.formatEther(await superChargerVault.reserveBalance()))
 
       console.log('lendingManager debt: ', utils.formatEther(await lendingManager.debt()))
-      console.log('superChargerVault weeklyNeededAmountForWithdraw: ', utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw()))
+      console.log(
+        'superChargerVault weeklyNeededAmountForWithdraw: ',
+        utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw())
+      )
 
       // Settle
 

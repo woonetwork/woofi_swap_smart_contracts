@@ -53,7 +53,6 @@ import '../interfaces/IVaultV2.sol';
 import './WooWithdrawManager.sol';
 import './WooLendingManager.sol';
 
-
 contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -63,7 +62,12 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     event RequestWithdraw(address indexed user, uint256 assets, uint256 shares);
     event InstantWithdraw(address indexed user, uint256 assets, uint256 shares, uint256 fees);
     event WeeklySettleStarted(address indexed caller, uint256 totalRequestedShares, uint256 weeklyRepayAmount);
-    event WeeklySettleEnded(address indexed caller, uint256 totalBalance, uint256 lendingBalance, uint256 reserveBalance);
+    event WeeklySettleEnded(
+        address indexed caller,
+        uint256 totalBalance,
+        uint256 lendingBalance,
+        uint256 reserveBalance
+    );
     event ReserveVaultMigrated(address indexed user, address indexed oldVault, address indexed newVault);
 
     /* ----- State Variables ----- */
@@ -224,10 +228,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     }
 
     function reserveBalance() public view returns (uint256) {
-        return _assets(
-            IERC20(address(reserveVault)).balanceOf(address(this)),
-            reserveVault.getPricePerFullShare()
-        );
+        return _assets(IERC20(address(reserveVault)).balanceOf(address(this)), reserveVault.getPricePerFullShare());
     }
 
     function lendingBalance() public view returns (uint256) {
@@ -307,10 +308,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         for (uint256 i = 0; i < length; i++) {
             address user = requestUsers.at(0);
 
-            withdrawManager.addWithdrawAmount(
-                user,
-                requestedWithdrawShares[user].mul(sharePrice).div(1e18)
-            );
+            withdrawManager.addWithdrawAmount(user, requestedWithdrawShares[user].mul(sharePrice).div(1e18));
             // withdrawManager.addWithdrawAmount(user, _assets(requestedWithdrawShares[user]));
             // withdrawManager.addWithdrawAmount(user, requestedWithdrawAmount(user));
 
