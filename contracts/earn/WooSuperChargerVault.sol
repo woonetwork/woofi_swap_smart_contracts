@@ -62,7 +62,12 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     event RequestWithdraw(address indexed user, uint256 assets, uint256 shares);
     event InstantWithdraw(address indexed user, uint256 assets, uint256 shares, uint256 fees);
     event WeeklySettleStarted(address indexed caller, uint256 totalRequestedShares, uint256 weeklyRepayAmount);
-    event WeeklySettleEnded(address indexed caller, uint256 totalBalance, uint256 debtBalance, uint256 reserveBalance);
+    event WeeklySettleEnded(
+        address indexed caller,
+        uint256 totalBalance,
+        uint256 lendingBalance,
+        uint256 reserveBalance
+    );
     event ReserveVaultMigrated(address indexed user, address indexed oldVault, address indexed newVault);
 
     /* ----- State Variables ----- */
@@ -226,13 +231,13 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         return _assets(IERC20(address(reserveVault)).balanceOf(address(this)), reserveVault.getPricePerFullShare());
     }
 
-    function debtBalance() public view returns (uint256) {
-        return lendingManager.debt();
+    function lendingBalance() public view returns (uint256) {
+        return lendingManager.debtAfterPerfFee();
     }
 
-    // Returns the total balance (assets), which is avaiable + reserve + debt.
+    // Returns the total balance (assets), which is avaiable + reserve + lending.
     function balance() public view returns (uint256) {
-        return available().add(reserveBalance()).add(debtBalance());
+        return available().add(reserveBalance()).add(lendingBalance());
     }
 
     function getPricePerFullShare() public view returns (uint256) {
@@ -264,7 +269,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
 
     // --- Admin operations --- //
 
-    function weeklyRepayAmount() public view returns (uint256) {
+    function weeklyNeededAmountForWithdraw() public view returns (uint256) {
         uint256 reserveBal = reserveBalance();
         uint256 requestedAmount = requestedTotalAmount();
         uint256 afterBal = balance().sub(requestedAmount);
@@ -279,14 +284,14 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         require(!isSettling);
         isSettling = true;
         lendingManager.accureInterest();
-        uint256 _weeklyRepayAmount = weeklyRepayAmount();
-        lendingManager.setRepayAmount(_weeklyRepayAmount);
-        emit WeeklySettleStarted(msg.sender, 0, _weeklyRepayAmount);
+        emit WeeklySettleStarted(msg.sender, requestedTotalShares, weeklyNeededAmountForWithdraw());
     }
 
     function endWeeklySettle() public onlyAdmin {
         require(isSettling, 'SETTLING');
-        require(lendingManager.weeklyRepayAmount() == 0, 'WEEKLY_REPAY_NEEDED');
+        require(weeklyNeededAmountForWithdraw() == 0, 'WEEKLY_REPAY_NOT_CLEARED');
+
+        uint256 sharePrice = getPricePerFullShare();
 
         isSettling = false;
         uint256 amount = requestedTotalAmount();
@@ -302,7 +307,11 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         uint256 length = requestUsers.length();
         for (uint256 i = 0; i < length; i++) {
             address user = requestUsers.at(0);
-            withdrawManager.addWithdrawAmount(user, requestedWithdrawAmount(user));
+
+            withdrawManager.addWithdrawAmount(user, requestedWithdrawShares[user].mul(sharePrice).div(1e18));
+            // withdrawManager.addWithdrawAmount(user, _assets(requestedWithdrawShares[user]));
+            // withdrawManager.addWithdrawAmount(user, requestedWithdrawAmount(user));
+
             requestedWithdrawShares[user] = 0;
             requestUsers.remove(user);
         }
@@ -315,7 +324,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
         uint256 totalBalance = balance();
         instantWithdrawCap = totalBalance.div(10);
 
-        emit WeeklySettleEnded(msg.sender, totalBalance, lendingManager.debt(), reserveBalance());
+        emit WeeklySettleEnded(msg.sender, totalBalance, lendingBalance(), reserveBalance());
     }
 
     function migrateReserveVault(address _vault) external onlyOwner {
