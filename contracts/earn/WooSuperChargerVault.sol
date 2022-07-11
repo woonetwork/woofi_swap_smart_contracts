@@ -53,6 +53,7 @@ import '../interfaces/IVaultV2.sol';
 import './WooWithdrawManager.sol';
 import './WooLendingManager.sol';
 
+
 contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -61,7 +62,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     event Deposit(address indexed user, uint256 assets, uint256 shares);
     event RequestWithdraw(address indexed user, uint256 assets, uint256 shares);
     event InstantWithdraw(address indexed user, uint256 assets, uint256 shares, uint256 fees);
-    event WeeklySettleStarted(address indexed caller, uint256 totalRequestedShares);
+    event WeeklySettleStarted(address indexed caller, uint256 totalRequestedShares, uint256 weeklyRepayAmount);
     event WeeklySettleEnded(address indexed caller, uint256 totalBalance, uint256 lendingBalance, uint256 reserveBalance);
     event ReserveVaultMigrated(address indexed user, address indexed oldVault, address indexed newVault);
 
@@ -267,7 +268,7 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
 
     // --- Admin operations --- //
 
-    function weeklyNeededRepayAmount() public view returns (uint256) {
+    function weeklyNeededAmountForWithdraw() public view returns (uint256) {
         uint256 reserveBal = reserveBalance();
         uint256 requestedAmount = requestedTotalAmount();
         uint256 afterBal = balance().sub(requestedAmount);
@@ -281,12 +282,13 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     function startWeeklySettle() external onlyAdmin {
         require(!isSettling);
         isSettling = true;
-        emit WeeklySettleStarted(msg.sender, requestedTotalShares);
+        lendingManager.accureInterest();
+        emit WeeklySettleStarted(msg.sender, requestedTotalShares, weeklyNeededAmountForWithdraw());
     }
 
     function endWeeklySettle() public onlyAdmin {
         require(isSettling, 'SETTLING');
-        require(weeklyNeededRepayAmount() == 0, 'WEEKLY_REPAY_NOT_CLEARED');
+        require(weeklyNeededAmountForWithdraw() == 0, 'WEEKLY_REPAY_NOT_CLEARED');
 
         uint256 sharePrice = getPricePerFullShare();
 

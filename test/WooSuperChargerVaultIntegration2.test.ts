@@ -303,7 +303,7 @@ describe('WooSuperChargerVault WFTM', () => {
       console.log('superCharger reserveBalance: ', utils.formatEther(await superChargerVault.reserveBalance()))
 
       console.log('lendingManager debt: ', utils.formatEther(await lendingManager.debt()))
-      console.log('superChargerVault weeklyNeededRepayAmount: ', utils.formatEther(await superChargerVault.weeklyNeededRepayAmount()))
+      console.log('superChargerVault weeklyNeededAmountForWithdraw: ', utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw()))
 
       // Settle
 
@@ -311,18 +311,18 @@ describe('WooSuperChargerVault WFTM', () => {
 
       expect(await superChargerVault.isSettling()).to.eq(true)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(40)
-      expect(await superChargerVault.weeklyNeededRepayAmount()).to.eq(0)
+      expect(await superChargerVault.weeklyNeededAmountForWithdraw()).to.eq(0)
 
       // Repay
 
-      let repayAmount = await superChargerVault.weeklyNeededRepayAmount()
+      let repayAmount = await superChargerVault.weeklyNeededAmountForWithdraw()
       await want.approve(lendingManager.address, repayAmount.mul(2))
       await lendingManager.repayWeekly()
 
       await superChargerVault.endWeeklySettle()
 
       expect(await superChargerVault.isSettling()).to.eq(false)
-      expect(await superChargerVault.weeklyNeededRepayAmount()).to.eq(0)
+      expect(await superChargerVault.weeklyNeededAmountForWithdraw()).to.eq(0)
 
       expect((await superChargerVault.lendingBalance()).div(ONE)).to.eq(50)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(0)
@@ -345,23 +345,24 @@ describe('WooSuperChargerVault WFTM', () => {
       expect(await superChargerVault.isSettling()).to.eq(true)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(30)
       expect((await superChargerVault.lendingBalance()).div(ONE)).to.eq(50)
-      expect((await superChargerVault.weeklyNeededRepayAmount()).div(ONE)).to.eq(23)
+      expect((await superChargerVault.weeklyNeededAmountForWithdraw()).div(ONE)).to.eq(23)
 
       // Repay 23 usdc
 
-      repayAmount = await superChargerVault.weeklyNeededRepayAmount()
+      repayAmount = await superChargerVault.weeklyNeededAmountForWithdraw()
       await want.approve(lendingManager.address, repayAmount.mul(2))
       await lendingManager.repayWeekly()
 
       await superChargerVault.endWeeklySettle()
 
       expect(await superChargerVault.isSettling()).to.eq(false)
-      expect(await superChargerVault.weeklyNeededRepayAmount()).to.eq(0)
+      expect(await superChargerVault.weeklyNeededAmountForWithdraw()).to.eq(0)
 
       expect((await superChargerVault.lendingBalance()).div(ONE)).to.eq(50 - 23)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(0)
 
       expect((await withdrawManager.withdrawAmount(owner.address)).div(ONE)).to.eq(40 + 30)
+      expect(await want.balanceOf(await lendingManager.treasury())).to.gt(0)
 
       // Withdraw
 
@@ -413,7 +414,7 @@ describe('WooSuperChargerVault WFTM', () => {
       console.log('superCharger reserveBalance: ', utils.formatEther(await superChargerVault.reserveBalance()))
 
       console.log('lendingManager debt: ', utils.formatEther(await lendingManager.debt()))
-      console.log('superChargerVault weeklyNeededRepayAmount: ', utils.formatEther(await superChargerVault.weeklyNeededRepayAmount()))
+      console.log('superChargerVault weeklyNeededAmountForWithdraw: ', utils.formatEther(await superChargerVault.weeklyNeededAmountForWithdraw()))
 
       // Settle
 
@@ -424,17 +425,19 @@ describe('WooSuperChargerVault WFTM', () => {
 
       // Repay
 
-      let repayAmount = await superChargerVault.weeklyNeededRepayAmount()
+      let repayAmount = await superChargerVault.weeklyNeededAmountForWithdraw()
       await want.approve(lendingManager.address, repayAmount.mul(2))
       await lendingManager.repayWeekly()
 
       await superChargerVault.endWeeklySettle()
 
       expect(await superChargerVault.isSettling()).to.eq(false)
-      expect(await superChargerVault.weeklyNeededRepayAmount()).to.eq(0)
+      expect(await superChargerVault.weeklyNeededAmountForWithdraw()).to.eq(0)
 
       expect((await superChargerVault.lendingBalance()).div(ONE)).to.eq(50)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(0)
+
+      expect(await want.balanceOf(await lendingManager.treasury())).to.gt(0)
 
       expect((await withdrawManager.withdrawAmount(owner.address)).div(ONE)).to.eq(30)
       expect((await withdrawManager.withdrawAmount(user1.address)).div(ONE)).to.eq(10)

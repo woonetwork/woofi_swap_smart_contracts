@@ -96,7 +96,7 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
     modifier onlyAdmin() {
         require(
             owner() == msg.sender || IWooAccessManager(accessManager).isVaultAdmin(msg.sender),
-            'LendingVault: Not admin'
+            'WooLendingManager: !ADMIN'
         );
         _;
     }
@@ -169,7 +169,7 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         lastAccuredTs = currentTs;
     }
 
-    function setInterestRate(uint256 _rate) external onlyBorrower {
+    function setInterestRate(uint256 _rate) external onlyAdmin {
         accureInterest();
         uint256 oldInterest = interestRate;
         interestRate = _rate;
@@ -198,14 +198,12 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         emit Borrow(msg.sender, amount);
     }
 
-    function repayWeekly() external onlyBorrower returns (uint256 repaidAmount) {
+    function calculateWeeklyRepayment() public returns (uint256 repayAmount) {
         accureInterest();
-        uint256 neededAmount = superChargerVault.weeklyNeededRepayAmount();
+        uint256 neededAmount = superChargerVault.weeklyNeededAmountForWithdraw();
         if (neededAmount == 0) {
             return 0;
         }
-
-        uint256 repayAmount;
         if (neededAmount <= borrowedInterest) {
             repayAmount = neededAmount.mul(10000).div(uint256(10000).sub(perfRate));
         } else {
@@ -214,15 +212,25 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
             );
         }
         repayAmount = repayAmount.add(1);
-        repay(repayAmount);
-        return repayAmount;
+    }
+
+    function repayWeekly() external onlyBorrower returns (uint256 repaidAmount) {
+        repaidAmount = calculateWeeklyRepayment();
+        if (repaidAmount != 0) {
+            repay(repaidAmount);
+        } else {
+            emit Repay(msg.sender, 0, 0);
+        }
     }
 
     function repayAll() external onlyBorrower returns (uint256 repaidAmount) {
         accureInterest();
-        uint256 allDebt = debt();
-        repay(allDebt);
-        return allDebt;
+        repaidAmount = debt();
+        if (repaidAmount != 0) {
+            repay(repaidAmount);
+        } else {
+            emit Repay(msg.sender, 0, 0);
+        }
     }
 
     function repay(uint256 amount) public onlyBorrower {

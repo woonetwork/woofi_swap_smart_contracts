@@ -106,7 +106,9 @@ contract WooWithdrawManager is Ownable, ReentrancyGuard {
 
     function withdraw() external nonReentrant {
         uint256 amount = withdrawAmount[msg.sender];
-        if (amount == 0) return;
+        if (amount == 0) {
+            return;
+        }
         withdrawAmount[msg.sender] = 0;
         if (want == weth) {
             IWETH(weth).withdraw(amount);
