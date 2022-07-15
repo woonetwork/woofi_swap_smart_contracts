@@ -33,7 +33,7 @@ contract StrategyTraderJoeDualLP is BaseStrategy {
     address public lpToken1;
 
     address public constant reward = address(0x6e84a6216eA6dACC71eE8E6b0a5B7322EEbC0fDd); // JOE
-    address public constant secondReward = address(0x8729438EB15e2C8B576fCc6AeCdA6A148776C0F5); // QI
+    address public constant secondReward = address(0x22d4002028f537599bE9f666d1c4Fa138522f9c8); // PTP
     address public constant uniRouter = address(0x60aE616a2155Ee3d9A68541Ba4544862310933d4);
     address public constant masterChef = address(0x188bED1968b795d5c9022F6a0bb5931Ac4c18F00);
 
@@ -160,33 +160,35 @@ contract StrategyTraderJoeDualLP is BaseStrategy {
     function _addLiquidity() private {
         uint256 rewardHalf = IERC20(reward).balanceOf(address(this)).div(2);
         uint256 secondRewardHalf = IERC20(secondReward).balanceOf(address(this)).div(2);
+        if (rewardHalf > 0) {
+            if (lpToken0 != reward) {
+                IUniswapRouter(uniRouter).swapExactTokensForTokens(rewardHalf, 0, rewardToLP0Route, address(this), now);
+            }
 
-        if (lpToken0 != reward) {
-            IUniswapRouter(uniRouter).swapExactTokensForTokens(rewardHalf, 0, rewardToLP0Route, address(this), now);
+            if (lpToken1 != reward) {
+                IUniswapRouter(uniRouter).swapExactTokensForTokens(rewardHalf, 0, rewardToLP1Route, address(this), now);
+            }
         }
+        if (secondRewardHalf > 0) {
+            if (lpToken0 != secondReward) {
+                IUniswapRouter(uniRouter).swapExactTokensForTokens(
+                    secondRewardHalf,
+                    0,
+                    secondRewardToLP0Route,
+                    address(this),
+                    now
+                );
+            }
 
-        if (lpToken1 != reward) {
-            IUniswapRouter(uniRouter).swapExactTokensForTokens(rewardHalf, 0, rewardToLP1Route, address(this), now);
-        }
-
-        if (lpToken0 != secondReward) {
-            IUniswapRouter(uniRouter).swapExactTokensForTokens(
-                secondRewardHalf,
-                0,
-                secondRewardToLP0Route,
-                address(this),
-                now
-            );
-        }
-
-        if (lpToken1 != secondReward) {
-            IUniswapRouter(uniRouter).swapExactTokensForTokens(
-                secondRewardHalf,
-                0,
-                secondRewardToLP1Route,
-                address(this),
-                now
-            );
+            if (lpToken1 != secondReward) {
+                IUniswapRouter(uniRouter).swapExactTokensForTokens(
+                    secondRewardHalf,
+                    0,
+                    secondRewardToLP1Route,
+                    address(this),
+                    now
+                );
+            }
         }
 
         uint256 lp0Balance = IERC20(lpToken0).balanceOf(address(this));
