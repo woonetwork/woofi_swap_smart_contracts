@@ -247,7 +247,8 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     // --- For WooLendingManager --- //
 
     function borrowFromLendingManager(uint256 amount, address fundAddr) external onlyLendingManager {
-        require(!isSettling);
+        require(!isSettling, 'IN SETTLING');
+        require(reserveBalance().sub(instantWithdrawCap.sub(instantWithdrawnAmount)) >= amount, 'INSUFF_AMOUNT_FOR_BORROW');
         uint256 sharesToWithdraw = _sharesUp(amount, reserveVault.getPricePerFullShare());
         reserveVault.withdraw(sharesToWithdraw);
         if (want == weth) {
@@ -281,14 +282,14 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     }
 
     function startWeeklySettle() external onlyAdmin {
-        require(!isSettling);
+        require(!isSettling, 'IN_SETTLING');
         isSettling = true;
         lendingManager.accureInterest();
         emit WeeklySettleStarted(msg.sender, requestedTotalShares, weeklyNeededAmountForWithdraw());
     }
 
     function endWeeklySettle() public onlyAdmin {
-        require(isSettling, 'SETTLING');
+        require(isSettling, '!SETTLING');
         require(weeklyNeededAmountForWithdraw() == 0, 'WEEKLY_REPAY_NOT_CLEARED');
 
         uint256 sharePrice = getPricePerFullShare();
@@ -309,8 +310,6 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
             address user = requestUsers.at(0);
 
             withdrawManager.addWithdrawAmount(user, requestedWithdrawShares[user].mul(sharePrice).div(1e18));
-            // withdrawManager.addWithdrawAmount(user, _assets(requestedWithdrawShares[user]));
-            // withdrawManager.addWithdrawAmount(user, requestedWithdrawAmount(user));
 
             requestedWithdrawShares[user] = 0;
             requestUsers.remove(user);
@@ -349,7 +348,6 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     }
 
     function inCaseTokenGotStuck(address stuckToken) external onlyOwner {
-        require(stuckToken != want);
         if (stuckToken == ETH_PLACEHOLDER_ADDR) {
             TransferHelper.safeTransferETH(msg.sender, address(this).balance);
         } else {

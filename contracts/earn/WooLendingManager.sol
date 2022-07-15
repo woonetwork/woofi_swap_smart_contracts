@@ -198,8 +198,9 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         emit Borrow(msg.sender, amount);
     }
 
-    function calculateWeeklyRepayment() public returns (uint256 repayAmount) {
-        accureInterest();
+    // NOTE: this is the view functiono;
+    // Remember to call the accureInterest to ensure the latest repayment state.
+    function weeklyRepayment() public view returns (uint256 repayAmount) {
         uint256 neededAmount = superChargerVault.weeklyNeededAmountForWithdraw();
         if (neededAmount == 0) {
             return 0;
@@ -214,8 +215,31 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         repayAmount = repayAmount.add(1);
     }
 
+    function weeklyRepaymentBreakdown() public view
+        returns (uint256 repayAmount, uint256 principal, uint256 interest, uint256 perfFee) {
+
+        uint256 neededAmount = superChargerVault.weeklyNeededAmountForWithdraw();
+        if (neededAmount == 0) {
+            return (0, 0, 0, 0);
+        }
+        if (neededAmount <= borrowedInterest) {
+            repayAmount = neededAmount.mul(10000).div(uint256(10000).sub(perfRate));
+            principal = 0;
+            interest = neededAmount;
+        } else {
+            repayAmount = neededAmount.sub(borrowedInterest).add(
+                borrowedInterest.mul(10000).div(uint256(10000).sub(perfRate))
+            );
+            principal = neededAmount.sub(borrowedInterest);
+            interest = borrowedInterest;
+        }
+        repayAmount = repayAmount.add(1);
+        perfFee = repayAmount.sub(neededAmount);
+    }
+
     function repayWeekly() external onlyBorrower returns (uint256 repaidAmount) {
-        repaidAmount = calculateWeeklyRepayment();
+        accureInterest();
+        repaidAmount = weeklyRepayment();
         if (repaidAmount != 0) {
             repay(repaidAmount);
         } else {
@@ -264,7 +288,6 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
     }
 
     function inCaseTokenGotStuck(address stuckToken) external onlyOwner {
-        require(stuckToken != want);
         if (stuckToken == ETH_PLACEHOLDER_ADDR) {
             TransferHelper.safeTransferETH(msg.sender, address(this).balance);
         } else {
