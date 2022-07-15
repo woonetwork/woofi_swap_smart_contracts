@@ -215,9 +215,16 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         repayAmount = repayAmount.add(1);
     }
 
-    function weeklyRepaymentBreakdown() public view
-        returns (uint256 repayAmount, uint256 principal, uint256 interest, uint256 perfFee) {
-
+    function weeklyRepaymentBreakdown()
+        public
+        view
+        returns (
+            uint256 repayAmount,
+            uint256 principal,
+            uint256 interest,
+            uint256 perfFee
+        )
+    {
         uint256 neededAmount = superChargerVault.weeklyNeededAmountForWithdraw();
         if (neededAmount == 0) {
             return (0, 0, 0, 0);

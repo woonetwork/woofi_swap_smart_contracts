@@ -248,7 +248,10 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
 
     function borrowFromLendingManager(uint256 amount, address fundAddr) external onlyLendingManager {
         require(!isSettling, 'IN SETTLING');
-        require(reserveBalance().sub(instantWithdrawCap.sub(instantWithdrawnAmount)) >= amount, 'INSUFF_AMOUNT_FOR_BORROW');
+        require(
+            reserveBalance().sub(instantWithdrawCap.sub(instantWithdrawnAmount)) >= amount,
+            'INSUFF_AMOUNT_FOR_BORROW'
+        );
         uint256 sharesToWithdraw = _sharesUp(amount, reserveVault.getPricePerFullShare());
         reserveVault.withdraw(sharesToWithdraw);
         if (want == weth) {
