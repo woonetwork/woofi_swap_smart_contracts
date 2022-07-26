@@ -301,7 +301,6 @@ describe('WooSuperChargerVault WFTM', () => {
       await lendingManager.borrow(utils.parseEther('20')) // borrow 20 want token
       await lendingManager.borrow(utils.parseEther('30')) // borrow 30 want token
 
-
       expect((await superChargerVault.lendingBalance()).div(ONE)).to.eq(50)
       expect((await superChargerVault.balance()).div(ONE)).to.eq(100)
       expect((await superChargerVault.requestedTotalAmount()).div(ONE)).to.eq(40)
