@@ -170,6 +170,7 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
     }
 
     function setInterestRate(uint256 _rate) external onlyAdmin {
+        require(_rate <= 30000, 'RATE_INVALID'); // NOTE: rate < 300%
         accureInterest();
         uint256 oldInterest = interestRate;
         interestRate = _rate;
@@ -181,8 +182,12 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         treasury = _treasury;
     }
 
+    function maxBorrowableAmount() external view returns (uint256) {
+        return superChargerVault.maxBorrowableAmount();
+    }
+
     function borrow(uint256 amount) external onlyBorrower {
-        require(amount > 0);
+        require(amount > 0, '!AMOUNT');
 
         accureInterest();
         borrowedPrincipal = borrowedPrincipal.add(amount);
