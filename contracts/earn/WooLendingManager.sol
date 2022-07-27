@@ -137,18 +137,20 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
         return borrowedPrincipal.add(borrowedInterest).sub(perfFee);
     }
 
-    function debtState()
+    function borrowState()
         external
         view
         returns (
             uint256 total,
             uint256 principal,
-            uint256 interest
+            uint256 interest,
+            uint256 borrowable
         )
     {
         total = debt();
         principal = borrowedPrincipal;
         interest = borrowedInterest;
+        borrowable = superChargerVault.maxBorrowableAmount();
     }
 
     function accureInterest() public {
