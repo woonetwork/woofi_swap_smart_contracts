@@ -170,7 +170,7 @@ contract WooLendingManager is Ownable, ReentrancyGuard {
     }
 
     function setInterestRate(uint256 _rate) external onlyAdmin {
-        require(_rate <= 30000, 'RATE_INVALID'); // NOTE: rate < 300%
+        require(_rate <= 50000, 'RATE_INVALID'); // NOTE: rate < 500%
         accureInterest();
         uint256 oldInterest = interestRate;
         interestRate = _rate;

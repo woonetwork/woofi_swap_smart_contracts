@@ -291,7 +291,7 @@ describe('WooSuperChargerVault WFTM', () => {
       await lendingManager.setBorrower(owner.address, true)
       await lendingManager.setInterestRate(1000) // APR - 10%
 
-      await expect(lendingManager.setInterestRate(30001)).to.be.revertedWith('RATE_INVALID')
+      await expect(lendingManager.setInterestRate(50001)).to.be.revertedWith('RATE_INVALID')
 
       // 100-10=90 to borrow
       await expect(lendingManager.borrow(utils.parseEther('100'))).to.be.revertedWith('INSUFF_AMOUNT_FOR_BORROW')
