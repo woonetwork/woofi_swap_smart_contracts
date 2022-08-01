@@ -302,27 +302,31 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
 
         isSettling = false;
         uint256 amount = requestedTotalAmount();
-        uint256 shares = _sharesUp(amount, reserveVault.getPricePerFullShare());
-        reserveVault.withdraw(shares);
 
-        if (want == weth) {
-            IWETH(weth).deposit{value: amount}();
+        if (amount != 0) {
+            uint256 shares = _sharesUp(amount, reserveVault.getPricePerFullShare());
+            reserveVault.withdraw(shares);
+
+            if (want == weth) {
+                IWETH(weth).deposit{value: amount}();
+            }
+            require(available() >= amount);
+
+            TransferHelper.safeApprove(want, address(withdrawManager), amount);
+            uint256 length = requestUsers.length();
+            for (uint256 i = 0; i < length; i++) {
+                address user = requestUsers.at(0);
+
+                withdrawManager.addWithdrawAmount(user, requestedWithdrawShares[user].mul(sharePrice).div(1e18));
+
+                requestedWithdrawShares[user] = 0;
+                requestUsers.remove(user);
+            }
+
+            _burn(address(this), requestedTotalShares);
+            requestedTotalShares = 0;
         }
-        require(available() >= amount);
 
-        TransferHelper.safeApprove(want, address(withdrawManager), amount);
-        uint256 length = requestUsers.length();
-        for (uint256 i = 0; i < length; i++) {
-            address user = requestUsers.at(0);
-
-            withdrawManager.addWithdrawAmount(user, requestedWithdrawShares[user].mul(sharePrice).div(1e18));
-
-            requestedWithdrawShares[user] = 0;
-            requestUsers.remove(user);
-        }
-
-        _burn(address(this), requestedTotalShares);
-        requestedTotalShares = 0;
         instantWithdrawnAmount = 0;
 
         lendingManager.accureInterest();
