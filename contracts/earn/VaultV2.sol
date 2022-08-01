@@ -106,7 +106,9 @@ contract WOOFiVaultV2 is IVaultV2, ERC20, Ownable, ReentrancyGuard {
     /* ----- External Functions ----- */
 
     function deposit(uint256 amount) public payable override nonReentrant {
-        require(amount > 0, 'WOOFiVaultV2: amount_CAN_NOT_BE_ZERO');
+        if (amount == 0) {
+            return;
+        }
 
         if (want == weth) {
             require(msg.value == amount, 'WOOFiVaultV2: msg.value_INSUFFICIENT');
@@ -140,7 +142,10 @@ contract WOOFiVaultV2 is IVaultV2, ERC20, Ownable, ReentrancyGuard {
     }
 
     function withdraw(uint256 shares) public override nonReentrant {
-        require(shares > 0, 'WOOFiVaultV2: shares_ZERO');
+        if (shares == 0) {
+            return;
+        }
+
         require(shares <= balanceOf(msg.sender), 'WOOFiVaultV2: shares_NOT_ENOUGH');
 
         if (address(strategy) != address(0)) {
