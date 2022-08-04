@@ -305,7 +305,6 @@ describe('WooSuperChargerVault USDC', () => {
       expect(await superChargerVault.isSettling()).to.eq(false)
     })
 
-
     it('Integration Test3: request withdraw amount exceeds MAX', async () => {
       let amount = utils.parseEther('100')
       await want.approve(superChargerVault.address, amount)
@@ -325,7 +324,6 @@ describe('WooSuperChargerVault USDC', () => {
       expect(await superChargerVault.balanceOf(owner.address)).to.eq(0)
       expect(await superChargerVault.balance()).to.eq(amount)
       expect(await superChargerVault.reserveBalance()).to.eq(amount)
-
     })
 
     it('Integration Test4: instant withdraw amount exceeds MAX', async () => {
@@ -339,14 +337,15 @@ describe('WooSuperChargerVault USDC', () => {
 
       await expect(superChargerVault.instantWithdraw(0)).to.be.revertedWith('WooSuperChargerVault: !amount')
       await expect(superChargerVault.instantWithdraw(amount)).to.be.revertedWith('WooSuperChargerVault: OUT_OF_CAP')
-      await expect(superChargerVault.instantWithdraw(amount.div(10).add(1))).to.be.revertedWith('WooSuperChargerVault: OUT_OF_CAP')
+      await expect(superChargerVault.instantWithdraw(amount.div(10).add(1))).to.be.revertedWith(
+        'WooSuperChargerVault: OUT_OF_CAP'
+      )
 
       await superChargerVault.instantWithdraw(amount.div(10))
       let leftBal = amount.sub(amount.div(10))
       expect(await superChargerVault.balanceOf(owner.address)).to.eq(leftBal)
       expect(await superChargerVault.balance()).to.eq(leftBal)
       expect(await superChargerVault.reserveBalance()).to.eq(leftBal)
-
     })
 
     it('Integration Test5: request and instant withdraw NOT ALLOWED during settling', async () => {
@@ -360,7 +359,9 @@ describe('WooSuperChargerVault USDC', () => {
 
       await expect(superChargerVault.instantWithdraw(0)).to.be.revertedWith('WooSuperChargerVault: !amount')
       await expect(superChargerVault.instantWithdraw(amount)).to.be.revertedWith('WooSuperChargerVault: OUT_OF_CAP')
-      await expect(superChargerVault.instantWithdraw(amount.div(10).add(1))).to.be.revertedWith('WooSuperChargerVault: OUT_OF_CAP')
+      await expect(superChargerVault.instantWithdraw(amount.div(10).add(1))).to.be.revertedWith(
+        'WooSuperChargerVault: OUT_OF_CAP'
+      )
 
       await superChargerVault.instantWithdraw(amount.div(10))
       let leftBal = amount.sub(amount.div(10))
@@ -372,8 +373,12 @@ describe('WooSuperChargerVault USDC', () => {
 
       expect(await superChargerVault.isSettling()).to.eq(true)
 
-      await expect(superChargerVault.requestWithdraw(utils.parseEther('1'))).to.be.revertedWith('WooSuperChargerVault: CANNOT_WITHDRAW_IN_SETTLING')
-      await expect(superChargerVault.instantWithdraw(utils.parseEther('0.5'))).to.be.revertedWith('WooSuperChargerVault: NOT_ALLOWED_IN_SETTLING')
+      await expect(superChargerVault.requestWithdraw(utils.parseEther('1'))).to.be.revertedWith(
+        'WooSuperChargerVault: CANNOT_WITHDRAW_IN_SETTLING'
+      )
+      await expect(superChargerVault.instantWithdraw(utils.parseEther('0.5'))).to.be.revertedWith(
+        'WooSuperChargerVault: NOT_ALLOWED_IN_SETTLING'
+      )
 
       await expect(superChargerVault.startWeeklySettle()).to.be.revertedWith('IN_SETTLING')
 
@@ -504,6 +509,5 @@ describe('WooSuperChargerVault USDC', () => {
       expect((await superChargerVault.weeklyNeededAmountForWithdraw()).div(ONE)).to.eq(0)
       expect(await superChargerVault.weeklyNeededAmountForWithdraw()).to.eq(0)
     })
-
   })
 })
