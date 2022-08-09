@@ -118,6 +118,7 @@ contract StrategySpookySwapLPV2 is BaseStrategy {
         }
 
         // just in case the decimal precision for the very left staking amount
+        require(wantBalance >= amount.mul(999).div(1000), 'StrategySpookySwapLPV2: WITHDRAW_INSUFF_AMOUNT');
         uint256 withdrawAmount = amount < wantBalance ? amount : wantBalance;
 
         uint256 fee = chargeWithdrawalFee(withdrawAmount);
@@ -194,18 +195,10 @@ contract StrategySpookySwapLPV2 is BaseStrategy {
 
     function retireStrat() external override {
         require(msg.sender == vault, 'StrategySpookySwapLPV2: NOT_VAULT');
-        IMasterChefV2(masterChefV2).emergencyWithdraw(pid, address(this));
-        uint256 wantBalance = IERC20(want).balanceOf(address(this));
-        if (wantBalance > 0) {
-            TransferHelper.safeTransfer(want, vault, wantBalance);
-        }
+        IMasterChefV2(masterChefV2).emergencyWithdraw(pid, vault);
     }
 
     function emergencyExit() external override onlyAdmin {
-        IMasterChefV2(masterChefV2).emergencyWithdraw(pid, address(this));
-        uint256 wantBalance = IERC20(want).balanceOf(address(this));
-        if (wantBalance > 0) {
-            TransferHelper.safeTransfer(want, vault, wantBalance);
-        }
+        IMasterChefV2(masterChefV2).emergencyWithdraw(pid, vault);
     }
 }
