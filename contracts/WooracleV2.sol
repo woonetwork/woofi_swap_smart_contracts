@@ -44,17 +44,17 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     /* ----- State variables ----- */
 
     // Oracle addresses for BSC
-    address public btcOracle = 0x264990fbd0A4796A3E3d8E37C4d5F87a3aCa5Ebf;    // decimal: 8
-    address public ethOracle = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e;    // decimal: 8
-    address public bnbOracle = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE;    // decimal: 8
-    address public wooOracle = 0x02Bfe714e78E2Ad1bb1C2beE93eC8dc5423B66d4;    // decimal: 8
+    address public btcOracle = 0x264990fbd0A4796A3E3d8E37C4d5F87a3aCa5Ebf; // decimal: 8
+    address public ethOracle = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e; // decimal: 8
+    address public bnbOracle = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE; // decimal: 8
+    address public wooOracle = 0x02Bfe714e78E2Ad1bb1C2beE93eC8dc5423B66d4; // decimal: 8
 
-    address public quoteOracle = 0xB97Ad0E74fa7d920791E90258A6E2085088b4320;  // USDT/USD, 8
+    address public quoteOracle = 0xB97Ad0E74fa7d920791E90258A6E2085088b4320; // USDT/USD, 8
 
     // 128 + 64 + 64 = 256 bits (slot size)
     struct TokenInfo {
         uint64 price; // as chainlink oracle (e.g. decimal = 8)
-        uint64 coeff;  // 18.
+        uint64 coeff; // 18.
         uint64 spread; // 18. spread <= 2e18   (2^64 = 1.84e19)
     }
 
@@ -81,7 +81,6 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     /// @param _oracle the token address
     function setQuoteToken(address _quote, address _oracle) external onlyOwner {
         quoteToken = newQuoteToken;
-
     }
 
     function decimals(address base) external view returns (uint8) {
