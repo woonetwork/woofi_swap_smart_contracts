@@ -66,7 +66,8 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     uint256 public staleDuration;
 
     mapping(address => bool) public wooFeasible;
-    mapping(address => uint8) public decimals;
+    mapping(address => bool) public clFeasible;
+    mapping(address => uint8) public override decimals;
 
     constructor() public {
         initOwner(msg.sender);
@@ -80,13 +81,13 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     /// @dev Set the quote token address.
     /// @param _oracle the token address
     function setQuoteToken(address _quote, address _oracle) external onlyOwner {
-        quoteToken = newQuoteToken;
+        // quoteToken = newQuoteToken;
     }
 
-    function decimals(address base) external view returns (uint8) {
-        uint8 d = decimals[base];
-        return d == 0 ? 8 : d;
-    }
+    // function decimals(address base) external view returns (uint8) {
+    //     uint8 d = decimals[base];
+    //     return d == 0 ? 8 : d;
+    // }
 
     /// @dev Set the staleDuration.
     /// @param newStaleDuration the new stale duration
@@ -98,7 +99,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     /// @param base the baseToken address
     /// @param newPrice the new prices for the base token
     function postPrice(address base, uint128 newPrice) external onlyOwner {
-        infos[base].price = newPrice;
+        infos[base].price = uint64(newPrice);
         timestamp = block.timestamp;
     }
 
@@ -110,7 +111,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         require(length == newPrices.length, 'Wooracle: length_INVALID');
 
         for (uint256 i = 0; i < length; i++) {
-            infos[bases[i]].price = newPrices[i];
+            infos[bases[i]].price = uint64(newPrices[i]);
         }
 
         timestamp = block.timestamp;
@@ -171,42 +172,25 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         timestamp = block.timestamp;
     }
 
-    function price(address base) external view override returns (uint256 priceNow, bool feasible) {
-        priceNow = uint256(infos[base].price);
-        feasible = priceNow != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
+    // function price(address base) external view override returns (uint256 priceNow, bool feasible) {
+    //     priceNow = uint256(infos[base].price);
+    //     feasible = priceNow != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
+    //     return (priceNow, feasible);
+    // }
+
+    function price(address base) external view override returns (uint256 priceNow, uint256 timestampNow) {
+        return (uint256(infos[base].price), 0);
     }
 
-    function price(address base) external view override returns (uint256) {
-        return uint256(infos[base].price);
-    }
-
-    function spread(address base) external view override returns (uint256) {
+    function spread(address base) external view returns (uint256) {
         return uint256(infos[base].spread);
     }
 
-    function coeff(address base) external view override returns (uint256) {
+    function coeff(address base) external view returns (uint256) {
         return uint256(infos[base].coeff);
     }
 
-    function state(address base)
-        external
-        view
-        override
-        returns (
-            uint256 priceNow,
-            uint256 spreadNow,
-            uint256 coeffNow,
-            bool feasible
-        )
-    {
-        TokenInfo storage info = infos[base];
-        priceNow = uint256(info.price);
-        spreadNow = uint256(info.spread);
-        coeffNow = uint256(info.coeff);
-        feasible = priceNow != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
-    }
-
-    function isFeasible(address base) public view override returns (bool) {
+    function isFeasible(address base) public view returns (bool) {
         return infos[base].price != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
     }
 
@@ -227,8 +211,43 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         uint64 newCoeff
     ) private {
         TokenInfo storage info = infos[base];
-        info.price = newPrice;
+        info.price = uint64(newPrice);
         info.spread = newSpread;
         info.coeff = newCoeff;
+    }
+
+    function cloPrice(address base) external view override returns (uint256 priceNow, uint256 timestampNow) {
+        return (0, 0);
+    }
+
+    function isWoFeasible(address base) external view override returns (bool) {
+        return true;
+    }
+
+    function woSpread(address base) external view override returns (uint256) {
+        return 0;
+    }
+
+    function woCoeff(address base) external view override returns (uint256) {
+        return 0;
+    }
+
+    // Wooracle price of the base token
+    function woPrice(address base) external view override returns (uint256 priceNow, uint256 timestampNow) {
+        return (0, 0);
+    }
+
+    function woState(address base) external view override returns (
+        uint256 priceNow,
+        uint256 spreadNow,
+        uint256 coeffNow,
+        uint256 timestampNow
+    ) {
+        return (0, 0, 0, 0);
+    }
+
+    function cloAddress(address base) external view override returns (address clo) {
+        clo = 0x02Bfe714e78E2Ad1bb1C2beE93eC8dc5423B66d4;
+        return clo;
     }
 }

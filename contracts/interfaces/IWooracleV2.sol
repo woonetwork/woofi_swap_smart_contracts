@@ -38,6 +38,12 @@ pragma experimental ABIEncoderV2;
 /// @title The oracle V2 interface by Woo.Network.
 /// @notice update and posted the latest price info by Woo.
 interface IWooracleV2 {
+    // function woPrice(address base) external view returns (uint256);
+
+    function woSpread(address base) external view returns (uint256);
+
+    function woCoeff(address base) external view returns (uint256);
+
     // Wooracle price of the base token
     function woPrice(address base) external view returns (uint256 price, uint256 timestamp);
 
@@ -57,7 +63,7 @@ interface IWooracleV2 {
     function cloAddress(address base) external view returns (address clo);
 
     // Returns Woooracle price if available, otherwise fallback to ChainLink
-    function price(address base) external view returns (uint256 price, uint256 timestamp);
+    function price(address base) external view returns (uint256 priceNow, uint256 timestamp);
 
     function decimals(address base) external view returns (uint8);
 

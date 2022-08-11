@@ -35,8 +35,8 @@ import { expect, use } from 'chai'
 import { ethers } from 'hardhat'
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { Wooracle } from '../typechain'
-import WooracleArtifact from '../artifacts/contracts/Wooracle_BSC.sol/Wooracle.json'
+import { WooracleV2 } from '../typechain'
+import WooracleArtifact from '../artifacts/contracts/WooracleV2.sol/WooracleV2.json'
 
 async function getCurrentBlockTimestamp() {
   let blockNum = await ethers.provider.getBlockNumber()
@@ -44,7 +44,7 @@ async function getCurrentBlockTimestamp() {
   return block.timestamp
 }
 
-async function checkWooracleTimestamp(wooracle: Wooracle) {
+async function checkWooracleTimestamp(wooracle: WooracleV2) {
   let currentBlockTimestamp = await getCurrentBlockTimestamp()
   expect(await wooracle.timestamp()).to.gte(currentBlockTimestamp)
 }
@@ -55,11 +55,11 @@ describe('Wooracle', () => {
   let anotherBaseToken: SignerWithAddress
   let quoteToken: SignerWithAddress
 
-  let wooracle: Wooracle
+  let wooracle: WooracleV2
 
   beforeEach(async () => {
     ;[owner, baseToken, anotherBaseToken, quoteToken] = await ethers.getSigners()
-    wooracle = (await deployContract(owner, WooracleArtifact, [])) as Wooracle
+    wooracle = (await deployContract(owner, WooracleArtifact, [])) as WooracleV2
   })
 
   it('Init with correct owner', async () => {
