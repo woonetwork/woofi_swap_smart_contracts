@@ -237,12 +237,17 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         return (0, 0);
     }
 
-    function woState(address base) external view override returns (
-        uint256 priceNow,
-        uint256 spreadNow,
-        uint256 coeffNow,
-        uint256 timestampNow
-    ) {
+    function woState(address base)
+        external
+        view
+        override
+        returns (
+            uint256 priceNow,
+            uint256 spreadNow,
+            uint256 coeffNow,
+            uint256 timestampNow
+        )
+    {
         return (0, 0, 0, 0);
     }
 
