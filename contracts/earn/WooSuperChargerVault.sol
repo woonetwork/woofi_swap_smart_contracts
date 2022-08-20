@@ -147,10 +147,14 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     /* ----- External Functions ----- */
 
     function deposit(uint256 amount) external payable whenNotPaused nonReentrant {
-        require(amount > 0, 'WooSuperChargerVault: !amount');
+        // require(amount > 0, 'WooSuperChargerVault: !amount');
+        if (amount == 0) {
+            return;
+        }
 
         lendingManager.accureInterest();
         uint256 shares = _shares(amount, getPricePerFullShare());
+        require(shares > 0, '!shares');
 
         uint256 sharesBefore = balanceOf(msg.sender);
         uint256 costBefore = costSharePrice[msg.sender];
@@ -165,7 +169,6 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
             TransferHelper.safeApprove(want, address(reserveVault), amount);
             reserveVault.deposit(amount);
         }
-
         _mint(msg.sender, shares);
 
         instantWithdrawCap = instantWithdrawCap.add(amount.div(10));

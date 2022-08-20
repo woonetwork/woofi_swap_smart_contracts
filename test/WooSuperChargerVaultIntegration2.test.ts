@@ -216,7 +216,6 @@ describe('WooSuperChargerVault WFTM', () => {
       expect(await superChargerVault.instantWithdrawCap()).to.eq(cap)
       expect(await superChargerVault.instantWithdrawnAmount()).to.eq(0)
 
-      await expect(superChargerVault.deposit(0)).to.be.revertedWith('WooSuperChargerVault: !amount')
       await expect(superChargerVault.instantWithdraw(0)).to.be.revertedWith('WooSuperChargerVault: !amount')
       await expect(superChargerVault.instantWithdraw(amount.div(2))).to.be.revertedWith(
         'WooSuperChargerVault: OUT_OF_CAP'
