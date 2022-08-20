@@ -70,6 +70,10 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     );
     event ReserveVaultMigrated(address indexed user, address indexed oldVault, address indexed newVault);
 
+    event LendingManagerUpdated(address formerLendingManager, address newLendingManager);
+    event WithdrawManagerUpdated(address formerWithdrawManager, address newWithdrawManager);
+    event InstantWithdrawFeeRateUpdated(uint256 formerFeeRate, uint256 newFeeRate);
+
     /* ----- State Variables ----- */
 
     address constant ETH_PLACEHOLDER_ADDR = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -367,11 +371,15 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     }
 
     function setLendingManager(address _lendingManager) external onlyOwner {
+        address formerManager = address(lendingManager);
         lendingManager = WooLendingManager(_lendingManager);
+        emit LendingManagerUpdated(formerManager, _lendingManager);
     }
 
     function setWithdrawManager(address payable _withdrawManager) external onlyOwner {
+        address formerManager = address(withdrawManager);
         withdrawManager = WooWithdrawManager(_withdrawManager);
+        emit WithdrawManagerUpdated(formerManager, _withdrawManager);
     }
 
     function setTreasury(address _treasury) external onlyOwner {
@@ -379,7 +387,9 @@ contract WooSuperChargerVault is ERC20, Ownable, Pausable, ReentrancyGuard {
     }
 
     function setInstantWithdrawFeeRate(uint256 _feeRate) external onlyOwner {
+        uint256 formerFeeRate = instantWithdrawFeeRate;
         instantWithdrawFeeRate = _feeRate;
+        emit InstantWithdrawFeeRateUpdated(formerFeeRate, _feeRate);
     }
 
     function pause() public onlyAdmin {
