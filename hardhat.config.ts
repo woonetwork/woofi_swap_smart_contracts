@@ -105,7 +105,7 @@ export default {
     apiKey: process.env.BSC_API,
   },
   mocha: {
-    timeout: 10000,
+    timeout: 20000,
   },
   gasReporter: {
     currency: 'AVAX',

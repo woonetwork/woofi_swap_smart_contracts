@@ -546,8 +546,8 @@ describe('WooStakingVault Access Control & Require Check', () => {
     ).to.be.revertedWith(initialWooAccessManagerZeroAddressMessage)
   })
 
-  it('deposit will be reverted when amount equal to zero', async () => {
-    await expect(wooStakingVault.connect(user).deposit(BN_ZERO)).to.be.revertedWith(depositAmountEqualToZeroMessage)
+  it('deposit will be okay when amount equal to zero', async () => {
+    await wooStakingVault.connect(user).deposit(BN_ZERO)
   })
 
   it('reserveWithdraw will be reverted when shares equal to zero', async () => {
