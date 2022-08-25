@@ -157,5 +157,4 @@ describe('Wooracle', () => {
     isWoFeasible = await wooracle.isWoFeasible(baseToken.address)
     expect(isWoFeasible).to.eq(true)
   })
-
 })

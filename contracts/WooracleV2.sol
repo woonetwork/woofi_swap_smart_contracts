@@ -42,7 +42,7 @@ import './interfaces/AggregatorV3Interface.sol';
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import "hardhat/console.sol";
+import 'hardhat/console.sol';
 
 /// @title Wooracle V2 contract
 contract WooracleV2 is InitializableOwnable, IWooracleV2 {
@@ -192,7 +192,8 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         (uint256 cloPrice, uint256 cloPriceTimestamp) = _refPrice(base, quoteToken);
 
         bool checkWoFeasible = woPrice != 0 && block.timestamp <= (woPriceTimestamp + staleDuration);
-        bool checkWoBound = cloPrice == 0 || (cloPrice.mulFloor(1e18 - bound) <= woPrice && woPrice <= cloPrice.mulCeil(1e18 + bound));
+        bool checkWoBound = cloPrice == 0 ||
+            (cloPrice.mulFloor(1e18 - bound) <= woPrice && woPrice <= cloPrice.mulCeil(1e18 + bound));
 
         // console.log('checkWoFeasible: %s checkWoBound: %s', checkWoFeasible, checkWoBound);
 
@@ -275,10 +276,11 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         info.coeff = newCoeff;
     }
 
-    function _refPrice(
-        address fromToken,
-        address toToken
-    ) private view returns (uint256 refPrice, uint256 refTimestamp) {
+    function _refPrice(address fromToken, address toToken)
+        private
+        view
+        returns (uint256 refPrice, uint256 refTimestamp)
+    {
         address baseOracle = clOracles[fromToken].oracle;
         if (baseOracle == address(0)) {
             return (0, 0);
@@ -295,7 +297,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         // console.log('Base oracle: %s %s', baseOracle, baseDecimal);
         // console.log('Quote oracle: %s %s', quoteOracle, quoteDecimal);
         // NOTE: Assume wooracle token decimal is same as chainlink token decimal.
-        uint256 ceoff = uint256(10) ** uint256(quoteDecimal);
+        uint256 ceoff = uint256(10)**uint256(quoteDecimal);
         refPrice = baseRefPrice.mul(ceoff).div(quoteRefPrice);
         refTimestamp = baseUpdatedAt >= quoteUpdatedAt ? quoteUpdatedAt : baseUpdatedAt;
     }

@@ -9,7 +9,7 @@ contract TestChainLink is AggregatorV3Interface, Ownable {
         return 8;
     }
 
-    function description() external view  override returns (string memory) {
+    function description() external view override returns (string memory) {
         return 'BTC / USD';
     }
 
@@ -20,13 +20,18 @@ contract TestChainLink is AggregatorV3Interface, Ownable {
     /// getRoundData and latestRoundData should both raise "No data present"
     /// if they do not have data to report, instead of returning unset values
     /// which could be misinterpreted as actual reported values.
-    function getRoundData(uint80 _roundId) external view override returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    ) {
+    function getRoundData(uint80 _roundId)
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
         return (36893488147419375519, 2119577093131, 1661310103, 1661310103, 36893488147419375519);
     }
 
@@ -40,9 +45,10 @@ contract TestChainLink is AggregatorV3Interface, Ownable {
             uint256 startedAt,
             uint256 updatedAt,
             uint80 answeredInRound
-        ) {
-            return (36893488147419375519, 2119577093131, 1661310103, 1661310103, 36893488147419375519);
-        }
+        )
+    {
+        return (36893488147419375519, 2119577093131, 1661310103, 1661310103, 36893488147419375519);
+    }
 }
 
 contract TestQuoteChainLink is AggregatorV3Interface, Ownable {
@@ -50,7 +56,7 @@ contract TestQuoteChainLink is AggregatorV3Interface, Ownable {
         return 8;
     }
 
-    function description() external view  override returns (string memory) {
+    function description() external view override returns (string memory) {
         return 'USDT / USD';
     }
 
@@ -61,13 +67,18 @@ contract TestQuoteChainLink is AggregatorV3Interface, Ownable {
     /// getRoundData and latestRoundData should both raise "No data present"
     /// if they do not have data to report, instead of returning unset values
     /// which could be misinterpreted as actual reported values.
-    function getRoundData(uint80 _roundId) external view override returns (
-        uint80 roundId,
-        int256 answer,
-        uint256 startedAt,
-        uint256 updatedAt,
-        uint80 answeredInRound
-    ) {
+    function getRoundData(uint80 _roundId)
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
         return (36893488147419109665, 99994997, 1661309776, 1661309776, 36893488147419109665);
     }
 
@@ -81,7 +92,8 @@ contract TestQuoteChainLink is AggregatorV3Interface, Ownable {
             uint256 startedAt,
             uint256 updatedAt,
             uint80 answeredInRound
-        ) {
-            return (36893488147419109665, 99994997, 1661309776, 1661309776, 36893488147419109665);
-        }
+        )
+    {
+        return (36893488147419109665, 99994997, 1661309776, 1661309776, 36893488147419109665);
+    }
 }
