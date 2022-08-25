@@ -36,42 +36,49 @@ pragma experimental ABIEncoderV2;
 */
 
 import './libraries/InitializableOwnable.sol';
+import './libraries/DecimalMath.sol';
 import './interfaces/IWooracleV2.sol';
+import './interfaces/AggregatorV3Interface.sol';
+
+import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
+import 'hardhat/console.sol';
 
 /// @title Wooracle V2 contract
 contract WooracleV2 is InitializableOwnable, IWooracleV2 {
+    using SafeMath for uint256;
+    using DecimalMath for uint256;
     /* ----- State variables ----- */
-
-    // Oracle addresses for BSC
-    address public btcOracle = 0x264990fbd0A4796A3E3d8E37C4d5F87a3aCa5Ebf; // decimal: 8
-    address public ethOracle = 0x9ef1B8c0E4F7dc8bF5719Ea496883DC6401d5b2e; // decimal: 8
-    address public bnbOracle = 0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE; // decimal: 8
-    address public wooOracle = 0x02Bfe714e78E2Ad1bb1C2beE93eC8dc5423B66d4; // decimal: 8
-
-    address public quoteOracle = 0xB97Ad0E74fa7d920791E90258A6E2085088b4320; // USDT/USD, 8
 
     // 128 + 64 + 64 = 256 bits (slot size)
     struct TokenInfo {
-        uint64 price; // as chainlink oracle (e.g. decimal = 8)
+        uint128 price; // as chainlink oracle (e.g. decimal = 8)
         uint64 coeff; // 18.
         uint64 spread; // 18. spread <= 2e18   (2^64 = 1.84e19)
     }
 
+    struct CLOracle {
+        address oracle;
+        uint8 decimal;
+    }
+
     mapping(address => TokenInfo) public infos;
+
+    mapping(address => CLOracle) public clOracles; // token to chainlink oracle.
 
     address public override quoteToken;
     uint256 public override timestamp;
 
     uint256 public staleDuration;
+    uint64 public bound;
 
     mapping(address => bool) public wooFeasible;
     mapping(address => bool) public clFeasible;
-    mapping(address => uint8) public override decimals;
 
     constructor() public {
         initOwner(msg.sender);
         staleDuration = uint256(300);
+        bound = uint64(1e16); // 1%
     }
 
     /* ----- External Functions ----- */
@@ -81,13 +88,19 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     /// @dev Set the quote token address.
     /// @param _oracle the token address
     function setQuoteToken(address _quote, address _oracle) external onlyOwner {
-        // quoteToken = newQuoteToken;
+        quoteToken = _quote;
+        clOracles[_quote].oracle = _oracle;
+        clOracles[_quote].decimal = AggregatorV3Interface(_oracle).decimals();
     }
 
-    // function decimals(address base) external view returns (uint8) {
-    //     uint8 d = decimals[base];
-    //     return d == 0 ? 8 : d;
-    // }
+    function setBound(uint64 _bound) external onlyOwner {
+        bound = _bound;
+    }
+
+    function setCLOracle(address token, address _oracle) external onlyOwner {
+        clOracles[token].oracle = _oracle;
+        clOracles[token].decimal = AggregatorV3Interface(_oracle).decimals();
+    }
 
     /// @dev Set the staleDuration.
     /// @param newStaleDuration the new stale duration
@@ -99,7 +112,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     /// @param base the baseToken address
     /// @param newPrice the new prices for the base token
     function postPrice(address base, uint128 newPrice) external onlyOwner {
-        infos[base].price = uint64(newPrice);
+        infos[base].price = newPrice;
         timestamp = block.timestamp;
     }
 
@@ -111,7 +124,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         require(length == newPrices.length, 'Wooracle: length_INVALID');
 
         for (uint256 i = 0; i < length; i++) {
-            infos[bases[i]].price = uint64(newPrices[i]);
+            infos[bases[i]].price = newPrices[i];
         }
 
         timestamp = block.timestamp;
@@ -172,26 +185,29 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         timestamp = block.timestamp;
     }
 
-    // function price(address base) external view override returns (uint256 priceNow, bool feasible) {
-    //     priceNow = uint256(infos[base].price);
-    //     feasible = priceNow != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
-    //     return (priceNow, feasible);
-    // }
+    function price(address base) external view override returns (uint256 price, uint256 priceTimestamp) {
+        uint256 woPrice = uint256(infos[base].price);
+        uint256 woPriceTimestamp = timestamp;
 
-    function price(address base) external view override returns (uint256 priceNow, uint256 timestampNow) {
-        return (uint256(infos[base].price), 0);
+        (uint256 cloPrice, uint256 cloPriceTimestamp) = _refPrice(base, quoteToken);
+
+        bool checkWoFeasible = woPrice != 0 && block.timestamp <= (woPriceTimestamp + staleDuration);
+        bool checkWoBound = cloPrice == 0 ||
+            (cloPrice.mulFloor(1e18 - bound) <= woPrice && woPrice <= cloPrice.mulCeil(1e18 + bound));
+
+        // console.log('checkWoFeasible: %s checkWoBound: %s', checkWoFeasible, checkWoBound);
+
+        if (checkWoFeasible && checkWoBound) {
+            price = woPrice;
+            priceTimestamp = woPriceTimestamp;
+        } else {
+            price = cloPrice;
+            priceTimestamp = cloPriceTimestamp;
+        }
     }
 
-    function spread(address base) external view returns (uint256) {
-        return uint256(infos[base].spread);
-    }
-
-    function coeff(address base) external view returns (uint256) {
-        return uint256(infos[base].coeff);
-    }
-
-    function isFeasible(address base) public view returns (bool) {
-        return infos[base].price != 0 && block.timestamp <= (timestamp + staleDuration * 1 seconds);
+    function decimals(address base) external view override returns (uint8) {
+        return clOracles[base].decimal;
     }
 
     function setWooFeasible(address base, bool feasible) external onlyOwner {
@@ -202,39 +218,27 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         clFeasible[base] = feasible;
     }
 
-    /* ----- Private Functions ----- */
-
-    function _setState(
-        address base,
-        uint128 newPrice,
-        uint64 newSpread,
-        uint64 newCoeff
-    ) private {
-        TokenInfo storage info = infos[base];
-        info.price = uint64(newPrice);
-        info.spread = newSpread;
-        info.coeff = newCoeff;
-    }
-
-    function cloPrice(address base) external view override returns (uint256 priceNow, uint256 timestampNow) {
-        return (0, 0);
+    function cloPrice(address base) external view override returns (uint256, uint256) {
+        return _refPrice(base, quoteToken);
     }
 
     function isWoFeasible(address base) external view override returns (bool) {
-        return true;
+        uint256 price = uint256(infos[base].price);
+        return price != 0 && block.timestamp <= (timestamp + staleDuration);
     }
 
-    function woSpread(address base) external view override returns (uint256) {
-        return 0;
+    function woSpread(address base) external view override returns (uint64) {
+        return infos[base].spread;
     }
 
-    function woCoeff(address base) external view override returns (uint256) {
-        return 0;
+    function woCoeff(address base) external view override returns (uint64) {
+        return infos[base].coeff;
     }
 
     // Wooracle price of the base token
-    function woPrice(address base) external view override returns (uint256 priceNow, uint256 timestampNow) {
-        return (0, 0);
+    function woPrice(address base) external view override returns (uint128 price, uint256 priceTimestamp) {
+        price = infos[base].price;
+        priceTimestamp = timestamp;
     }
 
     function woState(address base)
@@ -242,17 +246,59 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         view
         override
         returns (
-            uint256 priceNow,
-            uint256 spreadNow,
-            uint256 coeffNow,
-            uint256 timestampNow
+            uint128 priceNow,
+            uint64 spreadNow,
+            uint64 coeffNow,
+            uint256 priceTimestamp
         )
     {
-        return (0, 0, 0, 0);
+        TokenInfo storage info = infos[base];
+        priceNow = info.price;
+        spreadNow = info.spread;
+        coeffNow = info.coeff;
+        priceTimestamp = timestamp;
     }
 
     function cloAddress(address base) external view override returns (address clo) {
-        clo = 0x02Bfe714e78E2Ad1bb1C2beE93eC8dc5423B66d4;
-        return clo;
+        clo = clOracles[base].oracle;
+    }
+
+    /* ----- Private Functions ----- */
+    function _setState(
+        address base,
+        uint128 newPrice,
+        uint64 newSpread,
+        uint64 newCoeff
+    ) private {
+        TokenInfo storage info = infos[base];
+        info.price = newPrice;
+        info.spread = newSpread;
+        info.coeff = newCoeff;
+    }
+
+    function _refPrice(address fromToken, address toToken)
+        private
+        view
+        returns (uint256 refPrice, uint256 refTimestamp)
+    {
+        address baseOracle = clOracles[fromToken].oracle;
+        if (baseOracle == address(0)) {
+            return (0, 0);
+        }
+        address quoteOracle = clOracles[toToken].oracle;
+        uint8 baseDecimal = clOracles[fromToken].decimal;
+        uint8 quoteDecimal = clOracles[toToken].decimal;
+
+        (, int256 rawBaseRefPrice, , uint256 baseUpdatedAt, ) = AggregatorV3Interface(baseOracle).latestRoundData();
+        (, int256 rawQuoteRefPrice, , uint256 quoteUpdatedAt, ) = AggregatorV3Interface(quoteOracle).latestRoundData();
+        uint256 baseRefPrice = uint256(rawBaseRefPrice);
+        uint256 quoteRefPrice = uint256(rawQuoteRefPrice);
+
+        // console.log('Base oracle: %s %s', baseOracle, baseDecimal);
+        // console.log('Quote oracle: %s %s', quoteOracle, quoteDecimal);
+        // NOTE: Assume wooracle token decimal is same as chainlink token decimal.
+        uint256 ceoff = uint256(10)**uint256(quoteDecimal);
+        refPrice = baseRefPrice.mul(ceoff).div(quoteRefPrice);
+        refTimestamp = baseUpdatedAt >= quoteUpdatedAt ? quoteUpdatedAt : baseUpdatedAt;
     }
 }
