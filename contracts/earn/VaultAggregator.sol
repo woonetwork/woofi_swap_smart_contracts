@@ -7,7 +7,6 @@ import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import '../interfaces/IVaultAggregator.sol';
 
 contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
-
     /* ----- Initializer ----- */
 
     function initialize() external initializer {
@@ -16,16 +15,26 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
 
     /* ----- View Functions ----- */
 
-    function getVaultInfos(address user, address[] memory vaults) public view override returns (VaultInfos memory vaultInfos) {
+    function getVaultInfos(address user, address[] memory vaults)
+        public
+        view
+        override
+        returns (VaultInfos memory vaultInfos)
+    {
         vaultInfos.balances = getBalances(user, vaults);
         vaultInfos.sharePrices = getSharePrices(vaults);
         vaultInfos.costSharePrices = getCostSharePrices(user, vaults);
         return vaultInfos;
     }
 
-    function getBalances(address user, address[] memory vaults) public view override returns (uint256[] memory results) {
+    function getBalances(address user, address[] memory vaults)
+        public
+        view
+        override
+        returns (uint256[] memory results)
+    {
         results = new uint256[](vaults.length);
-        for(uint256 i = 0; i < vaults.length; i++) {
+        for (uint256 i = 0; i < vaults.length; i++) {
             results[i] = IVault(vaults[i]).balanceOf(user);
         }
         return results;
@@ -39,7 +48,12 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
         return results;
     }
 
-    function getCostSharePrices(address user, address[] memory vaults) public view override returns (uint256[] memory results) {
+    function getCostSharePrices(address user, address[] memory vaults)
+        public
+        view
+        override
+        returns (uint256[] memory results)
+    {
         results = new uint256[](vaults.length);
         for (uint256 i = 0; i < vaults.length; i++) {
             results[i] = IVault(vaults[i]).costSharePrice(user);
