@@ -27,12 +27,7 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
         return results;
     }
 
-    function balancesOf(address user, address[] memory vaults)
-        public
-        view
-        override
-        returns (uint256[] memory results)
-    {
+    function balancesOf(address user, address[] memory vaults) public view override returns (uint256[] memory results) {
         results = new uint256[](vaults.length);
         for (uint256 i = 0; i < vaults.length; i++) {
             results[i] = IVaultInfo(vaults[i]).balanceOf(user);
