@@ -26,7 +26,7 @@ describe('VaultAggregator.sol', () => {
     console.log(await vaultAggregator.owner())
 
     // Deploy Vault Contract
-    let deployVaultCount = 5
+    let deployVaultCount = 20
     for (let i = 0; i < deployVaultCount; i++) {
       let vault = await deployMockContract(owner, WOOFiVaultV2Artifact.abi)
       await vault.mock.balanceOf.returns(i)
@@ -46,7 +46,7 @@ describe('VaultAggregator.sol', () => {
     }
     console.log(iterationGet)
 
-    let bnCosts = await vaultAggregator.getCostSharePrices(user.address, vaultAddresses)
+    let bnCosts = await vaultAggregator.costSharePrices(user.address, vaultAddresses)
     let batchGet: Number[] = []
     for (let i = 0; i < bnCosts.length; i++) {
       batchGet.push(bnCosts[i].toNumber())
@@ -55,7 +55,7 @@ describe('VaultAggregator.sol', () => {
   })
 
   it('Get vaultInfos', async () => {
-    let results = await vaultAggregator.getVaultInfos(user.address, vaultAddresses)
+    let results = await vaultAggregator.vaultInfos(user.address, vaultAddresses)
     console.log(results)
   })
 })

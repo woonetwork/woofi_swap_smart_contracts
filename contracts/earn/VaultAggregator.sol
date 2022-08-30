@@ -15,19 +15,19 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
 
     /* ----- View Functions ----- */
 
-    function getVaultInfos(address user, address[] memory vaults)
+    function vaultInfos(address user, address[] memory vaults)
         public
         view
         override
-        returns (VaultInfos memory vaultInfos)
+        returns (VaultInfos memory results)
     {
-        vaultInfos.balances = getBalances(user, vaults);
-        vaultInfos.sharePrices = getSharePrices(vaults);
-        vaultInfos.costSharePrices = getCostSharePrices(user, vaults);
-        return vaultInfos;
+        results.balancesOf = balancesOf(user, vaults);
+        results.sharePrices = sharePrices(vaults);
+        results.costSharePrices = costSharePrices(user, vaults);
+        return results;
     }
 
-    function getBalances(address user, address[] memory vaults)
+    function balancesOf(address user, address[] memory vaults)
         public
         view
         override
@@ -35,20 +35,20 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
     {
         results = new uint256[](vaults.length);
         for (uint256 i = 0; i < vaults.length; i++) {
-            results[i] = IVault(vaults[i]).balanceOf(user);
+            results[i] = IVaultInfo(vaults[i]).balanceOf(user);
         }
         return results;
     }
 
-    function getSharePrices(address[] memory vaults) public view override returns (uint256[] memory results) {
+    function sharePrices(address[] memory vaults) public view override returns (uint256[] memory results) {
         results = new uint256[](vaults.length);
         for (uint256 i = 0; i < vaults.length; i++) {
-            results[i] = IVault(vaults[i]).getPricePerFullShare();
+            results[i] = IVaultInfo(vaults[i]).getPricePerFullShare();
         }
         return results;
     }
 
-    function getCostSharePrices(address user, address[] memory vaults)
+    function costSharePrices(address user, address[] memory vaults)
         public
         view
         override
@@ -56,7 +56,7 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
     {
         results = new uint256[](vaults.length);
         for (uint256 i = 0; i < vaults.length; i++) {
-            results[i] = IVault(vaults[i]).costSharePrice(user);
+            results[i] = IVaultInfo(vaults[i]).costSharePrice(user);
         }
         return results;
     }
