@@ -122,7 +122,7 @@ contract StrategyAvalancheAave is BaseStrategy {
     /* ----- Internal Functions ----- */
 
     function _claimAndSwap() internal {
-        IAaveV3Incentives(incentivesController).claimRewards(assets, type(uint256).max, address(this), want);
+        IAaveV3Incentives(incentivesController).claimRewards(assets, type(uint256).max, address(this), reward);
 
         if (reward != want) {
             uint256 rewardBal = IERC20(reward).balanceOf(address(this));
@@ -148,7 +148,9 @@ contract StrategyAvalancheAave is BaseStrategy {
     }
 
     function _withdrawAll() internal {
-        IAavePool(aavePool).withdraw(want, type(uint256).max, address(this));
+        if (balanceOfPool() > 0) {
+            IAavePool(aavePool).withdraw(want, type(uint256).max, address(this));
+        }
     }
 
     /* ----- Admin Functions ----- */
