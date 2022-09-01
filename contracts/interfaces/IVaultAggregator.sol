@@ -6,8 +6,6 @@ interface IVaultInfo {
     function costSharePrice(address) external view returns (uint256);
 
     function getPricePerFullShare() external view returns (uint256);
-
-    function balanceOf(address) external view returns (uint256);
 }
 
 interface IVaultAggregator {
@@ -25,9 +23,13 @@ interface IVaultAggregator {
 
     /* ----- View Functions ----- */
 
-    function infos(address user, address[] memory vaults, address[] memory tokens) external view returns (VaultInfos memory vaultInfos, TokenInfos memory tokenInfos);
+    function infos(
+        address user,
+        address[] memory vaults,
+        address[] memory tokens
+    ) external view returns (VaultInfos memory vaultInfos, TokenInfos memory tokenInfos);
 
-    function balancesOf(address user, address[] memory vaults) external view returns (uint256[] memory results);
+    function balancesOf(address user, address[] memory tokens) external view returns (uint256[] memory results);
 
     function sharePrices(address[] memory vaults) external view returns (uint256[] memory results);
 

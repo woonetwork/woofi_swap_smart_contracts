@@ -72,7 +72,7 @@ describe('VaultAggregator.sol', () => {
       }
       console.log(batchGet)
     }
-    
+
     console.log(results.tokenInfos)
   })
 
@@ -88,7 +88,7 @@ describe('VaultAggregator.sol', () => {
       }
       console.log(batchGet)
     }
-    
+
     console.log(results.vaultInfos)
   })
 
