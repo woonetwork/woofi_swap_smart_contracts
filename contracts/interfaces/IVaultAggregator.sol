@@ -18,6 +18,7 @@ interface IVaultAggregator {
     }
 
     struct TokenInfos {
+        uint256 nativeBalance;
         uint256[] balancesOf;
     }
 
