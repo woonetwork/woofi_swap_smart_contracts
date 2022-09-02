@@ -22,6 +22,7 @@ describe('VaultAggregator.sol', () => {
   before(async () => {
     ;[owner, user] = await ethers.getSigners()
     console.log(user.address)
+    console.log((await user.getBalance()).toString())
 
     // Deploy VaultAggregator Contract
     vaultAggregator = (await deployContract(owner, VaultAggregatorArtifact, [])) as VaultAggregator
@@ -80,10 +81,15 @@ describe('VaultAggregator.sol', () => {
     let results = await vaultAggregator.infos(user.address, [], tokenAddresses)
 
     for (let key in results.tokenInfos) {
+      if (key == 'nativeBalance') {
+        console.log(results.tokenInfos.nativeBalance.toString())
+        continue
+      }
+
       let batchGet: Number[] = []
       console.log(key)
-      for (let i = 0; i < results.tokenInfos[key].length; i++) {
-        let value = results.tokenInfos[key][i].toNumber()
+      for (let i = 0; i < results.tokenInfos.balancesOf.length; i++) {
+        let value = results.tokenInfos.balancesOf[i].toNumber()
         batchGet.push(value)
       }
       console.log(batchGet)
@@ -106,10 +112,15 @@ describe('VaultAggregator.sol', () => {
     }
 
     for (let key in results.tokenInfos) {
+      if (key == 'nativeBalance') {
+        console.log(results.tokenInfos.nativeBalance.toString())
+        continue
+      }
+
       let batchGet: Number[] = []
       console.log(key)
-      for (let i = 0; i < results.tokenInfos[key].length; i++) {
-        let value = results.tokenInfos[key][i].toNumber()
+      for (let i = 0; i < results.tokenInfos.balancesOf.length; i++) {
+        let value = results.tokenInfos.balancesOf[i].toNumber()
         batchGet.push(value)
       }
       console.log(batchGet)

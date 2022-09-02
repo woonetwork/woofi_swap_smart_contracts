@@ -25,6 +25,7 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
         vaultInfos.sharePrices = sharePrices(vaults);
         vaultInfos.costSharePrices = costSharePrices(user, vaults);
 
+        tokenInfos.nativeBalance = user.balance;
         tokenInfos.balancesOf = balancesOf(user, tokens);
         return (vaultInfos, tokenInfos);
     }
