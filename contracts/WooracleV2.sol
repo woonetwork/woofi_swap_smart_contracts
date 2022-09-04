@@ -185,7 +185,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         timestamp = block.timestamp;
     }
 
-    function price(address base) external view override returns (uint256 price, uint256 priceTimestamp) {
+    function price(address base) external view override returns (uint256 priceOut, uint256 priceTimestamp) {
         uint256 woPrice = uint256(infos[base].price);
         uint256 woPriceTimestamp = timestamp;
 
@@ -198,10 +198,10 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         // console.log('checkWoFeasible: %s checkWoBound: %s', checkWoFeasible, checkWoBound);
 
         if (checkWoFeasible && checkWoBound) {
-            price = woPrice;
+            priceOut = woPrice;
             priceTimestamp = woPriceTimestamp;
         } else {
-            price = cloPrice;
+            priceOut = cloPrice;
             priceTimestamp = cloPriceTimestamp;
         }
     }
@@ -223,8 +223,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     }
 
     function isWoFeasible(address base) external view override returns (bool) {
-        uint256 price = uint256(infos[base].price);
-        return price != 0 && block.timestamp <= (timestamp + staleDuration);
+        return infos[base].price != 0 && block.timestamp <= (timestamp + staleDuration);
     }
 
     function woSpread(address base) external view override returns (uint64) {
@@ -236,8 +235,8 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     }
 
     // Wooracle price of the base token
-    function woPrice(address base) external view override returns (uint128 price, uint256 priceTimestamp) {
-        price = infos[base].price;
+    function woPrice(address base) external view override returns (uint128 priceOut, uint256 priceTimestamp) {
+        priceOut = infos[base].price;
         priceTimestamp = timestamp;
     }
 
@@ -286,7 +285,6 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
             return (0, 0);
         }
         address quoteOracle = clOracles[toToken].oracle;
-        uint8 baseDecimal = clOracles[fromToken].decimal;
         uint8 quoteDecimal = clOracles[toToken].decimal;
 
         (, int256 rawBaseRefPrice, , uint256 baseUpdatedAt, ) = AggregatorV3Interface(baseOracle).latestRoundData();
@@ -294,8 +292,6 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         uint256 baseRefPrice = uint256(rawBaseRefPrice);
         uint256 quoteRefPrice = uint256(rawQuoteRefPrice);
 
-        // console.log('Base oracle: %s %s', baseOracle, baseDecimal);
-        // console.log('Quote oracle: %s %s', quoteOracle, quoteDecimal);
         // NOTE: Assume wooracle token decimal is same as chainlink token decimal.
         uint256 ceoff = uint256(10)**uint256(quoteDecimal);
         refPrice = baseRefPrice.mul(ceoff).div(quoteRefPrice);
