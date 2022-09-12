@@ -120,8 +120,8 @@ describe('WooPPV2 trading accuracy', () => {
 
       await wooracle.postState(
         btcToken.address,
-        PRICE_DEC.mul(BTC_PRICE),       // price
-        utils.parseEther('0.001'),      // spread
+        PRICE_DEC.mul(BTC_PRICE), // price
+        utils.parseEther('0.001'), // spread
         utils.parseEther('0.000000001') // coeff
       )
 
@@ -192,16 +192,16 @@ describe('WooPPV2 trading accuracy', () => {
 
     it('querySwap revert1', async () => {
       const btcAmount = 100
-      await expect(
-        wooRouter.querySwap(btcToken.address, usdtToken.address, ONE.mul(btcAmount))
-      ).to.be.revertedWith('WooPPV2: INSUFF_QUOTE')
+      await expect(wooRouter.querySwap(btcToken.address, usdtToken.address, ONE.mul(btcAmount))).to.be.revertedWith(
+        'WooPPV2: INSUFF_QUOTE'
+      )
     })
 
     it('querySwap revert2', async () => {
       const uAmount = 300000
-      await expect(
-        wooRouter.querySwap(usdtToken.address, btcToken.address, ONE.mul(uAmount))
-      ).to.be.revertedWith('WooPPV2: INSUFF_BASE')
+      await expect(wooRouter.querySwap(usdtToken.address, btcToken.address, ONE.mul(uAmount))).to.be.revertedWith(
+        'WooPPV2: INSUFF_BASE'
+      )
     })
   })
 
@@ -407,5 +407,4 @@ describe('WooPPV2 trading accuracy', () => {
     }
   })
   */
-
 })

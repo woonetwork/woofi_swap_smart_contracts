@@ -51,7 +51,7 @@ import '@openzeppelin/contracts/utils/Pausable.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
 import '@uniswap/lib/contracts/libraries/TransferHelper.sol';
 
-import "hardhat/console.sol";
+import 'hardhat/console.sol';
 
 /// @title Woo private pool for swaping.
 /// @notice the implementation class for interface IWooPPV2, mainly for query and swap tokens.
@@ -64,14 +64,14 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
     using SafeERC20 for IERC20;
 
     struct Decimals {
-        uint64 priceDec;    // 10**(price_decimal)
-        uint64 quoteDec;    // 10**(quote_decimal)
-        uint64 baseDec;     // 10**(base_decimal)
+        uint64 priceDec; // 10**(price_decimal)
+        uint64 quoteDec; // 10**(quote_decimal)
+        uint64 baseDec; // 10**(base_decimal)
     }
 
     struct TokenInfo {
-        uint192 reserve;    // balance reserve
-        uint16 feeRate;     // 1 in 100000; 10 = 1bp = 0.01%; max = 65535
+        uint192 reserve; // balance reserve
+        uint16 feeRate; // 1 in 100000; 10 = 1bp = 0.01%; max = 65535
         // bool paused;        // paused
     }
 
@@ -104,10 +104,7 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
     }
 
     function init(address _wooracle, address _feeManager) external onlyOwner {
-        require(
-            address(wooracle) == address(0) && address(feeManager) == address(0),
-            'WooPPV2: INIT_INVALID'
-        );
+        require(address(wooracle) == address(0) && address(feeManager) == address(0), 'WooPPV2: INIT_INVALID');
         wooracle = IWooracleV2(_wooracle);
         feeManager = IWooFeeManager(_feeManager);
         require(feeManager.quoteToken() == quoteToken, 'WooPPV2: !feeManager');
@@ -165,7 +162,10 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
 
         address from = msg.sender;
 
-        require(balance(baseToken).sub(tokenInfos[baseToken].reserve) >= baseAmount, 'WooPPV2: BASE_BALANCE_NOT_ENOUGH');
+        require(
+            balance(baseToken).sub(tokenInfos[baseToken].reserve) >= baseAmount,
+            'WooPPV2: BASE_BALANCE_NOT_ENOUGH'
+        );
 
         uint256 newPrice;
         (quoteAmount, newPrice) = getQuoteAmountSellBase(baseToken, baseAmount);
@@ -230,8 +230,9 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
     /// @dev forked and curtesy by Uniswap v3-core
     /// check
     function balance(address token) public view returns (uint256) {
-        (bool success, bytes memory data) =
-            token.staticcall(abi.encodeWithSelector(IERC20.balanceOf.selector, address(this)));
+        (bool success, bytes memory data) = token.staticcall(
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(this))
+        );
         require(success && data.length >= 32, 'WooPPV2: !BALANCE');
         return abi.decode(data, (uint256));
     }
@@ -307,9 +308,8 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
 
     function _updateReserve(address baseToken) private {
         require(
-            balance(baseToken) > tokenInfos[baseToken].reserve ||
-            balance(quoteToken) > tokenInfos[quoteToken].reserve,
-            "WooPPV2: !BALANCE"
+            balance(baseToken) > tokenInfos[baseToken].reserve || balance(quoteToken) > tokenInfos[quoteToken].reserve,
+            'WooPPV2: !BALANCE'
         );
 
         // TODO: how to handle the accidental transferred funds?
@@ -338,14 +338,13 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
 
         // quoteAmount = baseAmount * oracle.price * (1 - oracle.k * baseAmount * oracle.price - oracle.spread)
         {
-        uint256 coef = uint256(1e18) - (uint256(state.coeff) * baseAmount * state.price / decs.baseDec / decs.priceDec) - state.spread;
-        console.log('coeff:', coef / 1e16);
-        quoteAmount = baseAmount
-            .mul(decs.quoteDec)
-            .mul(state.price)
-            .div(decs.priceDec)
-            .mulFloor(coef)
-            .div(decs.baseDec);
+            uint256 coef = uint256(1e18) -
+                ((uint256(state.coeff) * baseAmount * state.price) / decs.baseDec / decs.priceDec) -
+                state.spread;
+            console.log('coeff:', coef / 1e16);
+            quoteAmount = baseAmount.mul(decs.quoteDec).mul(state.price).div(decs.priceDec).mulFloor(coef).div(
+                decs.baseDec
+            );
         }
 
         console.log(quoteAmount / 1e18);
@@ -353,10 +352,7 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
         // newPrice = (1 - 2 * k * oracle.price * baseAmount) * oracle.price
         uint256 k = uint256(2).mul(state.coeff).mul(state.price).mul(baseAmount).div(decs.priceDec).div(decs.baseDec);
         console.log('k: ', k / 1e12);
-        newPrice =
-            uint256(1e18).sub(k)
-            .mul(state.price)
-            .div(1e18);
+        newPrice = uint256(1e18).sub(k).mul(state.price).div(1e18);
         console.log('new price: ', newPrice / 1e8);
     }
 
@@ -395,13 +391,10 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
 
         // baseAmount = quoteAmount / oracle.price * (1 - oracle.k * quoteAmount - oracle.spread)
         {
-            uint256 coef = uint256(1e18) - quoteAmount * state.coeff / decs.quoteDec - state.spread;
-            baseAmount = quoteAmount
-                .mul(decs.baseDec)
-                .mul(decs.priceDec)
-                .div(state.price)
-                .mulFloor(coef)
-                .div(decs.quoteDec);
+            uint256 coef = uint256(1e18) - (quoteAmount * state.coeff) / decs.quoteDec - state.spread;
+            baseAmount = quoteAmount.mul(decs.baseDec).mul(decs.priceDec).div(state.price).mulFloor(coef).div(
+                decs.quoteDec
+            );
         }
 
         // oracle.postPrice(base, oracle.price * (1 + 2 * k * quoteAmount)

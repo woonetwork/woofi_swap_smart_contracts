@@ -102,7 +102,7 @@ describe('WooPPV2 trading accuracy', () => {
       wooPP = (await deployContract(owner, WooPPV2Artifact, [usdtToken.address])) as WooPPV2
 
       await wooPP.init(wooracle.address, feeManager.address)
-      await wooPP.setFeeRate(btcToken.address, 100);
+      await wooPP.setFeeRate(btcToken.address, 100)
 
       await btcToken.approve(wooPP.address, ONE.mul(10))
       await wooPP.deposit(btcToken.address, ONE.mul(10))
@@ -112,8 +112,8 @@ describe('WooPPV2 trading accuracy', () => {
 
       await wooracle.postState(
         btcToken.address,
-        PRICE_DEC.mul(BTC_PRICE),       // price
-        utils.parseEther('0.001'),      // spread
+        PRICE_DEC.mul(BTC_PRICE), // price
+        utils.parseEther('0.001'), // spread
         utils.parseEther('0.000000001') // coeff
       )
 
@@ -157,7 +157,7 @@ describe('WooPPV2 trading accuracy', () => {
       const uAmount = 10000
       const amount = await wooPP.querySellQuote(btcToken.address, ONE.mul(uAmount))
       const amountNum = Number(utils.formatEther(amount))
-      const benchmark = uAmount / BTC_PRICE * (1 - FEE)
+      const benchmark = (uAmount / BTC_PRICE) * (1 - FEE)
       expect(amountNum).to.lessThan(benchmark)
       const slippage = (benchmark - amountNum) / benchmark
       expect(slippage).to.lessThan(0.0012)
@@ -168,7 +168,7 @@ describe('WooPPV2 trading accuracy', () => {
       const uAmount = 100000
       const amount = await wooPP.querySellQuote(btcToken.address, ONE.mul(uAmount))
       const amountNum = Number(utils.formatEther(amount))
-      const benchmark = uAmount / BTC_PRICE * (1 - FEE)
+      const benchmark = (uAmount / BTC_PRICE) * (1 - FEE)
       expect(amountNum).to.lessThan(benchmark)
       const slippage = (benchmark - amountNum) / benchmark
       expect(slippage).to.lessThan(0.0012)
@@ -177,16 +177,14 @@ describe('WooPPV2 trading accuracy', () => {
 
     it('querySwap revert1', async () => {
       const btcAmount = 100
-      await expect(
-        wooPP.querySellBase(btcToken.address, ONE.mul(btcAmount))
-      ).to.be.revertedWith('WooPPV2: INSUFF_QUOTE')
+      await expect(wooPP.querySellBase(btcToken.address, ONE.mul(btcAmount))).to.be.revertedWith(
+        'WooPPV2: INSUFF_QUOTE'
+      )
     })
 
     it('querySwap revert2', async () => {
       const uAmount = 300000
-      await expect(
-        wooPP.querySellQuote(btcToken.address, ONE.mul(uAmount))
-      ).to.be.revertedWith('WooPPV2: INSUFF_BASE')
+      await expect(wooPP.querySellQuote(btcToken.address, ONE.mul(uAmount))).to.be.revertedWith('WooPPV2: INSUFF_BASE')
     })
   })
 
@@ -197,7 +195,7 @@ describe('WooPPV2 trading accuracy', () => {
       wooPP = (await deployContract(owner, WooPPV2Artifact, [usdtToken.address])) as WooPPV2
 
       await wooPP.init(wooracle.address, feeManager.address)
-      await wooPP.setFeeRate(btcToken.address, 100);
+      await wooPP.setFeeRate(btcToken.address, 100)
 
       await btcToken.mint(owner.address, ONE.mul(10))
       await usdtToken.mint(owner.address, ONE.mul(300000))
@@ -211,8 +209,8 @@ describe('WooPPV2 trading accuracy', () => {
 
       await wooracle.postState(
         btcToken.address,
-        PRICE_DEC.mul(BTC_PRICE),       // price
-        utils.parseEther('0.001'),      // spread
+        PRICE_DEC.mul(BTC_PRICE), // price
+        utils.parseEther('0.001'), // spread
         utils.parseEther('0.000000001') // coeff
       )
 
@@ -312,49 +310,25 @@ describe('WooPPV2 trading accuracy', () => {
     })
 
     it('sellBase fail1', async () => {
-      expect(wooPP.sellBase(
-        btcToken.address,
-        ONE,
-        0,
-        user2.address,
-        ZERO_ADDR)
-      ).to.be.revertedWith('WooPPV2: BASE_BALANCE_NOT_ENOUGH');
+      expect(wooPP.sellBase(btcToken.address, ONE, 0, user2.address, ZERO_ADDR)).to.be.revertedWith(
+        'WooPPV2: BASE_BALANCE_NOT_ENOUGH'
+      )
 
-      expect(wooPP.sellBase(
-        ZERO_ADDR,
-        ONE,
-        0,
-        user2.address,
-        ZERO_ADDR)
-      ).to.be.revertedWith('WooPPV2: !baseToken');
+      expect(wooPP.sellBase(ZERO_ADDR, ONE, 0, user2.address, ZERO_ADDR)).to.be.revertedWith('WooPPV2: !baseToken')
 
-      expect(wooPP.sellBase(
-        usdtToken.address,
-        ONE,
-        0,
-        user2.address,
-        ZERO_ADDR)
-      ).to.be.revertedWith('WooPPV2: baseToken==quoteToken');
+      expect(wooPP.sellBase(usdtToken.address, ONE, 0, user2.address, ZERO_ADDR)).to.be.revertedWith(
+        'WooPPV2: baseToken==quoteToken'
+      )
 
-      expect(wooPP.sellBase(
-        btcToken.address,
-        ONE,
-        0,
-        ZERO_ADDR,
-        ZERO_ADDR)
-      ).to.be.revertedWith('WooPPV2: !to');
-      })
+      expect(wooPP.sellBase(btcToken.address, ONE, 0, ZERO_ADDR, ZERO_ADDR)).to.be.revertedWith('WooPPV2: !to')
+    })
 
     it('sellBase fail2', async () => {
       await btcToken.approve(wooPP.address, ONE)
       await btcToken.transfer(wooPP.address, ONE)
-      expect(wooPP.sellBase(
-        btcToken.address,
-        ONE,
-        ONE.mul(BTC_PRICE),
-        user2.address,
-        ZERO_ADDR)
-      ).to.be.revertedWith('WooPPV2: quoteAmount_LT_minQuoteAmount');
+      expect(wooPP.sellBase(btcToken.address, ONE, ONE.mul(BTC_PRICE), user2.address, ZERO_ADDR)).to.be.revertedWith(
+        'WooPPV2: quoteAmount_LT_minQuoteAmount'
+      )
     })
 
     it('sellQuote accuracy1', async () => {
@@ -453,50 +427,28 @@ describe('WooPPV2 trading accuracy', () => {
 
     it('sellQuote fail1', async () => {
       const quoteAmount = ONE.mul(20000)
-      expect(wooPP.sellQuote(
-        btcToken.address,
-        quoteAmount,
-        0,
-        user2.address,
-        ZERO_ADDR)
-      ).to.be.revertedWith('WooPPV2: QUOTE_BALANCE_NOT_ENOUGH');
+      expect(wooPP.sellQuote(btcToken.address, quoteAmount, 0, user2.address, ZERO_ADDR)).to.be.revertedWith(
+        'WooPPV2: QUOTE_BALANCE_NOT_ENOUGH'
+      )
 
-      expect(wooPP.sellQuote(
-        ZERO_ADDR,
-        quoteAmount,
-        0,
-        user2.address,
-        ZERO_ADDR)
-      ).to.be.revertedWith('WooPPV2: !baseToken');
+      expect(wooPP.sellQuote(ZERO_ADDR, quoteAmount, 0, user2.address, ZERO_ADDR)).to.be.revertedWith(
+        'WooPPV2: !baseToken'
+      )
 
-      expect(wooPP.sellQuote(
-        usdtToken.address,
-        quoteAmount,
-        0,
-        user2.address,
-        ZERO_ADDR)
-      ).to.be.revertedWith('WooPPV2: baseToken==quoteToken');
+      expect(wooPP.sellQuote(usdtToken.address, quoteAmount, 0, user2.address, ZERO_ADDR)).to.be.revertedWith(
+        'WooPPV2: baseToken==quoteToken'
+      )
 
-      expect(wooPP.sellQuote(
-        btcToken.address,
-        quoteAmount,
-        0,
-        ZERO_ADDR,
-        ZERO_ADDR)
-      ).to.be.revertedWith('WooPPV2: !to');
+      expect(wooPP.sellQuote(btcToken.address, quoteAmount, 0, ZERO_ADDR, ZERO_ADDR)).to.be.revertedWith('WooPPV2: !to')
     })
 
     it('sellQuote fail2', async () => {
       const quoteAmount = ONE.mul(20000)
       await usdtToken.approve(wooPP.address, quoteAmount)
       await usdtToken.transfer(wooPP.address, quoteAmount)
-      expect(wooPP.sellQuote(
-        btcToken.address,
-        quoteAmount,
-        quoteAmount.div(BTC_PRICE),
-        user2.address,
-        ZERO_ADDR)
-      ).to.be.revertedWith('WooPPV2: baseAmount_LT_minBaseAmount');
+      expect(
+        wooPP.sellQuote(btcToken.address, quoteAmount, quoteAmount.div(BTC_PRICE), user2.address, ZERO_ADDR)
+      ).to.be.revertedWith('WooPPV2: baseAmount_LT_minBaseAmount')
     })
 
     it('balance accuracy', async () => {
@@ -528,7 +480,6 @@ describe('WooPPV2 trading accuracy', () => {
       expect(await wooPP.poolSize(btcToken.address)).to.be.not.eq(bal2.add(ONE))
       expect(await wooPP.poolSize(btcToken.address)).to.be.eq(bal2)
     })
-
 
     // TODO: deposit & withdraw & withdrawAll
   })

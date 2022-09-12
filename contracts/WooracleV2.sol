@@ -52,9 +52,9 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
 
     // 128 + 64 + 64 = 256 bits (slot size)
     struct TokenInfo {
-        uint128 price;  // as chainlink oracle (e.g. decimal = 8)
-        uint64 coeff;   // 18.    18.4 * 1e18
-        uint64 spread;  // 18. spread <= 2e18   (2^64 = 1.84e19)
+        uint128 price; // as chainlink oracle (e.g. decimal = 8)
+        uint64 coeff; // 18.    18.4 * 1e18
+        uint64 spread; // 18. spread <= 2e18   (2^64 = 1.84e19)
     }
 
     struct CLOracle {
