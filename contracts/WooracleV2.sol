@@ -42,7 +42,6 @@ import './interfaces/AggregatorV3Interface.sol';
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import 'hardhat/console.sol';
 
 /// @title Wooracle V2 contract
 contract WooracleV2 is InitializableOwnable, IWooracleV2 {
@@ -203,8 +202,6 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         bool checkWoBound = cloPrice == 0 ||
             (cloPrice.mulFloor(1e18 - bound) <= woPrice && woPrice <= cloPrice.mulCeil(1e18 + bound));
 
-        // console.log('checkWoFeasible: %s checkWoBound: %s', checkWoFeasible, checkWoBound);
-
         if (checkWoFeasible && checkWoBound) {
             priceOut = woPrice;
             priceTimestamp = woPriceTimestamp;
@@ -251,25 +248,26 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
 
     function woState(address base) external view override returns (State memory) {
         TokenInfo memory info = infos[base];
-        State memory state;
-        state.price = info.price;
-        state.spread = info.spread;
-        state.coeff = info.coeff;
-        state.woFeasible = (state.price != 0 && block.timestamp <= (timestamp + staleDuration));
-        return state;
+        return State({
+            price: info.price,
+            spread: info.spread,
+            coeff: info.coeff,
+            woFeasible: (info.price != 0 && block.timestamp <= (timestamp + staleDuration))
+        });
     }
 
     function state(address base) external view override returns (State memory) {
         TokenInfo memory info = infos[base];
-        State memory state_;
-        uint256 basePrice;
-        uint256 priceTimestamp;
-        (basePrice, priceTimestamp) = price(base);
-        state_.price = uint128(basePrice);
-        state_.spread = info.spread;
-        state_.coeff = info.coeff;
-        state_.woFeasible = (state_.price != 0 && block.timestamp <= (priceTimestamp + staleDuration));
-        return state_;
+        (
+            uint256 basePrice,
+            uint256 priceTimestamp
+        ) = price(base);
+        return State({
+            price: uint128(basePrice),
+            spread: info.spread,
+            coeff: info.coeff,
+            woFeasible: (basePrice != 0 && block.timestamp <= (priceTimestamp + staleDuration))
+        });
     }
 
     function cloAddress(address base) external view override returns (address clo) {
