@@ -248,26 +248,25 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
 
     function woState(address base) external view override returns (State memory) {
         TokenInfo memory info = infos[base];
-        return State({
-            price: info.price,
-            spread: info.spread,
-            coeff: info.coeff,
-            woFeasible: (info.price != 0 && block.timestamp <= (timestamp + staleDuration))
-        });
+        return
+            State({
+                price: info.price,
+                spread: info.spread,
+                coeff: info.coeff,
+                woFeasible: (info.price != 0 && block.timestamp <= (timestamp + staleDuration))
+            });
     }
 
     function state(address base) external view override returns (State memory) {
         TokenInfo memory info = infos[base];
-        (
-            uint256 basePrice,
-            uint256 priceTimestamp
-        ) = price(base);
-        return State({
-            price: uint128(basePrice),
-            spread: info.spread,
-            coeff: info.coeff,
-            woFeasible: (basePrice != 0 && block.timestamp <= (priceTimestamp + staleDuration))
-        });
+        (uint256 basePrice, uint256 priceTimestamp) = price(base);
+        return
+            State({
+                price: uint128(basePrice),
+                spread: info.spread,
+                coeff: info.coeff,
+                woFeasible: (basePrice != 0 && block.timestamp <= (priceTimestamp + staleDuration))
+            });
     }
 
     function cloAddress(address base) external view override returns (address clo) {
