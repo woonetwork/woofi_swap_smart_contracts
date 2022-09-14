@@ -42,7 +42,6 @@ import './interfaces/AggregatorV3Interface.sol';
 
 import '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 import '@openzeppelin/contracts/math/SafeMath.sol';
-import 'hardhat/console.sol';
 
 /// @title Wooracle V2 contract
 contract WooracleV2 is InitializableOwnable, IWooracleV2 {
@@ -53,7 +52,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     // 128 + 64 + 64 = 256 bits (slot size)
     struct TokenInfo {
         uint128 price; // as chainlink oracle (e.g. decimal = 8)
-        uint64 coeff; // 18.
+        uint64 coeff; // 18.    18.4 * 1e18
         uint64 spread; // 18. spread <= 2e18   (2^64 = 1.84e19)
     }
 
@@ -74,6 +73,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
 
     mapping(address => bool) public wooFeasible;
     mapping(address => bool) public clFeasible;
+    mapping(address => bool) public isAdmin;
 
     constructor() public {
         initOwner(msg.sender);
@@ -81,13 +81,20 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         bound = uint64(1e16); // 1%
     }
 
+    modifier onlyAdmin() {
+        require(_OWNER_ == msg.sender || isAdmin[msg.sender], 'Wooracle: !Admin');
+        _;
+    }
+
     /* ----- External Functions ----- */
 
-    // TODO for wooracle V2
+    function setAdmin(address addr, bool flag) external onlyOwner {
+        isAdmin[addr] = flag;
+    }
 
     /// @dev Set the quote token address.
     /// @param _oracle the token address
-    function setQuoteToken(address _quote, address _oracle) external onlyOwner {
+    function setQuoteToken(address _quote, address _oracle) external onlyAdmin {
         quoteToken = _quote;
         clOracles[_quote].oracle = _oracle;
         clOracles[_quote].decimal = AggregatorV3Interface(_oracle).decimals();
@@ -97,21 +104,21 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         bound = _bound;
     }
 
-    function setCLOracle(address token, address _oracle) external onlyOwner {
+    function setCLOracle(address token, address _oracle) external onlyAdmin {
         clOracles[token].oracle = _oracle;
         clOracles[token].decimal = AggregatorV3Interface(_oracle).decimals();
     }
 
     /// @dev Set the staleDuration.
     /// @param newStaleDuration the new stale duration
-    function setStaleDuration(uint256 newStaleDuration) external onlyOwner {
+    function setStaleDuration(uint256 newStaleDuration) external onlyAdmin {
         staleDuration = newStaleDuration;
     }
 
     /// @dev Update the base token prices.
     /// @param base the baseToken address
     /// @param newPrice the new prices for the base token
-    function postPrice(address base, uint128 newPrice) external onlyOwner {
+    function postPrice(address base, uint128 newPrice) external override onlyAdmin {
         infos[base].price = newPrice;
         timestamp = block.timestamp;
     }
@@ -119,7 +126,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     /// @dev batch update baseTokens prices
     /// @param bases list of baseToken address
     /// @param newPrices the updated prices list
-    function postPriceList(address[] calldata bases, uint128[] calldata newPrices) external onlyOwner {
+    function postPriceList(address[] calldata bases, uint128[] calldata newPrices) external onlyAdmin {
         uint256 length = bases.length;
         require(length == newPrices.length, 'Wooracle: length_INVALID');
 
@@ -133,7 +140,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     /// @dev update the spreads info.
     /// @param base baseToken address
     /// @param newSpread the new spreads
-    function postSpread(address base, uint64 newSpread) external onlyOwner {
+    function postSpread(address base, uint64 newSpread) external onlyAdmin {
         infos[base].spread = newSpread;
         timestamp = block.timestamp;
     }
@@ -141,7 +148,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     /// @dev batch update the spreads info.
     /// @param bases list of baseToken address
     /// @param newSpreads list of spreads info
-    function postSpreadList(address[] calldata bases, uint64[] calldata newSpreads) external onlyOwner {
+    function postSpreadList(address[] calldata bases, uint64[] calldata newSpreads) external onlyAdmin {
         uint256 length = bases.length;
         require(length == newSpreads.length, 'Wooracle: length_INVALID');
 
@@ -162,7 +169,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         uint128 newPrice,
         uint64 newSpread,
         uint64 newCoeff
-    ) external onlyOwner {
+    ) external onlyAdmin {
         _setState(base, newPrice, newSpread, newCoeff);
         timestamp = block.timestamp;
     }
@@ -177,7 +184,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         uint128[] calldata newPrices,
         uint64[] calldata newSpreads,
         uint64[] calldata newCoeffs
-    ) external onlyOwner {
+    ) external onlyAdmin {
         uint256 length = bases.length;
         for (uint256 i = 0; i < length; i++) {
             _setState(bases[i], newPrices[i], newSpreads[i], newCoeffs[i]);
@@ -185,7 +192,7 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         timestamp = block.timestamp;
     }
 
-    function price(address base) external view override returns (uint256 priceOut, uint256 priceTimestamp) {
+    function price(address base) public view override returns (uint256 priceOut, uint256 priceTimestamp) {
         uint256 woPrice = uint256(infos[base].price);
         uint256 woPriceTimestamp = timestamp;
 
@@ -194,8 +201,6 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         bool checkWoFeasible = woPrice != 0 && block.timestamp <= (woPriceTimestamp + staleDuration);
         bool checkWoBound = cloPrice == 0 ||
             (cloPrice.mulFloor(1e18 - bound) <= woPrice && woPrice <= cloPrice.mulCeil(1e18 + bound));
-
-        // console.log('checkWoFeasible: %s checkWoBound: %s', checkWoFeasible, checkWoBound);
 
         if (checkWoFeasible && checkWoBound) {
             priceOut = woPrice;
@@ -207,14 +212,15 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
     }
 
     function decimals(address base) external view override returns (uint8) {
-        return clOracles[base].decimal;
+        uint8 d = clOracles[base].decimal;
+        return d != 0 ? d : 8;
     }
 
-    function setWooFeasible(address base, bool feasible) external onlyOwner {
+    function setWooFeasible(address base, bool feasible) external onlyAdmin {
         wooFeasible[base] = feasible;
     }
 
-    function setCLFeasible(address base, bool feasible) external onlyOwner {
+    function setCLFeasible(address base, bool feasible) external onlyAdmin {
         clFeasible[base] = feasible;
     }
 
@@ -240,22 +246,27 @@ contract WooracleV2 is InitializableOwnable, IWooracleV2 {
         priceTimestamp = timestamp;
     }
 
-    function woState(address base)
-        external
-        view
-        override
-        returns (
-            uint128 priceNow,
-            uint64 spreadNow,
-            uint64 coeffNow,
-            uint256 priceTimestamp
-        )
-    {
-        TokenInfo storage info = infos[base];
-        priceNow = info.price;
-        spreadNow = info.spread;
-        coeffNow = info.coeff;
-        priceTimestamp = timestamp;
+    function woState(address base) external view override returns (State memory) {
+        TokenInfo memory info = infos[base];
+        return
+            State({
+                price: info.price,
+                spread: info.spread,
+                coeff: info.coeff,
+                woFeasible: (info.price != 0 && block.timestamp <= (timestamp + staleDuration))
+            });
+    }
+
+    function state(address base) external view override returns (State memory) {
+        TokenInfo memory info = infos[base];
+        (uint256 basePrice, uint256 priceTimestamp) = price(base);
+        return
+            State({
+                price: uint128(basePrice),
+                spread: info.spread,
+                coeff: info.coeff,
+                woFeasible: (basePrice != 0 && block.timestamp <= (priceTimestamp + staleDuration))
+            });
     }
 
     function cloAddress(address base) external view override returns (address clo) {
