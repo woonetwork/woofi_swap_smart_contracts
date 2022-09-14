@@ -37,7 +37,7 @@ import { ethers } from 'hardhat'
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { WooracleV2, TestChainLink, TestQuoteChainLink } from '../typechain'
-import WooracleArtifact from '../artifacts/contracts/WooracleV2.sol/WooracleV2.json'
+import WooracleV2Artifact from '../artifacts/contracts/WooracleV2.sol/WooracleV2.json'
 import TestChainLinkArtifact from '../artifacts/contracts/test/TestChainLink.sol/TestChainLink.json'
 import TestQuoteChainLinkArtifact from '../artifacts/contracts/test/TestChainLink.sol/TestQuoteChainLink.json'
 import { Test } from 'mocha'
@@ -71,7 +71,7 @@ describe('Wooracle', () => {
 
   beforeEach(async () => {
     ;[owner, baseToken, anotherBaseToken, quoteToken] = await ethers.getSigners()
-    wooracle = (await deployContract(owner, WooracleArtifact, [])) as WooracleV2
+    wooracle = (await deployContract(owner, WooracleV2Artifact, [])) as WooracleV2
   })
 
   beforeEach(async () => {
