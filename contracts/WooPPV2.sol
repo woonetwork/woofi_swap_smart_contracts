@@ -198,7 +198,7 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
         address from = msg.sender;
 
         require(
-            balance(quoteToken).sub(unclaimedFee).sub(tokenInfos[quoteToken].reserve) >= quoteAmount,
+            balance(quoteToken).sub(tokenInfos[quoteToken].reserve) >= quoteAmount,
             'WooPPV2: QUOTE_BALANCE_NOT_ENOUGH'
         );
 
@@ -224,13 +224,19 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
     /// @dev This function is gas optimized to avoid a redundant extcodesize check in addition to the returndatasize
     /// @dev forked and curtesy by Uniswap v3-core
     /// check
-    function balance(address token) public view returns (uint256) {
+    function _rawBalance(address token) private view returns (uint256) {
         (bool success, bytes memory data) = token.staticcall(
             abi.encodeWithSelector(IERC20.balanceOf.selector, address(this))
         );
         require(success && data.length >= 32, 'WooPPV2: !BALANCE');
         return abi.decode(data, (uint256));
     }
+
+    /// @dev User pool balance (substracted unclaimed fee)
+    function balance(address token) public view returns (uint256) {
+        return token == quoteToken ? _rawBalance(token).sub(unclaimedFee) : _rawBalance(token);
+    }
+
 
     /// @dev Get the pool's balance of token
     /// @param token the token pool to query
@@ -301,14 +307,13 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
 
     function _updateReserve(address baseToken) private {
         require(
-            balance(baseToken) > tokenInfos[baseToken].reserve ||
-                balance(quoteToken).sub(unclaimedFee) > tokenInfos[quoteToken].reserve,
+            balance(baseToken) > tokenInfos[baseToken].reserve || balance(quoteToken) > tokenInfos[quoteToken].reserve,
             'WooPPV2: !BALANCE'
         );
 
         // TODO: how to handle the accidental transferred funds?
         tokenInfos[baseToken].reserve = uint192(balance(baseToken));
-        tokenInfos[quoteToken].reserve = uint192(balance(quoteToken).sub(unclaimedFee));
+        tokenInfos[quoteToken].reserve = uint192(balance(quoteToken));
     }
 
     function getQuoteAmountSellBase(address baseToken, uint256 baseAmount)
