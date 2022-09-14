@@ -301,7 +301,8 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
 
     function _updateReserve(address baseToken) private {
         require(
-            balance(baseToken) > tokenInfos[baseToken].reserve || balance(quoteToken).sub(unclaimedFee) > tokenInfos[quoteToken].reserve,
+            balance(baseToken) > tokenInfos[baseToken].reserve ||
+                balance(quoteToken).sub(unclaimedFee) > tokenInfos[quoteToken].reserve,
             'WooPPV2: !BALANCE'
         );
 
