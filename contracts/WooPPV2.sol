@@ -198,7 +198,7 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
         address from = msg.sender;
 
         require(
-            balance(quoteToken).sub(tokenInfos[quoteToken].reserve) >= quoteAmount,
+            balance(quoteToken).sub(unclaimedFee).sub(tokenInfos[quoteToken].reserve) >= quoteAmount,
             'WooPPV2: QUOTE_BALANCE_NOT_ENOUGH'
         );
 
@@ -301,7 +301,7 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
 
     function _updateReserve(address baseToken) private {
         require(
-            balance(baseToken) > tokenInfos[baseToken].reserve || balance(quoteToken) > tokenInfos[quoteToken].reserve,
+            balance(baseToken) > tokenInfos[baseToken].reserve || balance(quoteToken).sub(unclaimedFee) > tokenInfos[quoteToken].reserve,
             'WooPPV2: !BALANCE'
         );
 
