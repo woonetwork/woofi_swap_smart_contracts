@@ -88,7 +88,6 @@ describe('WooPPV2 trading accuracy', () => {
     feeManager = await deployMockContract(owner, IWooFeeManager.abi)
     await feeManager.mock.feeRate.returns(0)
     await feeManager.mock.collectFee.returns()
-    await feeManager.mock.addRebate.returns()
     await feeManager.mock.quoteToken.returns(usdtToken.address)
   })
 
@@ -97,9 +96,9 @@ describe('WooPPV2 trading accuracy', () => {
     let wooRouter: WooRouterV3
 
     beforeEach('Deploy WooRouter', async () => {
-      wooPP = (await deployContract(owner, WooPPV2Artifact, [])) as WooPPV2
+      wooPP = (await deployContract(owner, WooPPV2Artifact, [usdtToken.address])) as WooPPV2
 
-      await wooPP.init(usdtToken.address, wooracle.address, feeManager.address)
+      await wooPP.init(wooracle.address, feeManager.address)
 
       wooRouter = (await deployContract(owner, WooRouterV3Artifact, [WBNB_ADDR, wooPP.address])) as WooRouterV3
 
