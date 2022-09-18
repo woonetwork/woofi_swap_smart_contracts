@@ -220,23 +220,10 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
         emit WooSwap(quoteToken, baseToken, quoteAmount.add(lpFee), baseAmount, from, to, rebateTo);
     }
 
-    /// @dev Get the pool's balance of the specified token
-    /// @dev This function is gas optimized to avoid a redundant extcodesize check in addition to the returndatasize
-    /// @dev forked and curtesy by Uniswap v3-core
-    /// check
-    function _rawBalance(address token) private view returns (uint256) {
-        (bool success, bytes memory data) = token.staticcall(
-            abi.encodeWithSelector(IERC20.balanceOf.selector, address(this))
-        );
-        require(success && data.length >= 32, 'WooPPV2: !BALANCE');
-        return abi.decode(data, (uint256));
-    }
-
     /// @dev User pool balance (substracted unclaimed fee)
     function balance(address token) public view returns (uint256) {
         return token == quoteToken ? _rawBalance(token).sub(unclaimedFee) : _rawBalance(token);
     }
-
 
     /// @dev Get the pool's balance of token
     /// @param token the token pool to query
@@ -304,6 +291,18 @@ contract WooPPV2 is InitializableOwnable, ReentrancyGuard, Pausable, IWooPPV2 {
     }
 
     /* ----- Private Functions ----- */
+
+    /// @dev Get the pool's balance of the specified token
+    /// @dev This function is gas optimized to avoid a redundant extcodesize check in addition to the returndatasize
+    /// @dev forked and curtesy by Uniswap v3-core
+    /// check
+    function _rawBalance(address token) private view returns (uint256) {
+        (bool success, bytes memory data) = token.staticcall(
+            abi.encodeWithSelector(IERC20.balanceOf.selector, address(this))
+        );
+        require(success && data.length >= 32, 'WooPPV2: !BALANCE');
+        return abi.decode(data, (uint256));
+    }
 
     function _updateReserve(address baseToken) private {
         require(
