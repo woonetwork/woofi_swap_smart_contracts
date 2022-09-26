@@ -44,9 +44,11 @@ import { Test } from 'mocha'
 
 const BN_1e18 = BigNumber.from(10).pow(18)
 const BN_2e18 = BN_1e18.mul(2)
+const BN_1e8 = BigNumber.from(10).pow(8)
 
 const BN_1e16 = BigNumber.from(10).pow(18)
 const BN_2e16 = BN_1e16.mul(2)
+const ZERO = 0
 
 async function getCurrentBlockTimestamp() {
   let blockNum = await ethers.provider.getBlockNumber()
@@ -156,5 +158,25 @@ describe('Wooracle', () => {
     await wooracle.setStaleDuration(300)
     isWoFeasible = await wooracle.isWoFeasible(baseToken.address)
     expect(isWoFeasible).to.eq(true)
+  })
+
+  it('state function', async () => {
+    let emptyState = await wooracle.state(baseToken.address)
+    expect(emptyState.woFeasible).to.eq(false)
+    expect(emptyState.price).to.eq(ZERO)
+    expect(emptyState.spread).to.eq(ZERO)
+    expect(emptyState.coeff).to.eq(ZERO)
+    await wooracle.postState(baseToken.address, BN_1e8, BN_1e18, BN_1e18)
+    let oracleState = await wooracle.state(baseToken.address)
+    expect(oracleState.woFeasible).to.eq(true)
+    expect(oracleState.price).to.eq(BN_1e8)
+    expect(oracleState.spread).to.eq(BN_1e18)
+    expect(oracleState.coeff).to.eq(BN_1e18)
+
+    let woStateNow = await wooracle.woState(baseToken.address)
+    expect(woStateNow.woFeasible).to.eq(true)
+    expect(woStateNow.price).to.eq(BN_1e8)
+    expect(woStateNow.spread).to.eq(BN_1e18)
+    expect(woStateNow.coeff).to.eq(BN_1e18)
   })
 })
