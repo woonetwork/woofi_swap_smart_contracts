@@ -13,7 +13,7 @@ import '../../../interfaces/Aave/IDataProvider.sol';
 
 import '../BaseStrategy.sol';
 
-contract StrategyAvalancheAave is BaseStrategy {
+contract StrategyAave is BaseStrategy {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -66,7 +66,7 @@ contract StrategyAvalancheAave is BaseStrategy {
     /* ----- Public Functions ----- */
 
     function harvest() public override whenNotPaused {
-        require(msg.sender == tx.origin || msg.sender == address(vault), 'StrategyAvalancheAave: EOA_or_vault');
+        require(msg.sender == tx.origin || msg.sender == address(vault), 'StrategyAave: EOA_or_vault');
 
         uint256 beforeBal = balanceOfWant();
 
@@ -90,15 +90,15 @@ contract StrategyAvalancheAave is BaseStrategy {
     }
 
     function withdraw(uint256 amount) public override nonReentrant {
-        require(msg.sender == vault, 'StrategyAvalancheAave: !vault');
-        require(amount > 0, 'StrategyAvalancheAave: !amount');
+        require(msg.sender == vault, 'StrategyAave: !vault');
+        require(amount > 0, 'StrategyAave: !amount');
 
         uint256 wantBal = balanceOfWant();
 
         if (wantBal < amount) {
             IAavePool(aavePool).withdraw(want, amount.sub(wantBal), address(this));
             uint256 newWantBal = IERC20(want).balanceOf(address(this));
-            require(newWantBal > wantBal, 'StrategyAvalancheAave: !newWantBal');
+            require(newWantBal > wantBal, 'StrategyAave: !newWantBal');
             wantBal = newWantBal;
         }
 
@@ -132,7 +132,7 @@ contract StrategyAvalancheAave is BaseStrategy {
         if (reward != want) {
             uint256 rewardBal = IERC20(reward).balanceOf(address(this));
             if (rewardBal > 0) {
-                require(rewardToWantRoute.length > 0, 'StrategyAvalancheAave: SWAP_ROUTE_INVALID');
+                require(rewardToWantRoute.length > 0, 'StrategyAave: SWAP_ROUTE_INVALID');
                 IJoeRouter(uniRouter).swapExactTokensForTokens(rewardBal, 0, rewardToWantRoute, address(this), now);
             }
         }
@@ -161,7 +161,7 @@ contract StrategyAvalancheAave is BaseStrategy {
     /* ----- Admin Functions ----- */
 
     function retireStrat() external override {
-        require(msg.sender == vault, 'StrategyAvalancheAave: !vault');
+        require(msg.sender == vault, 'StrategyAave: !vault');
         _withdrawAll();
         uint256 wantBal = IERC20(want).balanceOf(address(this));
         if (wantBal > 0) {
