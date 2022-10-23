@@ -11,38 +11,17 @@
   </a>
 </div>
 
-## WOOFi Swap V1.0
+## WOOFi Swap
 
-This repository contains the smart contracts and solidity library for the WOOFi Swap v1. WOOFi Swap is a decentralized exchange using a brand new on-chain market making algorithm called Synthetic Proactive Market Making (sPMM), which is designed for professional market makers to generate an on-chain orderbook simulating the price, spread and depth from centralized liquidity sources. Read more here.
+This repository contains the smart contracts and solidity library for the WOOFi Swap. WOOFi Swap is a decentralized exchange using a brand new on-chain market making algorithm called Synthetic Proactive Market Making (sPMM), which is designed for professional market makers to generate an on-chain orderbook simulating the price, spread and depth from centralized liquidity sources. Read more [here](https://learn.woo.org/woofi/intro).
 
-## Security
+## Useful links:
 
-#### Bug Bounty
-
-Bug bounty for the smart contracts: [Bug Bounty](https://learn.woo.org/woofi/woofi-swap/bug-bounty).
-
-#### Security Audit
-
-3rd party security audit: [Audit Report](https://learn.woo.org/woofi/woofi-swap/audits).
-
-## Code structure
-
-With the "minimalism" design, the whole code base consist of 4 main smart contract (in solidity):
-| File | Main Function |
-| :--- |:---:|
-| WooRouter.sol | Router contract to dispatch user trades to Woo Private Pool or 3rd party dex |
-| WooPP.sol | The WooTrade's proprietary market making pool and swap the given tokens |
-| Wooracle.sol | Proprietary oracle to push the latest market price, spread and slippage info |
-| WooGuardian.sol | The trading price and amount verification and defense contract |
-
-## BSC Mainnet deployment
-
-| Contract    |                                                     BSC address                                                      |
-| :---------- | :------------------------------------------------------------------------------------------------------------------: |
-| WooRouter   | [0x114f84658c99aa6EA62e3160a87A16dEaF7EFe83](https://bscscan.com/address/0x114f84658c99aa6ea62e3160a87a16deaf7efe83) |
-| WooPP       | [0x8489d142Da126F4Ea01750e80ccAa12FD1642988](https://bscscan.com/address/0x8489d142Da126F4Ea01750e80ccAa12FD1642988) |
-| WooGuardian | [0xC90ec9Fe0d243B98DdF5468AFaFB4863EF12002F](https://bscscan.com/address/0xC90ec9Fe0d243B98DdF5468AFaFB4863EF12002F) |
-| Wooracle    | [0xea4edfEfF60B375556459e106AB57B696c202A29](https://bscscan.com/address/0xea4edfEfF60B375556459e106AB57B696c202A29) |
+* overview: https://learn.woo.org/woofi/intro
+* sPMM: https://learn.woo.org/woofi/woofi-swap/the-math-behind-spmm
+* WOOFi smart contracts: https://learn.woo.org/woofi/dev-docs/contract
+* Bug Bounty and audits:https://learn.woo.org/woofi/audits
+* Integrate WOOFi as a liquidity source: https://learn.woo.org/woofi/dev-docs/integrate-woofi-as-liquidity-source
 
 ## Local Build & Tests
 
@@ -61,82 +40,6 @@ To run the unit tests:
 yarn build-test
 hh test
 ```
-
-## Integrate with WooFi Swap
-
-Currently, WooRouter supports the following tokens on BSC:
-
-| Token |                BSC address                 |
-| :---- | :----------------------------------------: |
-| usdt  | 0x55d398326f99059fF775485246999027B3197955 |
-| wbnb  | 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c |
-| btcb  | 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c |
-| eth   | 0x2170ed0880ac9a755fd29b2688956bd959f933f8 |
-| woo   | 0x4691937a7508860f876c9c0a2a617e7d9e945d4b |
-| bnb   | 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE |
-
-The easiest way is to interact with WooRouter.sol (BSC: https://bscscan.com/address/0x114f84658c99aa6ea62e3160a87a16deaf7efe83 )
-
-Quote the price:
-
-```solidity
-/// @dev query the amount to swap fromToken -> toToken
-/// @param fromToken the from token
-/// @param toToken the to token
-/// @param fromAmount the amount of fromToken to swap
-/// @return toAmount the swapped amount to receive
-function querySwap(
-  address fromToken,
-  address toToken,
-  uint256 fromAmount
-) external view returns (uint256 toAmount);
-
-```
-
-Sample call to quote selling 1 btc:
-
-```solidity
-querySwap(
-  0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c, // btcb token address
-  0x55d398326f99059fF775485246999027B3197955, // usdt token address
-  1000000000000000000);                       // btcb amount to swap in decimal 18
-```
-
-Swap the token:
-
-```solidity
-/// @dev swap fromToken -> toToken
-/// @param fromToken the from token
-/// @param toToken the to token
-/// @param fromAmount the amount of fromToken to swap
-/// @param minToAmount the amount of fromToken to swap
-/// @param to the destination address
-/// @param rebateTo the amount of fromToken to swap (optional, can be '0')
-/// @return realToAmount the amount of toToken to receive
-function swap(
-  address fromToken,
-  address toToken,
-  uint256 fromAmount,
-  uint256 minToAmount,
-  address payable to,
-  address rebateTo
-) external payable returns (uint256 realToAmount);
-
-```
-
-Sample call to sell 1 btc to usdt:
-
-```solidity
-swap(
-  0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c, // btcb token address
-  0x55d398326f99059fF775485246999027B3197955, // usdt token address
-  1000000000000000000,                        // btcb amount to swap in decimal 18
-   990000000000000000,                        // min amount for 1% slippage
-  0xd51062A4aF7B76ee0b2893Ef8b52aCC155393E3D, // the address to receive the swap fund
-  0);                                         // the rebate address
-```
-
-You can directly play with BSC mainnet contract here: https://bscscan.com/address/0x114f84658c99aa6ea62e3160a87a16deaf7efe83#writeContract
 
 #### IWooRouter Interface
 
