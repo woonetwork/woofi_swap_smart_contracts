@@ -61,7 +61,7 @@ contract WooRebateManager is InitializableOwnable, ReentrancyGuard, IWooRebateMa
     // decimal: 18; 1e16 = 1%, 1e15 = 0.1%, 1e14 = 0.01%
     //
     // e.g. suppose:
-    //   rebateRate = 1e17 (10%), so the rebate amount is total_swap_fee * 10%.
+    //   rebateRate = 2e17 (20%), so the rebate amount is total_swap_fee * 20%.
     mapping(address => uint256) public override rebateRate;
     EnumerableSet.AddressSet private rebateAddressSet;
 

@@ -37,7 +37,6 @@ pragma experimental ABIEncoderV2;
 
 import './libraries/InitializableOwnable.sol';
 import './libraries/DecimalMath.sol';
-import './interfaces/IWooPP.sol';
 import './interfaces/IWooRebateManager.sol';
 import './interfaces/IWooFeeManager.sol';
 import './interfaces/IWooVaultManager.sol';
@@ -111,6 +110,20 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
 
     /* ----- Admin Functions ----- */
 
+    function addRebates(address[] memory brokerAddrs, uint256[] memory amounts)
+        external override nonReentrant onlyAdmin {
+
+        require(amounts.length == brokerAddrs.length, 'WooFeeManager: !length');
+
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < brokerAddrs.length; ++i) {
+            rebateManager.addRebate(brokerAddrs[i], amounts[i]);
+            totalAmount = totalAmount.add(amounts[i]);
+        }
+
+        rebateAmount = rebateAmount.add(totalAmount);
+    }
+
     function distributeFees() external override nonReentrant onlyAdmin {
         uint256 balance = IERC20(quoteToken).balanceOf(address(this));
         require(balance > 0, 'WooFeeManager: balance_ZERO');
@@ -118,14 +131,12 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         // Step 1: distribute the vault balance. Currently, 80% of fee (2 bps) goes to vault manager.
         uint256 vaultAmount = balance.mulFloor(vaultRewardRate);
         if (vaultAmount > 0) {
-            TransferHelper.safeApprove(quoteToken, address(vaultManager), vaultAmount);
             TransferHelper.safeTransfer(quoteToken, address(vaultManager), vaultAmount);
             balance = balance.sub(vaultAmount);
         }
 
         // Step 2: distribute the rebate balance.
         if (rebateAmount > 0) {
-            TransferHelper.safeApprove(quoteToken, address(rebateManager), rebateAmount);
             TransferHelper.safeTransfer(quoteToken, address(rebateManager), rebateAmount);
 
             // NOTE: if balance not enought: certain rebate rates are set incorrectly.
@@ -134,7 +145,6 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
         }
 
         // Step 3: balance left for treasury
-        TransferHelper.safeApprove(quoteToken, treasury, balance);
         TransferHelper.safeTransfer(quoteToken, treasury, balance);
     }
 
