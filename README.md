@@ -17,11 +17,11 @@ This repository contains the smart contracts and solidity library for the WOOFi 
 
 ## Useful links:
 
-* overview: https://learn.woo.org/woofi/intro
-* sPMM: https://learn.woo.org/woofi/woofi-swap/the-math-behind-spmm
-* WOOFi smart contracts: https://learn.woo.org/woofi/dev-docs/contract
-* Bug Bounty and audits:https://learn.woo.org/woofi/audits
-* Integrate WOOFi as a liquidity source: https://learn.woo.org/woofi/dev-docs/integrate-woofi-as-liquidity-source
+- overview: https://learn.woo.org/woofi/intro
+- sPMM: https://learn.woo.org/woofi/woofi-swap/the-math-behind-spmm
+- WOOFi smart contracts: https://learn.woo.org/woofi/dev-docs/contract
+- Bug Bounty and audits:https://learn.woo.org/woofi/audits
+- Integrate WOOFi as a liquidity source: https://learn.woo.org/woofi/dev-docs/integrate-woofi-as-liquidity-source
 
 ## Local Build & Tests
 

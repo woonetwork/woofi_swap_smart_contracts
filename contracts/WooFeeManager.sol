@@ -111,8 +111,11 @@ contract WooFeeManager is InitializableOwnable, ReentrancyGuard, IWooFeeManager 
     /* ----- Admin Functions ----- */
 
     function addRebates(address[] memory brokerAddrs, uint256[] memory amounts)
-        external override nonReentrant onlyAdmin {
-
+        external
+        override
+        nonReentrant
+        onlyAdmin
+    {
         require(amounts.length == brokerAddrs.length, 'WooFeeManager: !length');
 
         uint256 totalAmount = 0;
