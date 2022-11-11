@@ -39,7 +39,14 @@ interface IVaultAggregator {
         address[] memory vaults,
         address[] memory tokens,
         uint256[] memory pids
-    ) external view returns (VaultInfos memory vaultInfos, TokenInfos memory tokenInfos, MasterChefWooInfos memory masterChefWooInfos);
+    )
+        external
+        view
+        returns (
+            VaultInfos memory vaultInfos,
+            TokenInfos memory tokenInfos,
+            MasterChefWooInfos memory masterChefWooInfos
+        );
 
     function balancesOf(address user, address[] memory tokens) external view returns (uint256[] memory results);
 

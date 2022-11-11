@@ -22,11 +22,16 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
         address[] memory vaults,
         address[] memory tokens,
         uint256[] memory pids
-    ) public view override returns (
-        VaultInfos memory vaultInfos,
-        TokenInfos memory tokenInfos,
-        MasterChefWooInfos memory masterChefWooInfos
-    ) {
+    )
+        public
+        view
+        override
+        returns (
+            VaultInfos memory vaultInfos,
+            TokenInfos memory tokenInfos,
+            MasterChefWooInfos memory masterChefWooInfos
+        )
+    {
         vaultInfos.balancesOf = balancesOf(user, vaults);
         vaultInfos.sharePrices = sharePrices(vaults);
         vaultInfos.costSharePrices = costSharePrices(user, vaults);
@@ -67,12 +72,11 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
         return results;
     }
 
-    function userInfos(address user, address masterChefWoo, uint256[] memory pids) 
-        public
-        view
-        override
-        returns (uint256[] memory amounts, uint256[] memory rewardDebts)
-    {
+    function userInfos(
+        address user,
+        address masterChefWoo,
+        uint256[] memory pids
+    ) public view override returns (uint256[] memory amounts, uint256[] memory rewardDebts) {
         uint256 length = pids.length;
         amounts = new uint256[](length);
         rewardDebts = new uint256[](length);
