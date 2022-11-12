@@ -8,6 +8,10 @@ interface IVaultInfo {
     function getPricePerFullShare() external view returns (uint256);
 }
 
+interface IMasterChefWooInfo {
+    function userInfo(uint256, address) external view returns (uint256, uint256);
+}
+
 interface IVaultAggregator {
     /* ----- Struct ----- */
 
@@ -22,17 +26,37 @@ interface IVaultAggregator {
         uint256[] balancesOf;
     }
 
+    struct MasterChefWooInfos {
+        uint256[] amounts;
+        uint256[] rewardDebts;
+    }
+
     /* ----- View Functions ----- */
 
     function infos(
         address user,
+        address masterChefWoo,
         address[] memory vaults,
-        address[] memory tokens
-    ) external view returns (VaultInfos memory vaultInfos, TokenInfos memory tokenInfos);
+        address[] memory tokens,
+        uint256[] memory pids
+    )
+        external
+        view
+        returns (
+            VaultInfos memory vaultInfos,
+            TokenInfos memory tokenInfos,
+            MasterChefWooInfos memory masterChefWooInfos
+        );
 
     function balancesOf(address user, address[] memory tokens) external view returns (uint256[] memory results);
 
     function sharePrices(address[] memory vaults) external view returns (uint256[] memory results);
 
     function costSharePrices(address user, address[] memory vaults) external view returns (uint256[] memory results);
+
+    function userInfos(
+        address user,
+        address masterChefWoo,
+        uint256[] memory pids
+    ) external view returns (uint256[] memory amounts, uint256[] memory rewardDebts);
 }

@@ -18,16 +18,29 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
 
     function infos(
         address user,
+        address masterChefWoo,
         address[] memory vaults,
-        address[] memory tokens
-    ) public view override returns (VaultInfos memory vaultInfos, TokenInfos memory tokenInfos) {
+        address[] memory tokens,
+        uint256[] memory pids
+    )
+        public
+        view
+        override
+        returns (
+            VaultInfos memory vaultInfos,
+            TokenInfos memory tokenInfos,
+            MasterChefWooInfos memory masterChefWooInfos
+        )
+    {
         vaultInfos.balancesOf = balancesOf(user, vaults);
         vaultInfos.sharePrices = sharePrices(vaults);
         vaultInfos.costSharePrices = costSharePrices(user, vaults);
 
         tokenInfos.nativeBalance = user.balance;
         tokenInfos.balancesOf = balancesOf(user, tokens);
-        return (vaultInfos, tokenInfos);
+
+        (masterChefWooInfos.amounts, masterChefWooInfos.rewardDebts) = userInfos(user, masterChefWoo, pids);
+        return (vaultInfos, tokenInfos, masterChefWooInfos);
     }
 
     function balancesOf(address user, address[] memory tokens) public view override returns (uint256[] memory results) {
@@ -57,5 +70,19 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
             results[i] = IVaultInfo(vaults[i]).costSharePrice(user);
         }
         return results;
+    }
+
+    function userInfos(
+        address user,
+        address masterChefWoo,
+        uint256[] memory pids
+    ) public view override returns (uint256[] memory amounts, uint256[] memory rewardDebts) {
+        uint256 length = pids.length;
+        amounts = new uint256[](length);
+        rewardDebts = new uint256[](length);
+        for (uint256 i = 0; i < pids.length; i++) {
+            (amounts[i], rewardDebts[i]) = IMasterChefWooInfo(masterChefWoo).userInfo(pids[i], user);
+        }
+        return (amounts, rewardDebts);
     }
 }
