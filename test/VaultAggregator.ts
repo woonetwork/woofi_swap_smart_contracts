@@ -1,5 +1,5 @@
 import { ethers } from 'hardhat'
-import { use } from 'chai'
+import { expect, use } from 'chai'
 import { deployContract, deployMockContract, solidity } from 'ethereum-waffle'
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
 import { VaultAggregator } from '../typechain'
@@ -7,14 +7,21 @@ import { VaultAggregator } from '../typechain'
 import VaultAggregatorArtifact from '../artifacts/contracts/earn/VaultAggregator.sol/VaultAggregator.json'
 import WOOFiVaultV2Artifact from '../artifacts/contracts/earn/VaultV2.sol/WOOFiVaultV2.json'
 import IERC20 from '../artifacts/@openzeppelin/contracts/token/ERC20/IERC20.sol/IERC20.json'
+import IMasterChefWooInfo from '../artifacts/contracts/interfaces/IVaultAggregator.sol/IMasterChefWooInfo.json'
 import { Contract } from 'ethers'
 
 use(solidity)
+
+const pid0UserInfo = [10000, 20000]
+const pid1UserInfo = [30000, 40000]
+const pid0PendingXWoo = [50000, 60000]
+const pid1PendingXWoo = [70000, 80000]
 
 describe('VaultAggregator.sol', () => {
   let owner: SignerWithAddress
   let user: SignerWithAddress
   let vaultAggregator: VaultAggregator
+  let masterChefWoo: Contract
   let vaults: Contract[] = []
   let vaultAddresses: string[] = []
   let tokenAddresses: string[] = []
@@ -27,6 +34,13 @@ describe('VaultAggregator.sol', () => {
     // Deploy VaultAggregator Contract
     vaultAggregator = (await deployContract(owner, VaultAggregatorArtifact, [])) as VaultAggregator
     console.log(await vaultAggregator.owner())
+
+    // Deploy MasterChefWoo
+    masterChefWoo = await deployMockContract(owner, IMasterChefWooInfo.abi)
+    await masterChefWoo.mock.userInfo.withArgs(0, user.address).returns(...pid0UserInfo)
+    await masterChefWoo.mock.userInfo.withArgs(1, user.address).returns(...pid1UserInfo)
+    await masterChefWoo.mock.pendingXWoo.withArgs(0, user.address).returns(...pid0PendingXWoo)
+    await masterChefWoo.mock.pendingXWoo.withArgs(1, user.address).returns(...pid1PendingXWoo)
 
     // Deploy Vault Contract
     let deployVaultCount = 20
@@ -62,7 +76,7 @@ describe('VaultAggregator.sol', () => {
   })
 
   it('Get vaultInfos only', async () => {
-    let results = await vaultAggregator.infos(user.address, vaultAddresses, [])
+    let results = await vaultAggregator.infos(user.address, masterChefWoo.address, vaultAddresses, [], [])
 
     for (let key in results.vaultInfos) {
       let batchGet: Number[] = []
@@ -78,7 +92,7 @@ describe('VaultAggregator.sol', () => {
   })
 
   it('Get tokenInfos only', async () => {
-    let results = await vaultAggregator.infos(user.address, [], tokenAddresses)
+    let results = await vaultAggregator.infos(user.address, masterChefWoo.address, [], tokenAddresses, [])
 
     for (let key in results.tokenInfos) {
       if (key == 'nativeBalance') {
@@ -99,7 +113,13 @@ describe('VaultAggregator.sol', () => {
   })
 
   it('Get whole infos', async () => {
-    let results = await vaultAggregator.infos(user.address, vaultAddresses, tokenAddresses)
+    let results = await vaultAggregator.infos(
+      user.address,
+      masterChefWoo.address,
+      vaultAddresses,
+      tokenAddresses,
+      [0, 1]
+    )
 
     for (let key in results.vaultInfos) {
       let batchGet: Number[] = []
@@ -125,5 +145,21 @@ describe('VaultAggregator.sol', () => {
       }
       console.log(batchGet)
     }
+
+    let amounts = results.masterChefWooInfos.amounts
+    let rewardDebts = results.masterChefWooInfos.rewardDebts
+    expect(amounts[0]).to.eq(pid0UserInfo[0])
+    expect(rewardDebts[0]).to.eq(pid0UserInfo[1])
+
+    expect(amounts[1]).to.eq(pid1UserInfo[0])
+    expect(rewardDebts[1]).to.eq(pid1UserInfo[1])
+
+    let pendingXWooAmounts = results.masterChefWooInfos.pendingXWooAmounts
+    let pendingWooAmounts = results.masterChefWooInfos.pendingWooAmounts
+    expect(pendingXWooAmounts[0]).to.eq(pid0PendingXWoo[0])
+    expect(pendingWooAmounts[0]).to.eq(pid0PendingXWoo[1])
+
+    expect(pendingXWooAmounts[1]).to.eq(pid1PendingXWoo[0])
+    expect(pendingWooAmounts[1]).to.eq(pid1PendingXWoo[1])
   })
 })

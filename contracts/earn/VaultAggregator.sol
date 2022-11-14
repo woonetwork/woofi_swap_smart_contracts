@@ -40,6 +40,11 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
         tokenInfos.balancesOf = balancesOf(user, tokens);
 
         (masterChefWooInfos.amounts, masterChefWooInfos.rewardDebts) = userInfos(user, masterChefWoo, pids);
+        (masterChefWooInfos.pendingXWooAmounts, masterChefWooInfos.pendingWooAmounts) = pendingXWoos(
+            user,
+            masterChefWoo,
+            pids
+        );
         return (vaultInfos, tokenInfos, masterChefWooInfos);
     }
 
@@ -80,9 +85,26 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
         uint256 length = pids.length;
         amounts = new uint256[](length);
         rewardDebts = new uint256[](length);
-        for (uint256 i = 0; i < pids.length; i++) {
+        for (uint256 i = 0; i < length; i++) {
             (amounts[i], rewardDebts[i]) = IMasterChefWooInfo(masterChefWoo).userInfo(pids[i], user);
         }
         return (amounts, rewardDebts);
+    }
+
+    function pendingXWoos(
+        address user,
+        address masterChefWoo,
+        uint256[] memory pids
+    ) public view override returns (uint256[] memory pendingXWooAmounts, uint256[] memory pendingWooAmounts) {
+        uint256 length = pids.length;
+        pendingXWooAmounts = new uint256[](length);
+        pendingWooAmounts = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            (pendingXWooAmounts[i], pendingWooAmounts[i]) = IMasterChefWooInfo(masterChefWoo).pendingXWoo(
+                pids[i],
+                user
+            );
+        }
+        return (pendingXWooAmounts, pendingWooAmounts);
     }
 }
