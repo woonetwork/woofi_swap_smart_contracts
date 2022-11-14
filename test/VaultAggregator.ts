@@ -76,13 +76,7 @@ describe('VaultAggregator.sol', () => {
   })
 
   it('Get vaultInfos only', async () => {
-    let results = await vaultAggregator.infos(
-      user.address,
-      masterChefWoo.address,
-      vaultAddresses,
-      [],
-      []
-    )
+    let results = await vaultAggregator.infos(user.address, masterChefWoo.address, vaultAddresses, [], [])
 
     for (let key in results.vaultInfos) {
       let batchGet: Number[] = []
@@ -98,13 +92,7 @@ describe('VaultAggregator.sol', () => {
   })
 
   it('Get tokenInfos only', async () => {
-    let results = await vaultAggregator.infos(
-      user.address,
-      masterChefWoo.address,
-      [],
-      tokenAddresses,
-      []
-    )
+    let results = await vaultAggregator.infos(user.address, masterChefWoo.address, [], tokenAddresses, [])
 
     for (let key in results.tokenInfos) {
       if (key == 'nativeBalance') {

@@ -40,7 +40,11 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
         tokenInfos.balancesOf = balancesOf(user, tokens);
 
         (masterChefWooInfos.amounts, masterChefWooInfos.rewardDebts) = userInfos(user, masterChefWoo, pids);
-        (masterChefWooInfos.pendingXWooAmounts, masterChefWooInfos.pendingWooAmounts) = pendingXWoos(user, masterChefWoo, pids);
+        (masterChefWooInfos.pendingXWooAmounts, masterChefWooInfos.pendingWooAmounts) = pendingXWoos(
+            user,
+            masterChefWoo,
+            pids
+        );
         return (vaultInfos, tokenInfos, masterChefWooInfos);
     }
 
@@ -96,7 +100,10 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
         pendingXWooAmounts = new uint256[](length);
         pendingWooAmounts = new uint256[](length);
         for (uint256 i = 0; i < length; i++) {
-            (pendingXWooAmounts[i], pendingWooAmounts[i]) = IMasterChefWooInfo(masterChefWoo).pendingXWoo(pids[i], user);
+            (pendingXWooAmounts[i], pendingWooAmounts[i]) = IMasterChefWooInfo(masterChefWoo).pendingXWoo(
+                pids[i],
+                user
+            );
         }
         return (pendingXWooAmounts, pendingWooAmounts);
     }
