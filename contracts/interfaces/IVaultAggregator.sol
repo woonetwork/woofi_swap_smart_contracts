@@ -10,6 +10,8 @@ interface IVaultInfo {
 
 interface IMasterChefWooInfo {
     function userInfo(uint256, address) external view returns (uint256, uint256);
+
+    function pendingXWoo(uint256, address) external view returns (uint256, uint256);
 }
 
 interface IVaultAggregator {
@@ -29,6 +31,8 @@ interface IVaultAggregator {
     struct MasterChefWooInfos {
         uint256[] amounts;
         uint256[] rewardDebts;
+        uint256[] pendingXWooAmounts;
+        uint256[] pendingWooAmounts;
     }
 
     /* ----- View Functions ----- */
@@ -59,4 +63,10 @@ interface IVaultAggregator {
         address masterChefWoo,
         uint256[] memory pids
     ) external view returns (uint256[] memory amounts, uint256[] memory rewardDebts);
+
+    function pendingXWoos(
+        address user,
+        address masterChefWoo,
+        uint256[] memory pids
+    ) external view returns (uint256[] memory pendingXWooAmounts, uint256[] memory pendingWooAmounts);
 }
