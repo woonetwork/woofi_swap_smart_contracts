@@ -26,10 +26,12 @@ async function main() {
     // Can't call initialize twice
     await upgrades.upgradeProxy(proxy, vaultAggregatorFactory)
 
+    await new Promise((resolve) => setTimeout(resolve, 10000))
+
     let implAddress = await upgrades.erc1967.getImplementationAddress(proxy)
     console.log('Implementation deployed to:', implAddress)
     // await run('verify:verify', {address: proxyAdmin});
-    await run('verify:verify', { address: impl })
+    await run('verify:verify', { address: implAddress })
   }
 }
 
