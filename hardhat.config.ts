@@ -80,12 +80,12 @@ export default {
       accounts: accounts,
     },
     optimism_mainnet: {
-      url: "https://mainnet.optimism.io/",
+      url: 'https://mainnet.optimism.io/',
       chainId: 10,
       accounts: accounts,
     },
     optimism_testnet: {
-      url: "https://goerli.optimism.io/",
+      url: 'https://goerli.optimism.io/',
       chainId: 420,
       accounts: accounts,
     },
