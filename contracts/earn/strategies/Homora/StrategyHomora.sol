@@ -68,6 +68,7 @@ contract StrategyHomora is BaseStrategy {
             wantBal = IERC20(want).balanceOf(address(this));
         }
 
+        require(wantBal >= amount.mul(9999).div(10000), 'StrategyHomora: !withdraw');    
         // In case the decimal precision for the very left staking amount
         uint256 withdrawAmt = amount < wantBal ? amount : wantBal;
 
