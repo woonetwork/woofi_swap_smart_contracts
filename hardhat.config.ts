@@ -79,6 +79,16 @@ export default {
       chainId: 421611,
       accounts: accounts,
     },
+    optimism_mainnet: {
+      url: 'https://mainnet.optimism.io/',
+      chainId: 10,
+      accounts: accounts,
+    },
+    optimism_testnet: {
+      url: 'https://goerli.optimism.io/',
+      chainId: 420,
+      accounts: accounts,
+    },
   },
   solidity: {
     version: '0.6.12',
@@ -119,6 +129,8 @@ export default {
       // arbitrum
       arbitrumOne: process.env.ARBISCAN_KEY,
       arbitrumTestnet: process.env.ARBISCAN_KEY,
+      // optimistic
+      optimisticEthereum: process.env.OPTIMISTIC_ETHERSCAN_KEY,
     },
   },
   mocha: {
