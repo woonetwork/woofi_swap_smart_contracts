@@ -100,13 +100,12 @@ contract VaultAggregator is OwnableUpgradeable, IVaultAggregator {
         pendingXWooAmounts = new uint256[](length);
         pendingWooAmounts = new uint256[](length);
         uint256 chainId;
-        assembly { chainId := chainid() }
+        assembly {
+            chainId := chainid()
+        }
         if (chainId == 10) {
             for (uint256 i = 0; i < length; i++) {
-                (pendingWooAmounts[i], ) = IMasterChefWooInfo(masterChefWoo).pendingReward(
-                    pids[i],
-                    user
-                );
+                (pendingWooAmounts[i], ) = IMasterChefWooInfo(masterChefWoo).pendingReward(pids[i], user);
                 pendingXWooAmounts[i] = pendingWooAmounts[i];
             }
         } else {
