@@ -12,6 +12,8 @@ interface IMasterChefWooInfo {
     function userInfo(uint256, address) external view returns (uint256, uint256);
 
     function pendingXWoo(uint256, address) external view returns (uint256, uint256);
+
+    function pendingReward(uint256, address) external view returns (uint256, uint256);
 }
 
 interface IVaultAggregator {
