@@ -173,7 +173,7 @@ contract WOOFiVaultV2Vector is IVault, ERC20, Ownable, ReentrancyGuard {
         }
     }
 
-    function earn() public override {
+    function earn() public override onlyAdmin {
         if (_isStratActive()) {
             uint256 balanceAvail = available();
             TransferHelper.safeTransfer(want, address(strategy), balanceAvail);

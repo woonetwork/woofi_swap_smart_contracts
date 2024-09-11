@@ -47,6 +47,7 @@ import '../interfaces/IVault.sol';
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+// NOTE: Deprecated, please use vault v2.
 contract VaultErc20 is IVault, ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -147,7 +148,7 @@ contract VaultErc20 is IVault, ERC20, Ownable, ReentrancyGuard {
         TransferHelper.safeTransfer(want, msg.sender, withdrawAmount);
     }
 
-    function earn() public override {
+    function earn() public override onlyAdmin {
         if (_isStratActive()) {
             uint256 balanceAvail = available();
             if (balanceAvail > 0) {

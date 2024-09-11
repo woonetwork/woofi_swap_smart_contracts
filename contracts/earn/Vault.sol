@@ -46,6 +46,8 @@ import '../interfaces/IVault.sol';
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+
+// NOTE: Deprecated, please use vault v2.
 contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
@@ -159,7 +161,7 @@ contract Vault is IVault, ERC20, Ownable, ReentrancyGuard {
         }
     }
 
-    function earn() public override {
+    function earn() public override onlyAdmin {
         if (_isStratActive()) {
             uint256 balanceAvail = available();
             TransferHelper.safeTransfer(want, address(strategy), balanceAvail);
