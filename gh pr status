@@ -1,0 +1,21 @@
+application/json as the content type.  - name: Check commit messages for bounty keywords
+    id: check_bounty
+    run: |
+      # Search for 'bounty' in commit messages between PR base and head
+      if git log ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -iq "bounty"; then
+        echo "found=true" >> $GITHUB_OUTPUT
+      else
+        echo "found=false" >> $GITHUB_OUTPUT
+      fi
+
+  - name: Edit PR Description with Immunefi Link
+    if: steps.check_bounty.outputs.found == 'true'
+    run: |
+      gh pr edit ${{ github.event.pull_request.number }} --body "$(gh pr view ${{ github.event.pull_request.number }} --json body --template '{{.body}}')
+
+      ---
+      **Immunefi Bounty Integration**
+      [Review Bug Bounty Program](https://immunefi.com)"
+write permissions to modify existing PR descriptions.
+Authentication: The GitHub CLI uses the built-in secrets.GITHUB_TOKEN automatically provided by GitHub Actions.
+Commit Inspection: The git log command scans all new commits within the pull request
