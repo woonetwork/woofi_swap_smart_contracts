@@ -1,0 +1,14 @@
+gh pr create --repo woonetwork/woofi_swap_smart_contracts --head gbr-na:assign_reviewer --title "Fix: theft of unclaimed yield" --body "Closes #147
+
+Reproduces and fixes the theft of unclaimed yield vulnerability reported in Immunefi report #68586.
+
+Screenshots:reproduced 
+
+ kotlinx.serialization)
+
+cc @0xmerl"gh issue edit 147 --repo woonetwork/woofi_swap_smart_contracts --add-label "bug,security"## Sample merge #4 https://github.com/apps/github-project-automationgh pr edit <#4> --add-reviewer @0xmerluest Template Description
+
+This is a sample pull request template. You can customize it to fit your project's needs.
+
+Don't forget to commit your template file to the repository so that it can be used for future pull requests!
+assignees  :@0xmerl 
