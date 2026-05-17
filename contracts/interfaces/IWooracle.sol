@@ -32,21 +32,50 @@ pragma experimental ABIEncoderV2;
 * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
+/// @title The oracle interface by Woo.Network.
+/// @notice update and posted the latest price info by Woo.
 interface IWooracle {
-    function getPrice(address base) external view returns (uint256 latestPrice, bool feasible);
+    /// @dev the quote token for Wooracle's pricing.
+    /// @return the quote token
+    function quoteToken() external view returns (address);
 
-    function getState(address base)
+    /// @dev the price for the given base token
+    /// @param base baseToken address
+    /// @return priceNow the current price of base token
+    /// @return feasible whether the current price is feasible and valid
+    function price(address base) external view returns (uint256 priceNow, bool feasible);
+
+    function getPrice(address base) external view returns (uint256);
+
+    function getSpread(address base) external view returns (uint256);
+
+    function getCoeff(address base) external view returns (uint256);
+
+    /// @dev returns the state for the given base token.
+    /// @param base baseToken address
+    /// @return priceNow the current price of base token
+    /// @return spreadNow the current spread of base token
+    /// @return coeffNow the slippage coefficient of base token
+    /// @return feasible whether the current state is feasible and valid
+    function state(address base)
         external
         view
         returns (
-            uint256 latestPrice,
-            uint256 spread,
-            uint256 coefficient,
+            uint256 priceNow,
+            uint256 spreadNow,
+            uint256 coeffNow,
             bool feasible
         );
 
+    /// @dev returns the last updated timestamp
+    /// @return the last updated timestamp
     function timestamp() external view returns (uint256);
+
+    /// @dev returns whether the base token price is valid.
+    /// @param base baseToken address
+    /// @return whether the base token price is valid.
+    function isFeasible(address base) external view returns (bool);
 }
