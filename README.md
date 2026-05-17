@@ -1,6 +1,4 @@
-<br>
-<p align="center"><img src="http://woofi.iamkun.com/_nuxt/img/8993400.png" width="320" /></p>
-
+<p align="center"><img src="https://files.gitbook.com/v0/b/gitbook-x-prod.appspot.com/o/spaces%2F-McghiWP3H5y-b9oQ6H6-887967055%2Fuploads%2FMaPxIQMWO8RcUv6vMK1n%2Flogo2.png?alt=media&token=e51ef4bd-664e-4356-9e38-fdfa12baf27d" width="320" /></p>
 <div align="center">
   <a href="https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/build.yml" style="text-decoration:none;">
     <img src="https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/build.yml/badge.svg" alt='Build' />
@@ -8,75 +6,240 @@
   <a href='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/lint.yml' style="text-decoration:none;">
     <img src='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/lint.yml/badge.svg' alt='Lint' />
   </a>
-  <a href='https://coveralls.io/github/dydxprotocol/solo' style="text-decoration:none;">
-    <img src='https://coveralls.io/repos/github/dydxprotocol/solo/badge.svg?t=toKMwT' alt='Coverage Status' />
-  </a>
-  <a href='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/slither.yml' style="text-decoration:none;">
-    <img src='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/slither.yml/badge.svg' alt='Slither' />
-  </a>
   <a href='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/unit_tests.yml' style="text-decoration:none;">
     <img src='https://github.com/woonetwork/woofi_swap_smart_contracts/actions/workflows/unit_tests.yml/badge.svg' alt='Unit Tests' />
   </a>
-  <a href='https://t.me/woonetwork' style="text-decoration:none;">
-    <img src='https://img.shields.io/badge/Chat-telegram-9cf.svg?longCache=true' alt='Telegram' />
-  </a>
 </div>
 
->
+## WOOFi Swap V1.0
 
-## Overview
+This repository contains the smart contracts and solidity library for the WOOFi Swap v1. WOOFi Swap is a decentralized exchange using a brand new on-chain market making algorithm called Synthetic Proactive Market Making (sPMM), which is designed for professional market makers to generate an on-chain orderbook simulating the price, spread and depth from centralized liquidity sources. Read more here.
 
-WooFi Swap utilizes the proprietary market making strategy with high capital efficiency and low price spread, configurable rebate mechanism and smart route to 3rd party AMM DEXes if necessary. This repo contains smart contracts and solidity library used for WooFi Swap hosted on [swap.woo.network](https://swap.woo.network).
+## Security
+
+#### Bug Bounty
+
+Bug bounty for the smart contracts: [Bug Bounty](https://learn.woo.org/woofi/woofi-swap/bug-bounty).
+
+#### Security Audit
+
+3rd party security audit: [Audit Report](https://learn.woo.org/woofi/woofi-swap/audits).
 
 ## Code structure
 
-With the "minimalism" design from day one, the smart contract for WooFi Swap is straightforward and neat. The whole code base consist of 4 main smart contract files (written in Solidity):
+With the "minimalism" design, the whole code base consist of 4 main smart contract (in solidity):
 | File | Main Function |
 | :--- |:---:|
-| WooRouter.sol | Routing endpoint to dispatch user trades to Woo private pool or 3rd party dex |
-| WooPP.sol | the WooTrade's proprietary market making pool |
-| WooPP_proxy.sol | the upgradable proxy file from OpenZepplin |
-| RewardManager.sol | the contract for user reward (e.g. trading fee discount or rebate) |
+| WooRouter.sol | Router contract to dispatch user trades to Woo Private Pool or 3rd party dex |
+| WooPP.sol | The WooTrade's proprietary market making pool and swap the given tokens |
+| Wooracle.sol | Proprietary oracle to push the latest market price, spread and slippage info |
+| WooGuardian.sol | The trading price and amount verification and defense contract |
 
-## Dev environment
+## BSC Mainnet deployment
 
-Supports both Remix online IDE and hardhat. More details are coming up...
+| Contract    |                                                     BSC address                                                      |
+| :---------- | :------------------------------------------------------------------------------------------------------------------: |
+| WooRouter   | [0x114f84658c99aa6EA62e3160a87A16dEaF7EFe83](https://bscscan.com/address/0x114f84658c99aa6ea62e3160a87a16deaf7efe83) |
+| WooPP       | [0x8489d142Da126F4Ea01750e80ccAa12FD1642988](https://bscscan.com/address/0x8489d142Da126F4Ea01750e80ccAa12FD1642988) |
+| WooGuardian | [0xC90ec9Fe0d243B98DdF5468AFaFB4863EF12002F](https://bscscan.com/address/0xC90ec9Fe0d243B98DdF5468AFaFB4863EF12002F) |
+| Wooracle    | [0xea4edfEfF60B375556459e106AB57B696c202A29](https://bscscan.com/address/0xea4edfEfF60B375556459e106AB57B696c202A29) |
 
-## Build version
+## Local Build & Tests
 
-Solidity =0.6.12 with 200 optimization on. "0.6.12" was chosen because it's a stable version used by most flagship DeFi apps (AAVE, Uniswap and Pancake.)
+Hardhat and yarn are utilized to compile, build and run tests for WOOFi smart contracts. We recommend to install [Hardhat](https://hardhat.org/) and [Shorthand (hh) and autocomplete](https://hardhat.org/guides/shorthand.html).
 
-## List of Documentations
+To build the smart contracts:
 
-- Dex design doc: https://shimowendang.com/docs/WGCKdhqQjDjPKcCD
-- Class diagram: https://www.processon.com/view/link/6107dba2e401fd7c4ed52e93
-- WooFi proprietary marking making model: https://shimowendang.com/docs/jv98yHh9HHKKRT8h
-- Certik audit report and tracking record: https://shimowendang.com/docs/wDQqdC6pXgJVhJvG
-- WooFi Swap Contract Integration Doc: https://shimowendang.com/docs/G8PvQdJtHwtwV8Rp
+```
+yarn
+hh compile
+```
 
-## HardHat tasks
+To run the unit tests:
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
+```
+yarn build-test
+hh test
+```
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, pre-configured to work with the project code.
+## Integrate with WooFi Swap
 
-Try running some of the following tasks:
+Currently, WooRouter supports the following tokens on BSC:
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.js
-node scripts/deploy.js
-npx eslint '**/*.js'
-npx eslint '**/*.js' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
+| Token |                BSC address                 |
+| :---- | :----------------------------------------: |
+| usdt  | 0x55d398326f99059fF775485246999027B3197955 |
+| wbnb  | 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c |
+| btcb  | 0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c |
+| eth   | 0x2170ed0880ac9a755fd29b2688956bd959f933f8 |
+| woo   | 0x4691937a7508860f876c9c0a2a617e7d9e945d4b |
+| bnb   | 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE |
+
+The easiest way is to interact with WooRouter.sol (BSC: https://bscscan.com/address/0x114f84658c99aa6ea62e3160a87a16deaf7efe83 )
+
+Quote the price:
+
+```solidity
+/// @dev query the amount to swap fromToken -> toToken
+/// @param fromToken the from token
+/// @param toToken the to token
+/// @param fromAmount the amount of fromToken to swap
+/// @return toAmount the swapped amount to receive
+function querySwap(
+  address fromToken,
+  address toToken,
+  uint256 fromAmount
+) external view returns (uint256 toAmount);
+
+```
+
+Sample call to quote selling 1 btc:
+
+```solidity
+querySwap(
+  0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c, // btcb token address
+  0x55d398326f99059fF775485246999027B3197955, // usdt token address
+  1000000000000000000);                       // btcb amount to swap in decimal 18
+```
+
+Swap the token:
+
+```solidity
+/// @dev swap fromToken -> toToken
+/// @param fromToken the from token
+/// @param toToken the to token
+/// @param fromAmount the amount of fromToken to swap
+/// @param minToAmount the amount of fromToken to swap
+/// @param to the destination address
+/// @param rebateTo the amount of fromToken to swap (optional, can be '0')
+/// @return realToAmount the amount of toToken to receive
+function swap(
+  address fromToken,
+  address toToken,
+  uint256 fromAmount,
+  uint256 minToAmount,
+  address payable to,
+  address rebateTo
+) external payable returns (uint256 realToAmount);
+
+```
+
+Sample call to sell 1 btc to usdt:
+
+```solidity
+swap(
+  0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c, // btcb token address
+  0x55d398326f99059fF775485246999027B3197955, // usdt token address
+  1000000000000000000,                        // btcb amount to swap in decimal 18
+   990000000000000000,                        // min amount for 1% slippage
+  0xd51062A4aF7B76ee0b2893Ef8b52aCC155393E3D, // the address to receive the swap fund
+  0);                                         // the rebate address
+```
+
+You can directly play with BSC mainnet contract here: https://bscscan.com/address/0x114f84658c99aa6ea62e3160a87a16deaf7efe83#writeContract
+
+#### IWooRouter Interface
+
+```solidity
+/// @dev query the amount to swap fromToken -> toToken
+/// @param fromToken the from token
+/// @param toToken the to token
+/// @param fromAmount the amount of fromToken to swap
+/// @return toAmount the predicted amount to receive
+function querySwap(
+  address fromToken,
+  address toToken,
+  uint256 fromAmount
+) external view returns (uint256 toAmount);
+
+/// @dev swap fromToken -> toToken
+/// @param fromToken the from token
+/// @param toToken the to token
+/// @param fromAmount the amount of fromToken to swap
+/// @param minToAmount the amount of fromToken to swap
+/// @param to the amount of fromToken to swap
+/// @param rebateTo the amount of fromToken to swap
+/// @return realToAmount the amount of toToken to receive
+function swap(
+  address fromToken,
+  address toToken,
+  uint256 fromAmount,
+  uint256 minToAmount,
+  address payable to,
+  address rebateTo
+) external payable returns (uint256 realToAmount);
+
+```
+
+#### IWooPP Interface
+
+```solidity
+/// @dev Swap baseToken into quoteToken
+/// @param baseToken the base token
+/// @param baseAmount amount of baseToken that user want to swap
+/// @param minQuoteAmount minimum amount of quoteToken that user accept to receive
+/// @param to quoteToken receiver address
+/// @param rebateTo the wallet address for rebate
+/// @return quoteAmount the swapped amount of quote token
+function sellBase(
+  address baseToken,
+  uint256 baseAmount,
+  uint256 minQuoteAmount,
+  address to,
+  address rebateTo
+) external returns (uint256 quoteAmount);
+
+/// @dev Swap quoteToken into baseToken
+/// @param baseToken the base token
+/// @param quoteAmount amount of quoteToken that user want to swap
+/// @param minBaseAmount minimum amount of baseToken that user accept to receive
+/// @param to baseToken receiver address
+/// @param rebateTo the wallet address for rebate
+/// @return baseAmount the swapped amount of base token
+function sellQuote(
+  address baseToken,
+  uint256 quoteAmount,
+  uint256 minBaseAmount,
+  address to,
+  address rebateTo
+) external returns (uint256 baseAmount);
+
+/// @dev Query the amount for selling the base token amount.
+/// @param baseToken the base token to sell
+/// @param baseAmount the amount to sell
+/// @return quoteAmount the swapped quote amount
+function querySellBase(address baseToken, uint256 baseAmount) external view returns (uint256 quoteAmount);
+
+/// @dev Query the amount for selling the quote token.
+/// @param baseToken the base token to receive (buy)
+/// @param quoteAmount the amount to sell
+/// @return baseAmount the swapped base token amount
+function querySellQuote(address baseToken, uint256 quoteAmount) external view returns (uint256 baseAmount);
+
+```
+
+## Licensing
+
+```
+MIT License
+===========
+
+Copyright (c) 2021 WOO Network
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```

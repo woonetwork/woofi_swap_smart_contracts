@@ -1,4 +1,4 @@
 -r ts-node/register/transpile-only
---timeout 50000
+--timeout 10000
 --no-warnings
 test/**/*.test.{js,ts}

@@ -1,4 +1,6 @@
-{
+{gh pr edit <pr-number-or-url> --add-reviewer username1,username2
+
+
   "compilerOptions": {
     "target": "es2018",
     "module": "commonjs",

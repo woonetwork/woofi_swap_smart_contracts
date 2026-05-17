@@ -1,23 +1,29 @@
 import '@typechain/hardhat'
 import '@nomiclabs/hardhat-ethers'
 import '@nomiclabs/hardhat-waffle'
+import '@openzeppelin/hardhat-upgrades'
 import '@nomiclabs/hardhat-etherscan'
 import '@nomiclabs/hardhat-solhint'
 import 'hardhat-gas-reporter'
 import 'solidity-coverage'
 
+import { resolve } from 'path'
+import { config as dotenvConfig } from 'dotenv'
+
+dotenvConfig({ path: resolve(__dirname, './.env') })
+
 const chainIds = {
   ganache: 1337,
   goerli: 5,
-  hardhat: 31337,
+  hardhat: 43114,
   kovan: 42,
   mainnet: 1,
   rinkeby: 4,
   ropsten: 3,
 }
 
-// const MNEMONIC = process.env.MNEMONIC || "";
-const MNEMONIC = ''
+const MNEMONIC = process.env.MNEMONIC || 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks.'
+const DEPLOYER = process.env.DEPLOYER || '8da4ef21b864d2cc526dbdb2a120bd2874c36c9d0a1fb7f8c63d7f7a8b41de8f' // private key here: 怕不怕？
 
 export default {
   defaultNetwork: 'hardhat',
@@ -29,24 +35,55 @@ export default {
       accounts: {
         mnemonic: MNEMONIC,
       },
-      chainId: chainIds.hardhat,
+      chainId: 43112,
     },
     bsc_testnet: {
       url: 'https://data-seed-prebsc-1-s1.binance.org:8545',
       chainId: 97,
       gasPrice: 20000000000,
-      accounts: [],
+      accounts: [DEPLOYER],
     },
     bsc_mainnet: {
       url: 'https://bsc-dataseed.binance.org/',
       chainId: 56,
-      gasPrice: 20000000000,
+      gasPrice: 6000000000,
+      accounts: [DEPLOYER],
+    },
+    avax_fuji: {
+      url: 'https://api.avax-test.network/ext/bc/C/rpc',
+      gasPrice: 225000000000,
+      chainId: 43113,
       accounts: [],
+    },
+    avax_mainnet: {
+      url: 'https://api.avax.network/ext/bc/C/rpc',
+      gasPrice: 60000000000,
+      chainId: 43114,
+      accounts: [DEPLOYER],
+    },
+    fantom_mainnet: {
+      url: 'https://rpc.ftm.tools/',
+      gasPrice: 20000000000, // gas = 100
+      chainId: 250,
+      accounts: [DEPLOYER],
+    },
+    fantom_testnet: {
+      url: 'https://rpc.testnet.fantom.network/',
+      gasPrice: 100000000000, // gas = 100
+      chainId: 0xfa2,
+      accounts: [DEPLOYER],
+    },
+    aurora_mainnet: {
+      url: 'https://mainnet.aurora.dev',
+      gasPrice: 30000000, // gas = 0.03
+      chainId: 1313161554,
+      accounts: [DEPLOYER],
     },
   },
   solidity: {
     version: '0.6.12',
     settings: {
+      evmVersion: 'istanbul',
       optimizer: {
         enabled: true,
         runs: 200,
@@ -64,7 +101,15 @@ export default {
     outDir: 'typechain',
     target: 'ethers-v5',
   },
+  etherscan: {
+    apiKey: process.env.BSC_API,
+  },
   mocha: {
-    timeout: 2000,
+    timeout: 10000,
+  },
+  gasReporter: {
+    currency: 'AVAX',
+    enabled: true,
+    gasPrice: 35,
   },
 }
