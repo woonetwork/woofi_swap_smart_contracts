@@ -28,24 +28,31 @@
 * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 import { expect, use } from 'chai'
 import { Contract } from 'ethers'
 import { deployContract, MockProvider, solidity } from 'ethereum-waffle'
-import InitializableOwnable from '../build/InitializableOwnable.json'
+// import InitializableOwnable from '../build/InitializableOwnable.json'
+import { ethers } from 'hardhat'
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+import { InitializableOwnable } from '../typechain'
+import InitializableOwnableArtifact from '../artifacts/contracts/libraries/InitializableOwnable.sol/InitializableOwnable.json'
 
 use(solidity)
 
 const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 
 describe('InitializableOwnable', () => {
-  const [owner, anotherOwner, user, quoteToken] = new MockProvider().getWallets()
-  let initOwnable: Contract
+  let owner: SignerWithAddress
+  let anotherOwner: SignerWithAddress
+
+  let initOwnable: InitializableOwnable
 
   beforeEach(async () => {
-    initOwnable = await deployContract(owner, InitializableOwnable, [])
+    ;[owner, anotherOwner] = await ethers.getSigners()
+    initOwnable = (await deployContract(owner, InitializableOwnableArtifact, [])) as InitializableOwnable
   })
 
   it('_OWNER_ should be zero address when deployed', async () => {

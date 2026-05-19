@@ -127,4 +127,10 @@ artifacts/
 cache/
 build/
 typechain/
+crytic-export/
+
+# solidity-coverage
+coverage.json
+
+contracts/WooGuardian.sol
 
