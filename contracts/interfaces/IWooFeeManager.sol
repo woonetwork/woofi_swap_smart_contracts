@@ -66,4 +66,9 @@ interface IWooFeeManager {
 
     /// @dev Collects the fee and distribute to rebate and vault managers.
     function distributeFees() external;
+
+    /// @dev Add the rebate amounts for the specified broker addresses.
+    /// @param brokerAddrs the broker address for rebate
+    /// @param amounts the rebate amount for each broker address
+    function addRebates(address[] memory brokerAddrs, uint256[] memory amounts) external;
 }

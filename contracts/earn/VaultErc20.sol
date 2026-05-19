@@ -110,6 +110,7 @@ contract VaultErc20 is IVault, ERC20, Ownable, ReentrancyGuard {
 
         // STEP 2: issues the shares and update the cost basis
         uint256 shares = totalSupply() == 0 ? amount : amount.mul(totalSupply()).div(balanceBefore);
+        require(shares > 0, 'VaultV2: !shares');
         uint256 sharesBefore = balanceOf(msg.sender);
         uint256 costBefore = costSharePrice[msg.sender];
         uint256 costAfter = (sharesBefore.mul(costBefore).add(amount.mul(1e18))).div(sharesBefore.add(shares));
